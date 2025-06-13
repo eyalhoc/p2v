@@ -1,4 +1,4 @@
-# p2v
+# P2V
 Python to Verilog compiler
 
 # What is P2V?
