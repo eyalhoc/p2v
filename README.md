@@ -8,7 +8,7 @@ P2V is a python library used to generate synthesizable RTL. The RTL modules writ
 P2V is meant for chip designers familiar with Verilog and Python.
 
 
-# INSTALLATION
+# Installation
 P2V is a native Python3 library, it needs no special installations for its basic function.
 Pip install TBD
 Beyond basic functionality P2V does take advantage of the following open-source tools, and their absence will shut off their corresponding features:
@@ -25,7 +25,7 @@ https://steveicarus.github.io/iverilog/usage/installation.html
 P2V can run without all its dependencies, but in order to do that the -allow_missing_tools should be added to the command line, that will allow, for example, running without indenting files if the indentation tool is not installed.
 
 
-# HELLO WORLD
+# Hello World
 python3 p2v/tutorial/example0_hello_world/hello_world.py
 
 p2v-INFO: starting with seed 1
