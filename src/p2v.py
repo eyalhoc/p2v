@@ -26,6 +26,7 @@ import argparse
 import csv
 
 import p2v_misc as misc
+import p2v_clock
 from p2v_clock import p2v_clock as clock
 from p2v_clock import default_clk
 import p2v_tools
@@ -156,7 +157,7 @@ class p2v():
     
     def _create_outdir(self):
         if os.path.exists(self._args.outdir) and self._args.rm_outdir:
-            assert os.path.isfile(os.path.join(self._args.outdir, self._get_logfile())), f"outdir {self._args.outdir} does not look like a {__class__.__name__} output directory"
+            assert os.path.isfile(os.path.join(self._args.outdir, self._get_logfile())), f"cannot remove {self._args.outdir}, it does not look like a {__class__.__name__} output directory"
             shutil.rmtree(self._args.outdir, ignore_errors=True)
         if not os.path.exists(self._args.outdir):
             os.mkdir(self._args.outdir)
