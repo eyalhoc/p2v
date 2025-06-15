@@ -23,6 +23,7 @@ import logging
 import traceback
 import inspect
 import argparse
+import csv
 
 import p2v_misc as misc
 from p2v_clock import p2v_clock as clock
@@ -35,13 +36,14 @@ import p2v_slang as slang
 
 MAX_MODNAME = 128
 MAX_DEPTH = 16
-MAX_VAR_STR = 16
+MAX_VAR_STR = 64
 MAX_SEED = 64 * 1024
 MAX_LOOP = 5
 
 SIGNAL_TYPES = [clock, dict, int, float, list, str, tuple]
 
 class p2v():
+    
     def __init__(self, parent=None, modname=None, parse=True):
         self._parent = parent
         self._modname = modname
@@ -249,9 +251,12 @@ class p2v():
         self.tb = p2v_tb(self, seed=self._args.seed, max_seed=MAX_SEED)
         self._logger.info(f"starting with seed {self.tb.seed}")
         
-        gen_loop = self._args.gen_num is not None
+        gen_loop = self._args.gen_num is not None or type(self._args.params) is list
         if gen_loop:
-            iter_num = self._args.gen_num
+            if misc._is_int(self._args.gen_num):
+                iter_num = self._args.gen_num
+            else:
+                iter_num = len(self._args.params)
             gen_seeds = []
             for i in range(iter_num):
                 gen_seeds.append(self.tb.rand_int(1, MAX_SEED))
@@ -264,7 +269,11 @@ class p2v():
                 self._logger.info(f"starting gen iteration {i}/{iter_num-1}")
             if self._args.sim or not gen_loop:
                 self.__init__(None, modname=misc.cond(not gen_loop, None, f"_tb{i}"), parse=False)
-                top_class.module(self, **self._args.params)
+                try:
+                    top_class.module(self, **self._args.params)
+                except Exception as e:
+                    self._raise(e)
+                    
                 for process in self._processes:
                     process.wait()
                 self._logger.info(f"verilog generation completed successfully ({misc.ceil(time.time() - _start_time)} sec)")
@@ -272,7 +281,10 @@ class p2v():
                 self._sim()
             else:
                 self.__init__(None, parse=False)
-                args = self._get_gen_args(top_class)
+                if type(self._args.params) is list:
+                    args = self._args.params[i]
+                else:
+                    args = self._get_gen_args(top_class)
                 top_class.module(self, **args)
                 self._lint()
                 self.tb.register_test(args)
@@ -281,6 +293,20 @@ class p2v():
         self._logger.info(f"completed {misc.cond(rtrn==0, 'successfully', 'with errors')}")
         return rtrn
         
+    def _param_type(self, value):
+        if os.path.isfile(value):
+            list_of_params = []
+            with open(value, newline='') as csvfile:
+                reader = csv.DictReader(csvfile, skipinitialspace=True)
+                for row in reader:
+                    args = {}
+                    for key, val in row.items():
+                        args[key.strip()] = eval(val)
+                    list_of_params.append(args)
+            return list_of_params
+        else:
+            return ast.literal_eval(value)
+
     def _parse_args(self):
         parser = argparse.ArgumentParser()
         parser.add_argument("-outdir", type=str, default="cache", help="directory for generated files")
@@ -288,7 +314,7 @@ class p2v():
         parser.add_argument("--rm_outdir", action="store_false", default=False, help="supress outdir removal")
         parser.add_argument('-I', default=[], action="append", help="append search directory")
         parser.add_argument("-prefix", type=str, default="", help="prefix all files")
-        parser.add_argument("-params", type=ast.literal_eval, default={}, help="top module parameters")
+        parser.add_argument("-params", type=self._param_type, default={}, help="top module parameters, dictionary or csv file")
         parser.add_argument("-stop_on", default="CRITICAL", choices=["WARNING", "ERROR", "CRITICAL"], help="stop after non critical errors")
         parser.add_argument("-log", default="DEBUG", choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], help="logging level")
         parser.add_argument("-allow_missing_tools", action="store_true", default=False, help="do not stop on missing dependencies")
@@ -799,11 +825,13 @@ class p2v():
                 if self._assert(name in self._params, f"module parameter {name} is missing set_param()"):
                     (param_var, param_remark, param_loose, param_suffix) = self._params[name]
                     if param_remark != "":
-                        param_remark = f": {param_remark}"
+                        param_remark = f" # {param_remark}"
                 else:
                     (param_var, param_remark, param_loose, param_suffix) = (None, "", False, None)
                 val = module_locals[name]
-                if type(val) is str:
+                if type(val) is clock:
+                    val_str = val._declare()
+                elif type(val) is str:
                     val_str = f'"{val}"'
                 else:
                     val_str = str(val)

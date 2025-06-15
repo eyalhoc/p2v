@@ -9,9 +9,9 @@ module adder__bits8_num2 (
 );
 
     // module parameters:
-    // clk = clk (p2v_clock)
-    // bits = 8 (int): data width
-    // num = 2 (int): number of inputs
+    // clk = "clock('clk', rst_n='rst_n')" (p2v_clock)
+    // bits = 8 (int) # data width
+    // num = 2 (int) # number of inputs
 
     always_ff @(posedge clk or negedge rst_n)
         if (!rst_n) o <= 8'd0;

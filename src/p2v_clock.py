@@ -27,6 +27,18 @@ class p2v_clock:
             else:
                 return False
 
+        def _declare(self):
+            s = f"clock('{self.name}'"
+            if self.rst_n is not None:
+                s += f", rst_n='{self.rst_n}'"
+            if self.reset is not None:
+                s += f", reset='{self.reset}'"
+            s += ")"
+            if "," in s:
+                return f'"{s}"'
+            else:
+                return s
+
         def get_nets(self):
             """
             Get all clock signals.
@@ -43,5 +55,6 @@ class p2v_clock:
             if self.reset is not None:
                 nets.append(self.reset)
             return nets
-                
+        
+        
 default_clk = p2v_clock("clk", rst_n="rst_n", remark="default clock")

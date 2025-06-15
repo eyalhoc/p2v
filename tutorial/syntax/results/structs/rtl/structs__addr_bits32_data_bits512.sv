@@ -250,7 +250,7 @@ module structs__addr_bits32_data_bits512 (
 );
 
     // module parameters:
-    // clk = clk (p2v_clock)
+    // clk = "clock('clk', rst_n='rst_n')" (p2v_clock)
     // addr_bits = 32 (int)
     // data_bits = 512 (int)
 

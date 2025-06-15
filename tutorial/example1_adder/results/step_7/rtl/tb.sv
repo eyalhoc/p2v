@@ -1,8 +1,8 @@
 module tb ();
 
     // module parameters:
-    // async_reset = True (bool): sync reset or async reset
-    // size = 4 (int): number of inputs to test
+    // async_reset = True (bool) # sync reset or async reset
+    // size = 4 (int) # number of inputs to test
 
     logic clk;
     logic resetn;

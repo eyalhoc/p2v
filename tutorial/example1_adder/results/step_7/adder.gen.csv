@@ -1,2 +1,2 @@
 float16         , bits            , num             
-False           , 32              , 4               
+bool(False)     , int(32)         , int(4)          

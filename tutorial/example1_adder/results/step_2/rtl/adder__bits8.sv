@@ -5,7 +5,7 @@ module adder__bits8 (
 );
 
     // module parameters:
-    // bits = 8 (int): data width
+    // bits = 8 (int) # data width
 
     assign o = a + b;
 

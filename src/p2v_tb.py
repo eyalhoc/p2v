@@ -126,6 +126,36 @@ class p2v_tb():
         self._parent._assert_type(l, list)
         return l[self.rand_int(len(l))]
     
+    def rand_clock(self, prefix="", has_async=None, has_sync=None):
+        """
+        Create clock with random resets.
+
+        Args:
+            prefix(str): prefix all signal names
+            has_async([None, bool]): use async reset, None is random
+            has_sync([None, bool]): use sync reset, None is random
+
+        Returns:
+            clock
+        """
+        self._parent._assert_type(prefix, str)
+        self._parent._assert_type(has_async, [None, bool])
+        self._parent._assert_type(has_sync, [None, bool])
+        if has_async is None:
+            has_async = self.rand_bool()
+        if has_async:
+            rst_n = prefix + "rst_n"
+        else:
+            rst_n = None
+            
+        if has_sync is None:
+            has_sync = self.rand_bool()
+        if has_sync:
+            reset = prefix + "reset"
+        else:
+            reset = None
+        return clock(prefix + "clk", rst_n=rst_n, reset=reset)
+    
     def dump(self, filename="dump.fst"):
         """
         Create an fst dump file.
@@ -339,19 +369,32 @@ class p2v_tb():
         """
         self._parent._assert_type(args, [None, dict])
         
+        col_width = 16
         if args is None:
             args = {}
             for name in self._parent._params:
                 args[name] = self._parent._params[name][0]
         filename = os.path.join(self._parent._args.outdir, f"{self._parent._get_clsname()}.gen.csv")
         if not os.path.isfile(filename):
-            vals = []
+            headers = []
             for name in args:
-                vals.append(name.ljust(16))
-            misc._write_file(filename, ", ".join(vals))
+                headers.append(name.ljust(col_width))
+            misc._write_file(filename, ", ".join(headers))
         vals = []
         for name in args:
-            vals.append(str(args[name]).ljust(16))
+            val = args[name]
+            if type(val) is clock:
+                val_str = val._declare()
+            elif type(val) is int:
+                val_str = f"int({val})"
+            elif type(val) is bool:
+                val_str = f"bool({val})"
+            elif type(val) is str:
+                val_str = f'"{val}"'
+            else:
+                val_str = str(val)
+                
+            vals.append(val_str.ljust(col_width))
         misc._write_file(filename, ", ".join(vals), append=True)
             
     def fifo(self, name, bits=1):
@@ -373,4 +416,10 @@ class p2v_tb():
         else:
             msb = f"{bits}-1"
         self._parent.line(f"reg [{msb}:0] {name}[$];")
+    
+    def syn_off(self):
+        self._parent.remark("synopsys translate_off")
+        
+    def syn_on(self):
+        self._parent.remark("synopsys translate_on")
     
