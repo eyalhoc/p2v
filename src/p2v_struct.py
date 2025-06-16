@@ -11,39 +11,46 @@
 #  GPL-3.0 license for full details: https://www.gnu.org/licenses/gpl-3.0.html
 # -----------------------------------------------------------------------------
 
+"""
+p2v_struct module. Responsible for creating p2v structs.
+"""
+
 from copy import deepcopy
 
 FIELD_SEP = "__"
 
 class p2v_struct():
+    """
+    This class is a p2v struct.
+    """
 
     def __init__(self, parent, name, fields):
         self._parent = parent
-        
+
         self.data_names = self.name_fields(name, fields, data_only=True)
         self.ctrl_names = self.name_fields(name, fields, ctrl_only=True)
         self.names = self.name_fields(name, fields)
-        
+
         self._data_fields = self.prefix_fields(name, fields, data_only=True)
         self._ctrl_fields = self.prefix_fields(name, fields, ctrl_only=True)
         self.fields = self.prefix_fields(name, fields)
-        
+
         self.valid = self.ready = None
-        for name in self._ctrl_fields:
-            if self._ctrl_fields[name] == 1.0:
-                self.valid = name
-            elif self._ctrl_fields[name] == -1.0:
-                self.ready = name
-            
+        for field_name in self._ctrl_fields:
+            if self._ctrl_fields[field_name] == 1.0:
+                self.valid = field_name
+            elif self._ctrl_fields[field_name] == -1.0:
+                self.ready = field_name
+
     def _name_fields(self, name, fields, data_only=False, ctrl_only=False):
         remove = []
         for key, value in fields.items():
             field_name = self.get_field_name(name, key)
-            if type(value) is dict:
+            if isinstance(value, dict):
                 self._name_fields(field_name, value, data_only=data_only, ctrl_only=ctrl_only)
-            elif type(value) is float and data_only:
+            elif isinstance(value, float) and data_only:
                 remove.append(key)
-            elif type(value) is not float and ctrl_only:
+            elif not isinstance(value, float) and ctrl_only:
                 remove.append(key)
             else:
                 fields[key] = field_name
@@ -53,14 +60,35 @@ class p2v_struct():
 
 
     def get_names(self, data=True, ctrl=True):
+        """
+        Returns a list of struct field names.
+
+        Args:
+            data(bool): return data fields
+            ctrl(bool): return control fields
+
+        Returns:
+            list
+        """
         if data and ctrl:
             return list(self.names.values())
-        elif data:
+        if data:
             return list(self.data_names.values())
-        elif ctrl:
+        if ctrl:
             return list(self.ctrl_names.values())
-        
+        return []
+
     def get_field_name(self, name, field_name):
+        """
+        Build full struct field name for Verilog signal.
+
+        Args:
+            name(str): struct name
+            field_name(str): field name
+
+        Returns:
+            str
+        """
         if FIELD_SEP in name:
             sep = ""
         else:
@@ -68,24 +96,46 @@ class p2v_struct():
         return f"{name}{sep}{field_name}"
 
     def update_field_name(self, name, field_name):
+        """
+        Takes a full field name and replaces the struct name prefix.
+
+        Args:
+            name(str): struct name
+            field_name(str): field name
+
+        Returns:
+            updated ffull struct field name (str)
+        """
         field_name = field_name.split(FIELD_SEP)[-1]
         return self.get_field_name(name, field_name)
 
     def prefix_fields(self, name, fields, data_only=False, ctrl_only=False):
+        """
+        Build a dictionary of field names to allow access to field names from hierarchical struct structure.
+
+        Args:
+            name(str): struct name
+            fields(dict): struct dics as defines by user
+            data_only(bool): only data field
+            ctrl_only(bool): only control field
+
+        Returns:
+            dict
+        """
         valid = ready = None
         new_fields = {}
         for field_name in fields:
             bits = fields[field_name]
             full_field_name = self.get_field_name(name, field_name)
-            if type(bits) is dict:
+            if isinstance(bits, dict):
                 son_fields = self.prefix_fields(full_field_name, bits, data_only=data_only, ctrl_only=ctrl_only)
                 for son_name in son_fields:
                     new_fields[son_name] = son_fields[son_name]
             else:
-                if type(bits) is float:
+                if isinstance(bits, float):
                     if data_only:
                         continue
-                    
+
                     if bits == 1.0:
                         assert valid is None, f"struct {name} has multiple valid signals (bits = 1.0)"
                         valid = full_field_name
@@ -100,7 +150,18 @@ class p2v_struct():
             if ready is not None:
                 new_fields[ready] = -1.0
         return new_fields
-        
+
     def name_fields(self, name, fields, data_only=False, ctrl_only=False):
+        """
+        Build a dictionary of fields to allow access to field data width from hierarchical struct structure.
+
+        Args:
+            name(str): struct name
+            fields(dict): struct dics as defines by user
+            data_only(bool): only data field
+            ctrl_only(bool): only control field
+
+        Returns:
+            dict
+        """
         return self._name_fields(name, deepcopy(fields), data_only=data_only, ctrl_only=ctrl_only)
-        

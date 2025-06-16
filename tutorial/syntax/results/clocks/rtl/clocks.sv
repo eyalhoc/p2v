@@ -22,7 +22,7 @@ module clocks (
 );
 
     // module parameters:
-    // clk = "clock('clk', rst_n='rst_n')" (p2v_clock)
+    // clk = p2v_clock.clk_arst() (p2v_clock)
 
     always_ff @(posedge clk or negedge rst_n)
         if (!rst_n) o0 <= 32'd0;

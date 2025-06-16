@@ -9,7 +9,7 @@ module adder__bits8_num2_float16False (
 );
 
     // module parameters:
-    // clk = "clock('clk', rst_n='rst_n')" (p2v_clock)
+    // clk = p2v_clock.clk_arst() (p2v_clock)
     // bits = 8 (int) # data width
     // num = 2 (int) # number of inputs
     // float16 = False (bool) # use a float16 adder

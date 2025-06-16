@@ -11,29 +11,38 @@
 #  GPL-3.0 license for full details: https://www.gnu.org/licenses/gpl-3.0.html
 # -----------------------------------------------------------------------------
 
-from p2v_clock import p2v_clock as clock
-import p2v_misc as misc
+"""
+p2v_tb module. Responsible for behavioral code, building test-benches and testing.
+"""
 
 import os
 import random
 import numpy as np
 
-pass_status = "PASSED"
-fail_status = "FAILED"
-    
+from p2v_clock import p2v_clock as clock
+import p2v_misc as misc
+
+PASS_STATUS = "PASSED"
+FAIL_STATUS = "FAILED"
+
 class p2v_tb():
+    """
+    This class is a p2v test bench function wrapper.
+    """
 
     def __init__(self, parent, seed, max_seed=1024):
         self._parent = parent
         self.seed = self._set_random_seed(seed, max_seed=max_seed)
 
-    def _test_finish(self, status, condition=None, message=None, params=[]):
+    def _test_finish(self, status, condition=None, message=None, params=None):
+        if params is None:
+            params = []
         param_str = ", $time"
         if message is None:
             msg = ""
         else:
             msg = f' ({message})'
-            if type(params) is str:
+            if isinstance(params, str):
                 params = [params]
             if len(params) > 0:
                 param_str += ", " + ", ".join(params)
@@ -43,36 +52,35 @@ class p2v_tb():
                         #10; $finish;
                     end
                 """
-            
+
     def _set_seed(self, seed):
         random.seed(seed)
         np.random.seed(seed)
-            
+
     def _set_random_seed(self, seed=0, max_seed=1024):
         if seed == 0:
             seed = self.rand_int(1, max_seed)
         self._set_seed(seed)
         return seed
-            
-            
-    def rand_int(self, a, b=None):
+
+
+    def rand_int(self, min_val, max_val=None):
         """
         Random integer value.
 
         Args:
-            a(int): min val (if b is None a is in range [0, a])
-            b([None, int]: max val
+            min_val(int): min val (if max_val is None min_val is in range [0, min_val])
+            max_val([None, int]: max val
 
         Returns:
             int
         """
-        self._parent._assert_type(a, int)
-        self._parent._assert_type(b, [None, int])
-        
-        if b is None:
-            return random.randint(0, a-1)
-        else:
-            return random.randint(a, b)
+        self._parent._assert_type(min_val, int)
+        self._parent._assert_type(max_val, [None, int])
+
+        if max_val is None:
+            return random.randint(0, min_val-1)
+        return random.randint(min_val, max_val)
 
     def rand_hex(self, bits):
         """
@@ -125,7 +133,7 @@ class p2v_tb():
         """
         self._parent._assert_type(l, list)
         return l[self.rand_int(len(l))]
-    
+
     def rand_clock(self, prefix="", has_async=None, has_sync=None):
         """
         Create clock with random resets.
@@ -147,7 +155,7 @@ class p2v_tb():
             rst_n = prefix + "rst_n"
         else:
             rst_n = None
-            
+
         if has_sync is None:
             has_sync = self.rand_bool()
         if has_sync:
@@ -155,7 +163,7 @@ class p2v_tb():
         else:
             reset = None
         return clock(prefix + "clk", rst_n=rst_n, reset=reset)
-    
+
     def dump(self, filename="dump.fst"):
         """
         Create an fst dump file.
@@ -167,7 +175,7 @@ class p2v_tb():
             None
         """
         self._parent._assert_type(filename, str)
-        
+
         self._parent.line(f"""
                               initial
                                   begin
@@ -176,8 +184,8 @@ class p2v_tb():
                                       $dumpon;
                                   end
                            """)
-                
-    def test_pass(self, condition=None, message=None, params=[]):
+
+    def test_pass(self, condition=None, message=None, params=None):
         """
         Finish test successfully if condition is met.
 
@@ -189,12 +197,14 @@ class p2v_tb():
         Returns:
             None
         """
+        if params is None:
+            params = []
         self._parent._assert_type(condition, [None, str])
         self._parent._assert_type(message, [None, str])
         self._parent._assert_type(params, [str, list])
-        return self._test_finish(pass_status, condition=condition, message=message, params=params)
-        
-    def test_fail(self, condition=None, message=None, params=[]):
+        return self._test_finish(PASS_STATUS, condition=condition, message=message, params=params)
+
+    def test_fail(self, condition=None, message=None, params=None):
         """
         Finish test with error if condition is met.
 
@@ -206,12 +216,14 @@ class p2v_tb():
         Returns:
             None
         """
+        if params is None:
+            params = []
         self._parent._assert_type(condition, [None, str])
         self._parent._assert_type(message, [None, str])
         self._parent._assert_type(params, [str, list])
-        return self._test_finish(fail_status, condition=condition, message=message, params=params)
+        return self._test_finish(FAIL_STATUS, condition=condition, message=message, params=params)
 
-    def test_finish(self, condition, pass_message=None, fail_message=None, params=[]):
+    def test_finish(self, condition, pass_message=None, fail_message=None, params=None):
         """
         Finish test if condition is met.
 
@@ -224,6 +236,8 @@ class p2v_tb():
         Returns:
             None
         """
+        if params is None:
+            params = []
         self._parent._assert_type(condition, [None, str])
         self._parent._assert_type(pass_message, [None, str])
         self._parent._assert_type(fail_message, [None, str])
@@ -234,7 +248,7 @@ class p2v_tb():
                 else
                     {self.test_fail(fail_message, params=params)}
                 """
-                
+
     def gen_clk(self, clk, cycle=10, reset_cycles=20, pre_reset_cycles=5):
         """
         Generate clock and async reset if it exists.
@@ -252,7 +266,7 @@ class p2v_tb():
         self._parent._assert_type(cycle, int)
         self._parent._assert_type(reset_cycles, int)
         self._parent._assert_type(pre_reset_cycles, int)
-        
+
         self._parent._check_declared(clk.name)
         cycle_low = cycle // 2
         cycle_high = cycle - cycle_low
@@ -286,7 +300,7 @@ class p2v_tb():
                                      end
                               """)
             self._parent.allow_undriven(clk.reset)
-    
+
     def gen_busy(self, clk, name, max_duration=100, max_delay=100, inverse=False):
         """
         Generate random behavior on signal, starts low.
@@ -305,7 +319,7 @@ class p2v_tb():
         self._parent._assert_type(max_duration, int)
         self._parent._assert_type(max_delay, int)
         self._parent._assert_type(inverse, bool)
-        
+
         self._parent.line(f"""
                             integer _gen_busy_{name}_seed = {self.seed};
                             initial forever
@@ -317,7 +331,7 @@ class p2v_tb():
                                 end
                           """)
         self._parent.allow_undriven(name)
-    
+
     def gen_en(self, clk, name, max_duration=100, max_delay=100):
         """
         Generate random behavior on signal, starts high.
@@ -336,7 +350,7 @@ class p2v_tb():
         self._parent._assert_type(max_duration, int)
         self._parent._assert_type(max_delay, int)
         self.gen_busy(clk, name, max_duration=max_duration, max_delay=max_delay, inverse=True)
-        
+
     def set_timeout(self, clk, timeout=100000):
         """
         Generate random behavior on signal, starts high.
@@ -350,13 +364,13 @@ class p2v_tb():
         """
         self._parent._assert_type(clk, clock)
         self._parent._assert_type(timeout, int)
-        
+
         self._parent.logic(f"_count_{clk}", 32, initial=0)
         self._parent.line(f"""
                              always @(posedge {clk}) _count_{clk} <= _count_{clk} + 'd1;
                           """)
         self._parent.assert_never(clk, f"_count_{clk} >= 'd{timeout}", f"reached timeout after {timeout} cycles of {clk}")
-    
+
     def register_test(self, args=None):
         """
         Register random module parameters to csv file.
@@ -368,7 +382,7 @@ class p2v_tb():
             None
         """
         self._parent._assert_type(args, [None, dict])
-        
+
         col_width = 16
         if args is None:
             args = {}
@@ -383,20 +397,20 @@ class p2v_tb():
         vals = []
         for name in args:
             val = args[name]
-            if type(val) is clock:
+            if isinstance(val, clock):
                 val_str = val._declare()
-            elif type(val) is int:
+            elif isinstance(val, int):
                 val_str = f"int({val})"
-            elif type(val) is bool:
+            elif isinstance(val, bool):
                 val_str = f"bool({val})"
-            elif type(val) is str:
+            elif isinstance(val, str):
                 val_str = f'"{val}"'
             else:
                 val_str = str(val)
-                
+
             vals.append(val_str.ljust(col_width))
         misc._write_file(filename, ", ".join(vals), append=True)
-            
+
     def fifo(self, name, bits=1):
         """
         Create SystemVerilog behavioral fifo (queue).
@@ -410,16 +424,33 @@ class p2v_tb():
         """
         self._parent._assert_type(name, str)
         self._parent._assert_type(bits, int)
-        
+
         if misc._is_int(bits):
             msb = bits - 1
         else:
             msb = f"{bits}-1"
         self._parent.line(f"reg [{msb}:0] {name}[$];")
-    
+
     def syn_off(self):
+        """
+        Start of non-synthesizable code.
+
+        Args:
+            NA
+
+        Returns:
+            None
+        """
         self._parent.remark("synopsys translate_off")
-        
+
     def syn_on(self):
+        """
+        End of non-synthesizable code.
+
+        Args:
+            NA
+
+        Returns:
+            None
+        """
         self._parent.remark("synopsys translate_on")
-    

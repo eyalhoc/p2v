@@ -11,8 +11,10 @@
 #  GPL-3.0 license for full details: https://www.gnu.org/licenses/gpl-3.0.html
 # -----------------------------------------------------------------------------
 
+"""
+p2v_tools module. Responsible for external tools, checking if intalled and operating using system commands.
+"""
 import os
-import sys
 import subprocess
 
 import p2v_misc as misc
@@ -20,6 +22,20 @@ import p2v_tb as tb
 
 
 def system(dirname, outdir, cmd, logfile, log_out=True, log_err=True):
+    """
+    Run system command while logging the command and output.
+
+    Args:
+        dirname(str): Directory to run command at
+        outdir(str): Directory for output files
+        cmd(str): Command to run
+        logfile(str): name of log file
+        log_out(bool): log output stream
+        log_err(bool): log error stream
+
+    Returns:
+        full path to log file
+    """
     assert os.path.isdir(dirname), f"{dirname} does not exist"
     outdir = os.path.abspath(outdir)
     logfile = os.path.join(outdir, logfile)
@@ -36,20 +52,50 @@ def system(dirname, outdir, cmd, logfile, log_out=True, log_err=True):
     misc._write_file(os.path.join(outdir, f"{bin_name}.cmd"), cmd)
     os.chdir(pwd)
     return os.path.join(os.path.abspath(dirname), logfile)
-    
+
 def check(tool_bin):
+    """
+    Check if a binary file exists in path.
+
+    Args:
+        tool_bin(str): name of binary file
+
+    Returns:
+        True if binary of tool exists
+    """
     for path in os.environ["PATH"].split(os.pathsep):
         if os.path.exists(os.path.join(path, tool_bin)):
             return True
     return False
-            
+
 def indent(filename):
+    """
+    Indent Verilog file in background.
+
+    Args:
+        filename(str): name of Verilog file to indent
+
+    Returns:
+        subprocess process for the parent process to poll on
+    """
     assert os.path.isfile(filename), f"{filename} does not exist"
-    cmd = f"{indent_bin} --indentation_spaces=4 --inplace {filename}"
-    process = subprocess.Popen(cmd.split())  # Runs in the background
+    cmd = f"{INDENT_BIN} --indentation_spaces=4 --inplace {filename}"
+    with subprocess.Popen(cmd.split(), start_new_session=True) as process: # Runs in the background
+        pass
     return process
 
 def lint(dirname, outdir, filename):
+    """
+    Run lint on Verilog file.
+
+    Args:
+        dirname(str): directory of Verilog file
+        outdir(str): directory for log file
+        filename(str): name of Verilog file
+
+    Returns:
+        full path of logfile and a boolean if lint completed successfully
+    """
     logfile = "p2v_lint.log"
     if filename is None:
         topmodule = "*.* -Wno-MULTITOP"
@@ -58,12 +104,29 @@ def lint(dirname, outdir, filename):
         if filename == topmodule:
             filename = os.path.join(dirname, topmodule)
         assert os.path.isfile(filename), f"{filename} does not exist"
-    cmd = f"{lint_bin} --lint-only {topmodule} -y {os.path.join(os.path.abspath(outdir), 'bbox')} --timing"
+    cmd = f"{LINT_BIN} --lint-only {topmodule} -y {os.path.join(os.path.abspath(outdir), 'bbox')} --timing"
     full_logfile = system(dirname, outdir, cmd, logfile, log_out=False, log_err=True)
     success = misc._read_file(full_logfile) == ""
     return full_logfile, success
 
-def comp(dirname, outdir, modname=None, search=[], libs=[]):
+def comp(dirname, outdir, modname=None, search=None, libs=None):
+    """
+    Run compile on Verilog file.
+
+    Args:
+        dirname(str): directory of Verilog file
+        outdir(str): directory for log file
+        modname(str): name of top module
+        search(list): list of directories to search Verilog files
+        libs(list): explicit list of Verilog files to compile
+
+    Returns:
+        full path of logfile and a boolean if compile completed successfully
+    """
+    if search is None:
+        search = []
+    if libs is None:
+        libs = []
     logfile = "p2v_comp.log"
     flags = ""
     if len(search) > 0:
@@ -71,15 +134,29 @@ def comp(dirname, outdir, modname=None, search=[], libs=[]):
         flags += " -y " + " -y ".join(search)
         flags += " -I " + " -I ".join(search)
     topmodule = misc.cond(modname is not None, f"-s {modname}")
-    ofile = os.path.join(os.path.abspath(outdir), f'{comp_bin}.o')
-    full_logfile = system(dirname, outdir, f"{comp_bin} -g2005-sv {topmodule} {' '.join(libs)} *.* -o {ofile} {flags}", logfile, log_out=False, log_err=True)
+    ofile = os.path.join(os.path.abspath(outdir), f'{COMP_BIN}.o')
+    full_logfile = system(dirname, outdir, f"{COMP_BIN} -g2005-sv {topmodule} {' '.join(libs)} *.* -o {ofile} {flags}", logfile, log_out=False, log_err=True)
     success = os.path.isfile(ofile)
     return full_logfile, success
-    
-def sim(dirname, outdir, err_str=["error", "failed"], pass_str=tb.pass_status):
+
+def sim(dirname, outdir, err_str=None, pass_str=tb.PASS_STATUS):
+    """
+    Run simulation on Verilog file.
+
+    Args:
+        dirname(str): directory of Verilog file
+        outdir(str): directory for log file
+        err_str(list): string that count as error if detected in log file
+        pass_str(str): string that marks a successful simulation
+
+    Returns:
+        full path of logfile and a boolean if simulation completed successfully
+    """
+    if err_str is None:
+        err_str = ["error", "failed"]
     success = False
     logfile = "p2v_sim.log"
-    full_logfile = system(dirname, outdir, f"{sim_bin} {comp_bin}.o -fst", logfile, log_out=True, log_err=True)
+    full_logfile = system(dirname, outdir, f"{SIM_BIN} {COMP_BIN}.o -fst", logfile, log_out=True, log_err=True)
     for line in misc._read_file(full_logfile).split("\n"):
         if pass_str in line:
             success = True
@@ -89,16 +166,17 @@ def sim(dirname, outdir, err_str=["error", "failed"], pass_str=tb.pass_status):
     return full_logfile, success
 
 
-indent_bin = "verible-verilog-format"
-lint_bin = "verilator"
-comp_bin = "iverilog"
-sim_bin = "vvp"
+# External tools being used for each function
+INDENT_BIN = "verible-verilog-format"
+LINT_BIN = "verilator"
+COMP_BIN = "iverilog"
+SIM_BIN = "vvp"
 
 tools = {}
-tools[indent_bin] = "indentation"
-tools[lint_bin] = "lint"
-tools[comp_bin] = "compilation"
-tools[sim_bin] = "simulation"
+tools[INDENT_BIN] = "indentation"
+tools[LINT_BIN] = "lint"
+tools[COMP_BIN] = "compilation"
+tools[SIM_BIN] = "simulation"
 
 en = {}
 for tool_bin in tools:

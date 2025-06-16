@@ -11,8 +11,11 @@
 #  GPL-3.0 license for full details: https://www.gnu.org/licenses/gpl-3.0.html
 # -----------------------------------------------------------------------------
 
+"""
+p2v module. Responsible for behavioral code, building test-benches and testing.
+"""
+
 import time
-_start_time = time.time()
 import sys
 import os
 import re
@@ -29,11 +32,11 @@ import p2v_misc as misc
 import p2v_clock
 from p2v_clock import p2v_clock as clock
 from p2v_clock import default_clk
-import p2v_tools
 from p2v_signal import p2v_signal
 from p2v_connect import p2v_connect
 from p2v_tb import p2v_tb
 import p2v_slang as slang
+import p2v_tools
 
 MAX_MODNAME = 128
 MAX_DEPTH = 16
@@ -43,8 +46,10 @@ MAX_LOOP = 5
 
 SIGNAL_TYPES = [clock, dict, int, float, list, str, tuple]
 
+_start_time = time.time()
+
 class p2v():
-    
+
     def __init__(self, parent=None, modname=None, parse=True):
         self._parent = parent
         self._modname = modname
@@ -69,7 +74,7 @@ class p2v():
                 self._logger = self._create_logger()
                 self._search = self._build_seach_path()
                 rtrn = self._parse_top()
-                exit(rtrn)
+                sys.exit(rtrn)
         else:
             self._args = parent._args
             self.tb = p2v_tb(self, seed=self._args.seed, max_seed=MAX_SEED) # regenerate to fix parent pointer
@@ -84,51 +89,50 @@ class p2v():
             self._err_num = parent._err_num
             self._depth = parent._depth + 1
             self._search = parent._search
-        
+
         self._assert(self._depth < MAX_DEPTH, f"reached max instance depth", fatal=True)
-    
+
     def _get_stack(self):
         stack = []
         for s in traceback.extract_stack():
             if not os.path.basename(s.filename).startswith(__class__.__name__) and s.line != "":
                 stack.append(s)
         return stack[1:]
-    
+
     def _assert_type(self, var, var_types, fatal=True):
-        if type(var_types) is not list:
+        if not isinstance(var_types, list):
             var_types = [var_types]
         if None in var_types:
             var_types.append(type(None))
         self._assert(type(var) in var_types, f"{var} of type {type(var)} must be in {misc._type2str(var_types)}", fatal=fatal)
-    
+
     def _assert(self, condition, message, warning=False, fatal=False, stack_idx=-1):
         if condition:
             return True
-        else:
-            stop = self._args.stop_on == "WARNING" or (self._args.stop_on == "ERROR" and not warning)
-            critical = fatal or stop
-            stack = self._get_stack()
-            if critical:
-                if self._args.debug:
-                    raise Exception(message)
-                err_stack = []
-                for s in stack:
-                    err_stack.append(f"  File {s.filename}, line {s.lineno}, in {s.name}\n    {s.line}")
-                log_info = []
-                for err_str in err_stack:
-                    log_info.append(err_str)
-                if len(log_info) > 0:
-                    log_info = ["Trace:"] + log_info + [""]
-                    self._logger.info("\n".join(log_info))
-            try:
-                filename = stack[stack_idx].filename
-                lineno = stack[stack_idx].lineno
-            except:
-                filename = lineno = None
-            self._error(message, filename=filename, lineno=lineno, warning=warning, fatal=fatal)
-            if critical:
-                exit(1)
-            return False
+        stop = self._args.stop_on == "WARNING" or (self._args.stop_on == "ERROR" and not warning)
+        critical = fatal or stop
+        stack = self._get_stack()
+        if critical:
+            if self._args.debug:
+                raise Exception(message)
+            err_stack = []
+            for s in stack:
+                err_stack.append(f"  File {s.filename}, line {s.lineno}, in {s.name}\n    {s.line}")
+            log_info = []
+            for err_str in err_stack:
+                log_info.append(err_str)
+            if len(log_info) > 0:
+                log_info = ["Trace:"] + log_info + [""]
+                self._logger.info("\n".join(log_info))
+        try:
+            filename = stack[stack_idx].filename
+            lineno = stack[stack_idx].lineno
+        except:
+            filename = lineno = None
+        self._error(message, filename=filename, lineno=lineno, warning=warning, fatal=fatal)
+        if critical:
+            sys.exit(1)
+        return False
 
     def _raise(self, message):
         self._assert(False, message, fatal=True)
@@ -151,10 +155,10 @@ class p2v():
             else:
                 self._logger.error(err_str)
                 self._err_num += 1
-        
+
     def _get_logfile(self):
         return f"{__class__.__name__}.log"
-    
+
     def _create_outdir(self):
         if os.path.exists(self._args.outdir) and self._args.rm_outdir:
             assert os.path.isfile(os.path.join(self._args.outdir, self._get_logfile())), f"cannot remove {self._args.outdir}, it does not look like a {__class__.__name__} output directory"
@@ -164,7 +168,7 @@ class p2v():
         rtl_dir = self._get_rtldir()
         if not os.path.exists(rtl_dir):
             os.mkdir(rtl_dir)
-        
+
     def _create_logger(self):
         logname = os.path.join(self._args.outdir, self._get_logfile())
 
@@ -195,10 +199,10 @@ class p2v():
         for path in search:
             sys.path.append(path)
         return search
-        
+
     def _lint(self):
         if self._args.lint:
-            if self._assert(p2v_tools.en[p2v_tools.lint_bin], f"cannot perform lint, {p2v_tools.lint_bin} is not installed", warning=self._args.allow_missing_tools):
+            if self._assert(p2v_tools.en[p2v_tools.LINT_BIN], f"cannot perform lint, {p2v_tools.LINT_BIN} is not installed", warning=self._args.allow_missing_tools):
                 if self._modname is None:
                     top_filename = None
                 else:
@@ -208,36 +212,32 @@ class p2v():
                     self._logger.info("verilog lint completed successfully")
                     return True
         return False
- 
+
     def _comp(self):
         if self._args.sim:
-            if self._assert(p2v_tools.en[p2v_tools.comp_bin], f"cannot perform verilog compile, {p2v_tools.comp_bin} is not installed", warning=self._args.allow_missing_tools):
+            if self._assert(p2v_tools.en[p2v_tools.COMP_BIN], f"cannot perform verilog compile, {p2v_tools.COMP_BIN} is not installed", warning=self._args.allow_missing_tools):
                 logfile, success = p2v_tools.comp(dirname=self._get_rtldir(), outdir=self._args.outdir, modname=self._modname, search=self._search, libs=self._libs)
                 comp_str = misc._read_file(logfile)
                 if self._assert(success and comp_str=="", f"verilog compilation completed with errors:\n{comp_str}"):
                     self._logger.info("verilog compilation completed successfully")
                     return True
         return False
-                   
+
     def _sim(self):
         if self._args.sim:
-            if self._assert(p2v_tools.en[p2v_tools.sim_bin], f"cannot perform verilog simulation, {p2v_tools.sim_bin} is not installed", warning=self._args.allow_missing_tools):
+            if self._assert(p2v_tools.en[p2v_tools.SIM_BIN], f"cannot perform verilog simulation, {p2v_tools.SIM_BIN} is not installed", warning=self._args.allow_missing_tools):
                 if self._comp():
                     logfile, success = p2v_tools.sim(dirname=self._args.outdir, outdir=self._args.outdir)
                     if self._assert(success, f"verilog simulation failed, logfile: {logfile}"):
                         self._logger.info("verilog simulation completed successfully")
                         return True
-                    else:
-                        self._logger.debug(f"verilog simulation completed with errors:\n{misc._read_file(logfile)}")
+                    self._logger.debug(f"verilog simulation completed with errors:\n{misc._read_file(logfile)}")
         return False
-    
+
     def _get_gen_args(self, top_class):
-        try:
-            top_class.gen
-        except:
-            self._raise(f"{top_class.__name__} is missing gen() function")
+        self._assert("gen" in dir(top_class), f"{top_class.__name__} is missing gen() function")
         return top_class.gen(self)
-    
+
     def _parse_top(self):
         top_module = self._get_top_modname()
         module = __import__(top_module)
@@ -251,8 +251,8 @@ class p2v():
         self = top_class(self)
         self.tb = p2v_tb(self, seed=self._args.seed, max_seed=MAX_SEED)
         self._logger.info(f"starting with seed {self.tb.seed}")
-        
-        gen_loop = self._args.gen_num is not None or type(self._args.params) is list
+
+        gen_loop = self._args.gen_num is not None or isinstance(self._args.params, list)
         if gen_loop:
             if misc._is_int(self._args.gen_num):
                 iter_num = self._args.gen_num
@@ -263,7 +263,7 @@ class p2v():
                 gen_seeds.append(self.tb.rand_int(1, MAX_SEED))
         else:
             iter_num = 1
-        
+
         for i in range(iter_num):
             if gen_loop:
                 self.tb._set_seed(gen_seeds[i])
@@ -274,7 +274,7 @@ class p2v():
                     top_class.module(self, **self._args.params)
                 except Exception as e:
                     self._raise(e)
-                    
+
                 for process in self._processes:
                     process.wait()
                 self._logger.info(f"verilog generation completed successfully ({misc.ceil(time.time() - _start_time)} sec)")
@@ -282,18 +282,18 @@ class p2v():
                 self._sim()
             else:
                 self.__init__(None, parse=False)
-                if type(self._args.params) is list:
+                if isinstance(self._args.params, list):
                     args = self._args.params[i]
                 else:
                     args = self._get_gen_args(top_class)
                 top_class.module(self, **args)
                 self._lint()
                 self.tb.register_test(args)
-                
+
         rtrn = int(self._err_num > 0)
         self._logger.info(f"completed {misc.cond(rtrn==0, 'successfully', 'with errors')}")
         return rtrn
-        
+
     def _param_type(self, value):
         if os.path.isfile(value):
             list_of_params = []
@@ -305,8 +305,7 @@ class p2v():
                         args[key.strip()] = eval(val)
                     list_of_params.append(args)
             return list_of_params
-        else:
-            return ast.literal_eval(value)
+        return ast.literal_eval(value)
 
     def _parse_args(self):
         parser = argparse.ArgumentParser()
@@ -334,15 +333,14 @@ class p2v():
 
     def _get_top_filename(self):
         return sys.argv[0]
-        
+
     def _get_top_modname(self):
         return os.path.basename(self._get_top_filename()).split(".")[0]
-        
+
     def _get_clsname(self):
         if self.__class__.__name__ == __class__.__name__:
             return self._get_top_modname()
-        else:
-            return self.__class__.__name__
+        return self.__class__.__name__
 
     def _add_signal(self, signal):
         if self._exists(): # is called from p2v_connect
@@ -351,9 +349,11 @@ class p2v():
         if self._assert(signal.name not in self._signals, f"{signal.name} was previously defined"):
             self._signals[signal.name] = signal
         return signal
-    
-    def _get_signals(self, kinds=[]):
-        if type(kinds) is str:
+
+    def _get_signals(self, kinds=None):
+        if kinds is None:
+            kinds = []
+        if isinstance(kinds, str):
             kinds = [kinds]
         signals = []
         for name in self._signals:
@@ -361,7 +361,7 @@ class p2v():
             if signal.kind in kinds:
                 signals.append(signal)
         return signals
-    
+
     def _get_module_header(self):
         lines = []
         lines.append(f"module {self._modname}")
@@ -380,7 +380,7 @@ class p2v():
         lines.append(");")
         lines.append("")
         return lines
-            
+
     def _get_module_footer(self):
         lines = []
         lines.append("")
@@ -403,11 +403,11 @@ class p2v():
         lines += self._lines
         lines += self._get_module_footer()
         return lines
-    
+
     def _write_lines(self, outfile, lines, indent=True):
         misc._write_file(outfile, "\n".join(lines))
         if indent and self._args.indent:
-            if self._assert(p2v_tools.en[p2v_tools.indent_bin], f"cannot perform verilog indentation, {p2v_tools.indent_bin} is not installed", warning=self._args.allow_missing_tools):
+            if self._assert(p2v_tools.en[p2v_tools.INDENT_BIN], f"cannot perform verilog indentation, {p2v_tools.INDENT_BIN} is not installed", warning=self._args.allow_missing_tools):
                 self._processes.append(p2v_tools.indent(outfile))
 
     def _exists(self):
@@ -417,24 +417,23 @@ class p2v():
         connects = p2v_connect(parent, modname, signals, params=params)
         self._connects[modname] = connects
         return connects
-    
+
     def _get_current_line(self):
         extracted = traceback.extract_stack()
         i = -1
         while extracted[i].filename == __file__:
             i -= 1
         return extracted[i].line
-            
+
     def _get_remark(self):
         return None # - TBD - performance
         line = self._get_current_line()
         if "#" in line:
             return line.split("#")[-1]
-        else:
-            return None
+        return None
 
     def _get_names(self, wire):
-        assert type(wire) is str, wire
+        self._assert_type(wire, str)
         self._check_line_balanced(wire)
         return misc._get_names(wire)
 
@@ -443,13 +442,13 @@ class p2v():
             self._assert(name in self._signals, f"{name} was not declared", fatal=True)
 
     def _set_used(self, wire, allow=False, drive=True):
-        if type(wire) is clock:
+        if isinstance(wire, clock):
             for net in wire.get_nets():
                 self._set_used(net, allow=allow)
-        elif type(wire) is list:
-            for w in wire:
-                self._set_used(w, allow=allow)
-        elif type(wire) is str and wire in self._signals and (self._signals[wire].strct is not None):
+        elif isinstance(wire, list):
+            for name in wire:
+                self._set_used(name, allow=allow)
+        elif isinstance(wire, str) and wire in self._signals and (self._signals[wire].strct is not None):
             fields = self._signals[wire].strct.fields
             for field_name in fields:
                 bits = fields[field_name]
@@ -458,22 +457,22 @@ class p2v():
                 elif drive:
                     self._set_driven(field_name, allow=allow)
         else:
-            self._assert(type(wire) is str, f"unknown type {type(wire)} for signal", fatal=True)
+            self._assert(isinstance(wire, str), f"unknown type {type(wire)} for signal", fatal=True)
             wire = str(wire)
             for name in self._get_names(wire):
                 self._check_declared(name)
                 self._signals[name].used = True
-    
+
     def _set_driven(self, wire, allow=False):
         if self._exists(): # is called from p2v_connect
             return
-        if type(wire) is clock:
+        if isinstance(wire, clock):
             for net in wire.get_nets():
                 self._set_driven(net, allow=allow)
-        elif type(wire) is list:
-            for w in wire:
-                self._set_driven(w, allow=allow)
-        elif type(wire) is str and wire in self._signals and self._signals[wire].strct is not None:
+        elif isinstance(wire, list):
+            for name in wire:
+                self._set_driven(name, allow=allow)
+        elif isinstance(wire, str) and wire in self._signals and self._signals[wire].strct is not None:
             fields = self._signals[wire].strct.fields
             for field_name in fields:
                 bits = fields[field_name]
@@ -482,7 +481,7 @@ class p2v():
                 else:
                     self._set_used(field_name, allow=allow)
         else:
-            self._assert(type(wire) is str, f"unknown type {type(wire)} for signal", fatal=True)
+            self._assert(isinstance(wire, str), f"unknown type {type(wire)} for signal", fatal=True)
             arrays = []
             names = []
             for name in self._get_names(wire):
@@ -545,16 +544,15 @@ class p2v():
                 if c == q:
                     self._assert(misc._is_quote_closed(line, q=q), f"unbalanced quote in : {line}", fatal=True)
                     break
-              
+
     def _get_signal_bits(self, name):
         array_name = name.split("[")[0] # support arrays
         is_array = array_name in self._signals and len(self._signals[array_name].dim) > 1
         if misc._is_legal_name(name) or is_array:
             return self._signals[array_name].dim[-1]
-        else:
-            msb, lsb = misc._get_bit_range(name)
-            return msb + 1 - lsb 
-    
+        msb, lsb = misc._get_bit_range(name)
+        return msb + 1 - lsb
+
     def _update_outhash(self, modname, outfile, lines):
         outhash = misc._get_hash("\n".join(lines))
         if modname in self._outfiles:
@@ -566,14 +564,14 @@ class p2v():
 
     def _port(self, kind, name, bits=1, used=False, driven=False):
         self._assert(type(bits) in SIGNAL_TYPES, f"unknown type {bits} for port", fatal=True)
-        if type(name) is clock:
+        if isinstance(name, clock):
             self._assert(bits == 1, f"{kind} clock {name} must be declared with bits = 1")
             for net in name.get_nets():
                 self._port(kind, net, used=used, driven=driven)
-        elif type(name) is list:
+        elif isinstance(name, list):
             for n in name:
                 self._port(kind, n, bits=bits, used=used, driven=driven)
-        elif type(bits) is dict:
+        elif isinstance(bits, dict):
             self._assert(kind in ["input", "output"], f"struct {name} is of illegal kind {kind}")
             signal = self._add_signal(p2v_signal(kind, name, bits=0, strct=bits, used=True, driven=True))
             fields = signal.strct.fields
@@ -586,11 +584,11 @@ class p2v():
                     self.output(field_name, abs(field_bits))
             return signal.strct.names
         else:
-            if type(bits) is str:
+            if isinstance(bits, str):
                 for bits_str in self._get_names(bits):
                     self._set_used(bits_str)
             self._add_signal(p2v_signal(kind, name, bits, used=used, driven=driven, remark=self._get_remark()))
-        
+
     def _find_file(self, filename, allow_dir=False, allow=False):
         found = None
         for dirname in self._search:
@@ -602,18 +600,20 @@ class p2v():
                 return fullname
         if found is not None:
             return found
-        elif allow:
+        if allow:
             return None
-        elif os.path.isabs(filename):
+        if os.path.isabs(filename):
             self._raise(f"could not find file {filename}")
         else:
             self._raise(f"could not find file {filename} in:\n\t" + "\n\t".join(self._search))
-    
+
     def _grep(self, pattern, filename):
         return len(re.findall(pattern, misc._read_file(filename))) > 0
-    
-    def _find_module(self, modname, ext=[".v", ".sv"], allow=False):
-        if type(ext) is str:
+
+    def _find_module(self, modname, ext=None, allow=False):
+        if ext is None:
+            ext = [".v", ".sv"]
+        if isinstance(ext, str):
             ext = [ext]
         for e in ext:
             filename = self._find_file(modname + e, allow=True)
@@ -623,39 +623,39 @@ class p2v():
         for dirname in self._search:
             for e in ext:
                 for filename in glob.glob(f"{dirname}/*{e}"):
-                    if self._grep(f"\Wmodule *{modname}\W", filename):
+                    if self._grep(rf"\Wmodule *{modname}\W", filename):
                         if filename not in self._libs:
                             self._libs.append(filename)
                         return filename
-        if allow:
-            return None
-        else:
+        if not allow:
             self._raise(f"could not find file for module {modname} in:\n\t" + "\n\t".join(self._search))
-    
+        return None
+
+
     def _empty_module(self, modname, ports):
         filename = self._find_module(modname)
         s = misc._read_file(filename)
         s = misc._comment_remover(s)
-        
+
         # extract relevant module
         s = re.sub(rf".*\bmodule *{modname}\b", f"module {modname} ", s, flags=re.S) # remove everything before relevant module
-        s = re.sub(rf"\bendmodule\b.*", f"", s) # remove everything after relevant module
+        s = re.sub(r"\bendmodule\b.*", f"", s) # remove everything after relevant module
 
         # ansi declare
         begin = re.findall(r"\bmodule\b[\s\S]*?;", s)
         functions = re.findall(r"\bfunction\b[\s\S]*?\bendfunction\b", s)
         end = ["endmodule"]
-        
+
         # legacy declare
         s = re.sub(r"^.*?;\s*", "", s, flags=re.S) # remove module declare
         for name in ["task", "function"]:
             s = re.sub(rf"\b{name}\b[\s\S]*?\bend{name}\b", "", s)
         declare = re.findall(r"(?:input|output|inout|parameter|localparam).*?;", s)
-        
+
         return begin + declare + functions + end
-    
+
     def _fix_lint(self, filename):
-        if p2v_tools.en[p2v_tools.lint_bin]:
+        if p2v_tools.en[p2v_tools.LINT_BIN]:
             logfile, success = p2v_tools.lint(dirname=self._get_rtldir(), outdir=self._args.outdir, filename=filename)
             if not success:
                 s = misc._read_file(logfile)
@@ -664,7 +664,7 @@ class p2v():
                 lint_on = "\n".join(lint_errs).replace("lint_off", "lint_on")
                 s = misc._read_file(filename)
                 misc._write_file(filename, f"{lint_off}\n{s}\n{lint_on}")
-    
+
     def _write_empty_module(self, modname, ports):
         bbox_dir = os.path.join(self._args.outdir, "bbox")
         if not os.path.exists(bbox_dir):
@@ -676,13 +676,15 @@ class p2v():
             self._fix_lint(empty_outfile)
             self._bbox[modname] = empty_outfile
             self._logger.debug(f"created bbox: {os.path.basename(empty_outfile)}")
-        
-    def _get_verilog_ports(self, modname, params={}):
+
+    def _get_verilog_ports(self, modname, params=None):
+        if params is None:
+            params = {}
         filename = self._find_module(modname)
         ast = slang.get_ast(filename, modname, params=params)
         self._assert(ast is not None, f"failed to parse verilog file {filename}, manually create wrapper for module", fatal=True)
         return slang.get_ports(ast)
-    
+
     def _assign_clocks(self, tgt, src):
         self._assert_type(tgt, clock)
         self._assert_type(src, clock)
@@ -714,10 +716,10 @@ class p2v():
                     continue
                 signals.append(signal)
         return signals
-    
+
     def _check_structs(self, tgt, src):
         self._check_declared(tgt)
-        if type(src) is not int and src is not None:
+        if not isinstance(src, int) and src is not None:
             self._check_declared(src)
             self._assert(self._signals[tgt].strct is not None, f"trying to assign struct {src} to a non struct signal {tgt}", fatal=True)
             self._assert(self._signals[src].strct is not None, f"trying to assign a non struct signal {src} to struct {tgt}", fatal=True)
@@ -727,7 +729,7 @@ class p2v():
         self.line()
         tgt_strct = self._signals[tgt].strct
         src_strct = self._signals[src].strct
-        
+
         # control
         if tgt_strct.valid is None:
             valid = ext_valid
@@ -743,22 +745,22 @@ class p2v():
                 self._assert(src_strct.ready is not None, f"struct {tgt} has ready while {src} does not", fatal=True)
                 valid = f"{src_strct.valid} & {src_strct.ready}"
                 ready = src_strct.ready
-            
+
         if ready is not None:
             if src_strct.ready in self._signals and self._signals[src_strct.ready].driven:
                 pass
             else:
-                self.assign(src_strct.ready, tgt_strct.ready) 
+                self.assign(src_strct.ready, tgt_strct.ready)
         if valid is not None:
             self.sample(clk, tgt_strct.valid, src_strct.valid, valid=f"~{tgt_strct.valid}{misc.cond(src_strct.ready is not None, f' | ~{src_strct.ready}')}")
         self.line()
-        
+
         # data
         self.line()
         tgt_fields = self._signals[tgt].strct.fields
         for tgt_field_name in tgt_fields:
             field_bits = tgt_fields[tgt_field_name]
-            if field_bits == 0 or type(field_bits) is float:
+            if field_bits == 0 or isinstance(field_bits, float):
                 continue
             src_field_name = self._signals[src].strct.update_field_name(src, tgt_field_name)
             if src_field_name not in src_strct.fields: # support casting (best effort)
@@ -768,23 +770,21 @@ class p2v():
             if field_bits < 0 and not self._signals[src_field_name].driven:
                 self.sample(clk, src_field_name, tgt_field_name, valid=valid)
         self.line()
-        
+
     def _assign_structs(self, tgt, src, keyword="assign"):
-        if type(src) is int:
+        if isinstance(src, int):
             self._check_structs(tgt, None)
             self._assert(src == 0, "struct {src} can only be assigned to 0 when assigned to int", fatal=True)
         else:
             self._check_structs(tgt, src)
             self._assert(self._signals[src].strct is not None, f"trying to assign a non struct signal {src} to struct {tgt}", fatal=True)
-            src_names = self._signals[src].strct.names
-            tgt_names = self._signals[tgt].strct.names
         self.line()
         tgt_fields = self._signals[tgt].strct.fields
         for tgt_field_name in tgt_fields:
             field_bits = tgt_fields[tgt_field_name]
             if field_bits == 0:
                 continue
-            if type(src) is int:
+            if isinstance(src, int):
                 if field_bits > 0 and not self._signals[tgt_field_name].driven:
                     self.assign(tgt_field_name, 0, keyword=keyword)
             else:
@@ -813,10 +813,10 @@ class p2v():
         """
         self._assert_type(modname, [None, str])
         self._assert_type(suffix, bool)
-        
-        simple_types = [int, bool, str]
+
+        simple_types = (int, bool, str)
         suf = []
-        
+
         frame = inspect.currentframe()
         module_locals = frame.f_back.f_locals
         del module_locals["self"]
@@ -824,15 +824,15 @@ class p2v():
             self.remark("module parameters:")
             for name in module_locals:
                 if self._assert(name in self._params, f"module parameter {name} is missing set_param()"):
-                    (param_var, param_remark, param_loose, param_suffix) = self._params[name]
+                    (_, param_remark, param_loose, param_suffix) = self._params[name]
                     if param_remark != "":
                         param_remark = f" # {param_remark}"
                 else:
-                    (param_var, param_remark, param_loose, param_suffix) = (None, "", False, None)
+                    (_, param_remark, param_loose, param_suffix) = (None, "", False, None)
                 val = module_locals[name]
-                if type(val) is clock:
+                if isinstance(val, clock):
                     val_str = val._declare()
-                elif type(val) is str:
+                elif isinstance(val, str):
                     val_str = f'"{val}"'
                 else:
                     val_str = str(val)
@@ -840,20 +840,20 @@ class p2v():
                     val_str = val_str[:MAX_VAR_STR] + "..."
                 type_str = val.__class__.__name__
                 self.remark(f"{name} = {val_str} ({type_str}){param_remark}")
-                
+
                 if param_suffix is None:
                     pass
                 elif param_suffix != "":
                     suf.append(str(param_suffix))
                 else:
                     if modname is None and suffix and not param_loose:
-                        self._assert(type(val) in simple_types, f"module name should be explicitly set when using parameter '{name}' of type {type_str}", fatal=True)
-                    if type(val) is str:
+                        self._assert(isinstance(val, simple_types), f"module name should be explicitly set when using parameter '{name}' of type {type_str}", fatal=True)
+                    if isinstance(val, str):
                         val = misc._fix_legal_name(val)
-                    if type(val) in simple_types:
+                    if isinstance(val, simple_types):
                         suf.append(f"{name}{val}")
             self.line()
-        
+
         if self._modname is None:
             self._modname = self._args.prefix
             if modname:
@@ -868,7 +868,8 @@ class p2v():
             self._signals = self._connects[self._modname]._signals
             if module_locals != self._modules[self._modname]:
                 for name in module_locals:
-                    self._assert(module_locals[name] == self._modules[self._modname][name], f"module {self._modname} was generated with different {name} values but it does not affect module name", fatal=True)
+                    self._assert(module_locals[name] == self._modules[self._modname][name], \
+                    f"module {self._modname} was generated with different {name} values but it does not affect module name", fatal=True)
         else:
             clsname = self._get_clsname()
             if clsname != "_test":
@@ -877,7 +878,7 @@ class p2v():
         if self._parent is not None:
             self._parent._sons.append(self._modname)
         return exists
-    
+
     def set_param(self, var, kind, condition=None, remark="", suffix=""):
         """
         Declare module parameter and set assertions.
@@ -895,7 +896,7 @@ class p2v():
         self._assert_type(condition, [None, bool])
         self._assert_type(remark, str)
         self._assert_type(suffix, [None, str])
-        
+
         auto_suffix = suffix == ""
         line = self._get_current_line().replace(" ", "").split("#")[0]
         self._check_line_balanced(line)
@@ -903,18 +904,18 @@ class p2v():
         if kind is clock and auto_suffix:
             if var != default_clk:
                 suffix = str(var)
-        if type(kind) is not list:
+        if not isinstance(kind, list):
             kind = [kind]
         for n, k in enumerate(kind):
             if k is None:
                 kind[n] = type(None)
-        self._assert(type(var) in kind, f"{name} is of type {misc._type2str(type(var))} while expecting it to be in {misc._type2str(kind)}", fatal=True)
+        self._assert(isinstance(var, tuple(kind)), f"{name} is of type {misc._type2str(type(var))} while expecting it to be in {misc._type2str(kind)}", fatal=True)
         loose = condition is None
         if not loose:
-            var_str = misc.cond(type(var) is str, f'"{var}"', var)
+            var_str = misc.cond(isinstance(var, str), f'"{var}"', var)
             self._assert(condition, f"{name} = {var_str} failed to pass its assertions", fatal=True)
         self._params[name] = (var, remark, loose, suffix)
-    
+
     def get_fields(self, strct, attrib="name"):
         """
         Get struct fields.
@@ -938,8 +939,8 @@ class p2v():
             else:
                 self._raise(f"unknown struct attribute {attrib}")
         return vals
-    
-    def gen_rand_args(self, override={}):
+
+    def gen_rand_args(self, override=None):
         """
         Generate random module parameters and register in csv file.
 
@@ -949,11 +950,10 @@ class p2v():
         Returns:
             random arguments (dict)
         """
+        if override is None:
+            override = {}
         self._assert_type(override, dict)
-        try:
-            self.gen
-        except:
-            self._raise(f"{self._get_clsname()} is missing gen() function")
+        self._assert("gen" in dir(self), f"{self._get_clsname()} is missing gen() function")
         args = self.gen()
         for name in self._args.sim_args:
             override[name] = self._args.sim_args[name]
@@ -963,7 +963,7 @@ class p2v():
         self.remark(args)
         self.tb.register_test(args)
         return args
-    
+
     def line(self, line="", remark=None):
         """
         Insert Verilog code directly into module without parsing.
@@ -995,7 +995,7 @@ class p2v():
             None
         """
         self._assert_type(comment, [str, dict])
-        if type(comment) is dict:
+        if isinstance(comment, dict):
             for key in comment:
                 self.remark(f"{key} = {comment[key]}")
             self.line()
@@ -1022,7 +1022,7 @@ class p2v():
         self._add_signal(p2v_signal(misc.cond(local, "localparam", "parameter"), name, val, driven=True, remark=self._get_remark()))
         if local:
             self.line(f"localparam {name} = {val};", remark=self._get_remark())
-    
+
     def input(self, name, bits=1):
         """
         Create an input port.
@@ -1100,14 +1100,14 @@ class p2v():
         self._assert_type(bits, SIGNAL_TYPES)
         self._assert_type(assign, [int, str, dict, None])
         self._assert_type(initial, [int, str, dict, None])
-        if type(name) is clock:
+        if isinstance(name, clock):
             for net in name.get_nets():
                 self.logic(net)
-        elif type(name) is list:
+        elif isinstance(name, list):
             for n in name:
                 self.logic(n, bits=bits, assign=assign, initial=initial)
             return
-        elif type(bits) is dict:
+        elif isinstance(bits, dict):
             signal = self._add_signal(p2v_signal("logic", name, bits=0, strct=bits, used=True, driven=True))
             fields = signal.strct.fields
             for field_name in fields:
@@ -1142,7 +1142,7 @@ class p2v():
         self._assert_type(keyword, str)
         if self._exists():
             return
-        if type(tgt) is clock or type(src) is clock:
+        if isinstance(tgt, clock) or isinstance(src, clock):
             self._assign_clocks(tgt, src)
         else:
             self._assert_type(tgt, [str, dict])
@@ -1151,9 +1151,9 @@ class p2v():
                 self._assign_structs(tgt, src, keyword=keyword)
             else:
                 self._set_driven(tgt)
-                if type(src) is int:
+                if isinstance(src, int):
                     bits = self._get_signal_bits(tgt)
-                    self._assert(bits > 0, f"illegal assignment to signal {tgt} of 0 bits") 
+                    self._assert(bits > 0, f"illegal assignment to signal {tgt} of 0 bits")
                     src = misc.dec(src, bits)
                 self._set_used(src, drive=False)
                 self.line(f"{keyword} {tgt} = {src};", remark=self._get_remark())
@@ -1190,8 +1190,8 @@ class p2v():
                 self._set_used(net)
             if bits is None:
                 bits = self._get_signal_bits(tgt)
-            if type(reset_val) is int:
-                if type(bits) is int:
+            if isinstance(reset_val, int):
+                if isinstance(bits, int):
                     reset_val = misc.dec(reset_val, bits)
                 else:
                     reset_val = f"'{reset_val}"
@@ -1215,7 +1215,7 @@ class p2v():
             for cond in conds:
                 self.line(cond)
             self.line()
-    
+
     def allow_unused(self, name):
         """
         Set module signal/s as used.
@@ -1230,7 +1230,7 @@ class p2v():
         if self._exists():
             return
         self._set_used(name, allow=True)
-    
+
     def allow_undriven(self, name):
         """
         Set module signal as driven.
@@ -1245,8 +1245,8 @@ class p2v():
         if self._exists():
             return
         self._set_driven(name, allow=True)
-    
-    def verilog_module(self, modname, params={}):
+
+    def verilog_module(self, modname, params=None):
         """
         Instantiate Verilog module (pre-existing source file).
 
@@ -1257,6 +1257,8 @@ class p2v():
         Returns:
             success
         """
+        if params is None:
+            params = {}
         self._assert_type(modname, str)
         self._assert_type(params, dict)
         if self._exists():
@@ -1268,8 +1270,8 @@ class p2v():
             if self._args.lint:
                 self._write_empty_module(modname, ports)
             return self._get_connects(parent=self, modname=modname, signals=ports, params=params)
-                
-    def assert_never(self, clk, condition, message, params=[], fatal=True):
+
+    def assert_never(self, clk, condition, message, params=None, fatal=True):
         """
         Assertion on Verilog signals with clock (ignores condition during async reset if present).
 
@@ -1282,6 +1284,8 @@ class p2v():
         Returns:
             success
         """
+        if params is None:
+            params = []
         self._assert_type(condition, str)
         self._assert_type(message, str)
         self._assert_type(params, [str, list])
@@ -1293,11 +1297,11 @@ class p2v():
         self.logic(wire, assign=condition)
         self._set_used([clk, wire])
         full_messgae = f'"{message}"'
-        if type(params) is str:
+        if isinstance(params, str):
             params = [params]
         for param in params:
             full_messgae += f", {param}"
-        if type(clk) is str:
+        if isinstance(clk, str):
             self._check_declared(clk)
             self.line(f"""always @({clk})
                               if ({wire})
@@ -1309,8 +1313,8 @@ class p2v():
                               if ({misc.cond(clk.rst_n is not None, f'{clk.rst_n} & ')}{wire})
                                   {misc.cond(fatal, f'$fatal(0, {full_messgae});', f'$error({full_messgae});')}
                         """)
-        
-    def assert_always(self, clk, condition, message, params=[], fatal=True):
+
+    def assert_always(self, clk, condition, message, params=None, fatal=True):
         """
         Assertion on Verilog signals with clock (ignores condition during async reset if present).
 
@@ -1323,6 +1327,8 @@ class p2v():
         Returns:
             success
         """
+        if params is None:
+            params = []
         self._assert_type(condition, str)
         self._assert_type(message, str)
         self._assert_type(params, [str, list])
@@ -1330,8 +1336,8 @@ class p2v():
         if self._exists():
             return
         self.assert_never(clk, condition=f"~({condition})", message=message, params=params, fatal=fatal)
-    
-    def check_never(self, condition, message, params=[], fatal=True):
+
+    def check_never(self, condition, message, params=None, fatal=True):
         """
         Assertion on Verilog signals with no clock.
 
@@ -1344,6 +1350,8 @@ class p2v():
         Returns:
             success
         """
+        if params is None:
+            params = []
         self._assert_type(condition, str)
         self._assert_type(message, str)
         self._assert_type(params, [str, list])
@@ -1354,8 +1362,8 @@ class p2v():
         for param in params:
             full_messgae += f", {param}"
         return f"""if ({condition}) {misc.cond(fatal, f'$fatal(0, {full_messgae});', f'$error("{full_messgae}");')}"""
-      
-    def check_always(self, condition, message, params=[], fatal=True):
+
+    def check_always(self, condition, message, params=None, fatal=True):
         """
         Assertion on Verilog signals with no clock.
 
@@ -1368,6 +1376,8 @@ class p2v():
         Returns:
             success
         """
+        if params is None:
+            params = []
         self._assert_type(condition, str)
         self._assert_type(message, str)
         self._assert_type(params, [str, list])
@@ -1375,7 +1385,7 @@ class p2v():
         if self._exists():
             return
         return self.check_never(condition=f"~({condition})", params=params, message=message, fatal=fatal)
-      
+
     def assert_static(self, condition, message, fatal=True):
         """
         Assertion on Python varibales.
@@ -1392,7 +1402,7 @@ class p2v():
         self._assert_type(message, str)
         self._assert_type(fatal, bool)
         self._assert(condition, message, fatal=fatal)
-        
+
     def write(self):
         """
         Write the Verilog file.

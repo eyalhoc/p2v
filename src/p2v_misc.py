@@ -11,24 +11,27 @@
 #  GPL-3.0 license for full details: https://www.gnu.org/licenses/gpl-3.0.html
 # -----------------------------------------------------------------------------
 
+"""
+p2v_misc module
+"""
+
 import re
 import hashlib
 import math
 import os
 
 def _get_hash(s):
-    assert type(s) is str, s
+    assert isinstance(s, str), s
     hash_object = hashlib.sha1(s.encode())
     return hash_object.hexdigest()
-    
+
 def _is_legal_name(name):
-    if type(name) is not str or len(name) == 0:
+    if not isinstance(name, str) or len(name) == 0:
         return False
-    else:
-        return (name[0].isalpha() or name[0] == "_") and name.replace("_", "").isalnum()
+    return (name[0].isalpha() or name[0] == "_") and name.replace("_", "").isalnum()
 
 def _fix_legal_name(name):
-    assert type(name) is str, name
+    assert isinstance(name, str), name
     fixed = ""
     for c in name:
         if not c.isalnum():
@@ -36,7 +39,7 @@ def _fix_legal_name(name):
         else:
             fixed += c
     return fixed
-    
+
 def _get_names(s):
     names = []
     clean = ""
@@ -49,7 +52,7 @@ def _get_names(s):
     for name in clean.split():
         if f"${name}" in s: # sv tasks
             return _get_names(s.replace(f"${name}", ""))
-        elif _is_legal_name(name):
+        if _is_legal_name(name):
             names.append(name)
     return names
 
@@ -72,41 +75,42 @@ def _is_paren_balanced(line, open="(", close=")"):
 def _get_bit_range(wire):
     if "[" not in wire:
         return None, None
+    assert _is_paren_balanced(wire, open="[", close="]"), wire
+    paren = wire.split("]")[0].split("[")[-1].replace(" ", "")
+    if ":" in paren:
+        subs = paren.split(":")
+        assert len(subs) == 2, f"weird bit range in {wire}"
+        msb = int(subs[0])
+        lsb = int(subs[1])
     else:
-        assert _is_paren_balanced(wire, open="[", close="]"), wire
-        paren = wire.split("]")[0].split("[")[-1].replace(" ", "")
-        if ":" in paren:
-            subs = paren.split(":")
-            assert len(subs) == 2, f"weird bit range in {wire}"
-            msb = int(subs[0])
-            lsb = int(subs[1])
-        else:
-            msb = lsb = int(paren)
-        return msb, lsb
+        msb = lsb = int(paren)
+    return msb, lsb
 
 def _is_int(n):
-    try:
-        int(n)
+    if isinstance(n, int):
         return True
-    except:
-        return False
+    if isinstance(n, str):
+        return n.isdigit()
+    if isinstance(n, float):
+        return int(n) == n
+    return False
 
-def _to_int(n):
-    try:
-        n_int = int(n)
-    except:
-        raise Exception(f"unkonw type {type(n)}")
-    assert n_int == n, f"cannot be perfomed on non-round float {n}"
-    return n_int
+def _to_int(n, allow=False):
+    if _is_int(n):
+        return int(n)
+    if allow:
+        return n
+    raise Exception(f"cannot convert {n} to int")
+
+def  _get_base_str(base):
+    if base == 16:
+        return "x"
+    if base == 2:
+        return "b"
+    raise Exception(f"unknown base {base} for decimal conversion")
 
 def _base(base, n, bits=None, add_sep=4, prefix=None):
-    if base == 16:
-        base_s = "x"
-    elif base == 2:
-        base_s = "b"
-    else:
-        raise Exception(f"unknown base {base} for decimal conversion")
-
+    base_s = _get_base_str(base)
     n = _to_int(n)
 
     if bits is None:
@@ -115,7 +119,7 @@ def _base(base, n, bits=None, add_sep=4, prefix=None):
     else:
         n_bits = bits
 
-    s = '{:0{}{}}'.format(n & ((1 << n_bits)-1), int((n_bits+log2(base)-1)/log2(base)), base_s)
+    s = f"{n & ((1 << n_bits) - 1):0{int((n_bits + log2(base) - 1) / log2(base))}{base_s}}"
     nibbles = (n_bits // log2(base)) + ((n_bits % log2(base)) > 0)
     assert len(s) <= nibbles, f"{n} cannot be represented in {n_bits} bits (base {base})"
     s = (nibbles - len(s)) * "0" + s
@@ -142,33 +146,32 @@ def _base(base, n, bits=None, add_sep=4, prefix=None):
 def _type2str(n):
     if n is None:
         n = type(n)
-    if type(n) is list:
+    if isinstance(n, list):
         l = []
         for s in n:
             l.append(_type2str(s))
         return str(l)
-    else:
-        assert type(n) is type, type(n)
-        return "'" + str(n).split("'")[1] + "'"
+    assert isinstance(n, type), type(n)
+    return "'" + str(n).split("'")[1] + "'"
 
 def _make_name_legal(name):
     legal_name = ""
-    for c in name:
-        if not c.isalnum():
+    for char in name:
+        if not char.isalnum():
             if len(legal_name) > 0 and legal_name[-1] != "_":
                 legal_name += "_"
         else:
-            legal_name += c
+            legal_name += char
     return legal_name
 
 def _read_file(filename):
-    with open(filename, 'r') as file:
+    with open(filename, "r", encoding="utf-8") as file:
         s = file.read()
         file.close()
         return s
 
 def _write_file(filename, s, append=False):
-    with open(filename, cond(append, "a", "w")) as file:
+    with open(filename, cond(append, "a", "w"), encoding="utf-8") as file:
         file.write(s + "\n")
         file.close()
 
@@ -176,10 +179,12 @@ def _link(src, name):
     if not os.path.exists(name):
         os.symlink(src, name)
 
-def _comment_remover(string):
-    string = re.sub(re.compile("/\*.*?\*/", re.DOTALL), "", string) # remove all occurrences streamed comments (/*COMMENT */) from string
-    string = re.sub(re.compile("//.*?\n" ), "\n", string) # remove all occurrence single-line comments (//COMMENT\n ) from string
-    return string
+def _comment_remover(s):
+    # remove all occurrences streamed comments (/*COMMENT */) from string
+    s = re.sub(re.compile(r"/\*.*?\*/", re.DOTALL), "", s)
+    # remove all occurrence single-line comments (//COMMENT\n ) from string
+    s = re.sub(re.compile(r"//.*?\n" ), "\n", s)
+    return s
 
 
 def ceil(n):
@@ -192,7 +197,7 @@ def ceil(n):
     Returns:
         int
     """
-    assert type(n) in [int, float], n
+    assert isinstance(n, (int, float)), n
     return int(math.ceil(n))
 
 def log2(n):
@@ -205,7 +210,7 @@ def log2(n):
     Returns:
         int
     """
-    assert type(n) is int and n > 0, n
+    assert isinstance(n, int) and n > 0, n
     return ceil(math.log2(n))
 
 def is_pow2(n):
@@ -218,7 +223,7 @@ def is_pow2(n):
     Returns:
         bool
     """
-    assert type(n) is int, n
+    assert isinstance(n, int), n
     return n > 0 and n == (1 << log2(n))
 
 def roundup(num, round_to):
@@ -232,8 +237,8 @@ def roundup(num, round_to):
     Returns:
         bool
     """
-    assert type(num) is int, num
-    assert type(round_to) is int, round_to
+    assert isinstance(num, int), num
+    assert isinstance(round_to, int), round_to
     rounded = round_to
     while num > rounded:
         rounded += round_to
@@ -251,14 +256,13 @@ def cond(condition, true_var, false_var=None):
     Returns:
         Selected input parameter
     """
-    assert type(condition) is bool, condition
-    
+    assert isinstance(condition, bool), condition
+
     if condition:
         return true_var
-    elif false_var is not None:
+    if false_var is not None:
         return false_var
-    else:
-        return ""
+    return ""
 
 def concat(vals, sep=None, nl_every=None):
     """
@@ -272,9 +276,9 @@ def concat(vals, sep=None, nl_every=None):
     Returns:
         Verilog code
     """
-    assert type(vals) is list, vals
-    assert type(sep) in [type(None), str], sep
-    assert type(nl_every) in [type(None), int], nl_every
+    assert isinstance(vals, list), vals
+    assert isinstance(sep, (type(None), str)), sep
+    assert isinstance(nl_every, (type(None), int)), nl_every
     assert len(vals) >= 0, vals
     new_vals = []
     for n, val in enumerate(vals):
@@ -282,25 +286,22 @@ def concat(vals, sep=None, nl_every=None):
             if nl_every is not None and ((n > 0) and (n%nl_every) == 0):
                 val += "\n"
             new_vals.append(val)
-            
+
     vals = new_vals
     if sep is None:
         if len(set(vals)) == 1: # all items are the same
             if len(vals) == 1:
                 return vals[0]
-            else:
-                return "{" + str(len(vals)) + "{" + str(vals[0]) + "}}"
-        else:
-            return "{" + ", ".join(vals) + "}"
-    else:
-        for i, val in enumerate(vals):
-            if not val.startswith("(") or not val.endswith(")"):
-                if not _is_legal_name(val): # don't add brackets on single variable
-                    vals[i] = f"({val})"
-        if len(sep) == 1:
-            sep = f" {sep} "
-        return sep.join(vals)
-        
+            return "{" + str(len(vals)) + "{" + str(vals[0]) + "}}"
+        return "{" + ", ".join(vals) + "}"
+    for i, val in enumerate(vals):
+        if not val.startswith("(") or not val.endswith(")"):
+            if not _is_legal_name(val): # don't add brackets on single variable
+                vals[i] = f"({val})"
+    if len(sep) == 1:
+        sep = f" {sep} "
+    return sep.join(vals)
+
 def pad(left, name, right=0, val=0):
     """
     Verilog padding for lint and for shift left.
@@ -314,10 +315,10 @@ def pad(left, name, right=0, val=0):
     Returns:
         Verilog code
     """
-    assert type(name) is str, name
-    assert type(left) is int and left >= 0, left
-    assert type(right) is int and right >= 0, right
-    assert type(val) is int, val
+    assert isinstance(name, str), name
+    assert isinstance(left, int) and left >= 0, left
+    assert isinstance(right, int) and right >= 0, right
+    assert isinstance(val, int), val
     vals = []
     if left > 0:
         vals.append(dec(val, left))
@@ -326,37 +327,36 @@ def pad(left, name, right=0, val=0):
         vals.append(dec(val, right))
     return concat(vals)
 
-def dec(n, bits=1):
+def dec(num, bits=1):
     """
     Represent integer in Verilog decimal representation.
 
     Args:
-        n(int): input value
+        num(int): input value
         bits(int): number of bits for value
 
     Returns:
         Verilog code
     """
-    assert type(n) is int, n
-    assert type(bits) is int, bits
-    
-    bits = abs(bits)
-    if type(n) is bool:
-        n = int(n)
-        bits=1
-    if n == -1:
-        return "{" + str(bits) + "{1'b1}}"
-    elif n < 0:
-        return bin(n + (1<<bits), bits)
-    else:
-        return f"{bits}'d{n}"
+    assert isinstance(num, int), num
+    assert isinstance(bits, int), bits
 
-def hex(n, bits=None, add_sep=4, prefix="'h"):
+    bits = abs(bits)
+    if isinstance(num, bool):
+        num = int(num)
+        bits=1
+    if num == -1:
+        return "{" + str(bits) + "{1'b1}}"
+    if num < 0:
+        return bin(num + (1<<bits), bits)
+    return f"{bits}'d{num}"
+
+def hex(num, bits=None, add_sep=4, prefix="'h"):
     """
     Represent integer in Verilog hexademical representation.
 
     Args:
-        n(int): input value
+        num(int): input value
         bits([None, int]): number of bits for value
         add_sep(int): add underscore every few characters for easier reading of large numbers
         prefix(str): hexadecimal annotation
@@ -364,18 +364,18 @@ def hex(n, bits=None, add_sep=4, prefix="'h"):
     Returns:
         Verilog code
     """
-    assert type(n) is int, n
-    assert type(bits) in [type(None), int], bits
-    assert type(add_sep) is int and add_sep >= 0, add_sep
-    assert type(prefix) is str, prefix
-    return _base(16, n, bits, add_sep, prefix)
+    assert isinstance(num, int), num
+    assert isinstance(bits, (type(None), int)), bits
+    assert isinstance(add_sep, int) and add_sep >= 0, add_sep
+    assert isinstance(prefix, str), prefix
+    return _base(16, num, bits, add_sep, prefix)
 
-def bin(n, bits=None, add_sep=4, prefix="'b"):
+def bin(num, bits=None, add_sep=4, prefix="'b"):
     """
     Represent integer in Verilog binary representation.
 
     Args:
-        n(int): input value
+        num(int): input value
         bits([None, int]): number of bits for value
         add_sep(int): add underscore every few characters for easier reading of large numbers
         prefix(str): binary annotation
@@ -383,11 +383,11 @@ def bin(n, bits=None, add_sep=4, prefix="'b"):
     Returns:
         Verilog code
     """
-    assert type(n) is int, n
-    assert type(bits) in [type(None), int], bits
-    assert type(add_sep) is int and add_sep >= 0, add_sep
-    assert type(prefix) is str, prefix
-    return _base(2, n, bits, add_sep, prefix)
+    assert isinstance(num, int), num
+    assert isinstance(bits, (type(None), int)), bits
+    assert isinstance(add_sep, int) and add_sep >= 0, add_sep
+    assert isinstance(prefix, str), prefix
+    return _base(2, num, bits, add_sep, prefix)
 
 def bits(name, bits, start=0):
     """
@@ -401,16 +401,15 @@ def bits(name, bits, start=0):
     Returns:
         Verilog code
     """
-    assert type(name) is str
-    assert type(bits) is int and bits > 0, bits
-    assert type(start) is int, start
+    assert isinstance(name, str)
+    assert isinstance(bits, int) and bits > 0, bits
+    assert isinstance(start, int), start
     end = start + bits - 1
     if start == end:
         return f"{name}[{start}]"
-    elif start > end:
+    if start > end:
         return None
-    else:
-        return f"{name}[{end}:{start}]"
+    return f"{name}[{end}:{start}]"
 
 def bit(name, idx):
     """
@@ -423,8 +422,8 @@ def bit(name, idx):
     Returns:
         Verilog code
     """
-    assert type(name) is str
-    assert type(idx) in [int, str]
+    assert isinstance(name, str)
+    assert isinstance(idx, (int, str))
     return f"{name}[{idx}]"
 
 def is_hotone(var, bits, allow_zero=False):
@@ -439,13 +438,11 @@ def is_hotone(var, bits, allow_zero=False):
     Returns:
         Verilog code
     """
-    assert type(var) is str, var
-    assert type(bits) is int and bits > 0, bits
-    assert type(allow_zero) is bool, allow_zero
+    assert isinstance(var, str), var
+    assert isinstance(bits, int) and bits > 0, bits
+    assert isinstance(allow_zero, bool), allow_zero
     if bits == 1:
         if allow_zero:
             return "1'b1"
-        else:
-            return var
-    else:
-        return f"(~|({var} & ({var} - {dec(1, bits)})))" + cond(allow_zero, f" | (~|{var})")
+        return var
+    return f"(~|({var} & ({var} - {dec(1, bits)})))" + cond(allow_zero, f" | (~|{var})")

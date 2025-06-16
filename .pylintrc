@@ -1,0 +1,11 @@
+[FORMAT]
+max-line-length=192
+good-names=c,s,l,n,m,x,y,z,i,j,q,e
+
+[DESIGN]
+class-naming-style=snake_case
+max-args=8
+max-attributes=12
+
+[MESSAGES CONTROL]
+disable=redefined-builtin,redefined-outer-name,protected-access,consider-using-dict-items,no-self-use
