@@ -235,7 +235,7 @@ def roundup(num, round_to):
         round_to(int): returned values must divide by this value
 
     Returns:
-        bool
+        rounded integer
     """
     assert isinstance(num, int), num
     assert isinstance(round_to, int), round_to
