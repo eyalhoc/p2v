@@ -399,10 +399,10 @@ class p2v_tb():
             val = args[name]
             if isinstance(val, clock):
                 val_str = val._declare()
+            elif isinstance(val, bool): # bool must be before int since bool is also an int type
+                val_str = f"bool({val})"
             elif isinstance(val, int):
                 val_str = f"int({val})"
-            elif isinstance(val, bool):
-                val_str = f"bool({val})"
             elif isinstance(val, str):
                 val_str = f'"{val}"'
             else:

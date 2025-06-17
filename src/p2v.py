@@ -29,7 +29,7 @@ import argparse
 import csv
 
 import p2v_misc as misc
-import p2v_clock
+import p2v_clock # needed for clock loading from gen csv file # # pylint: disable=unused-import
 from p2v_clock import p2v_clock as clock
 from p2v_clock import default_clk
 from p2v_signal import p2v_signal
@@ -49,6 +49,9 @@ SIGNAL_TYPES = [clock, dict, int, float, list, str, tuple]
 _start_time = time.time()
 
 class p2v():
+    """
+    This is the main p2v class. All p2v modules inherit this class.
+    """
 
     def __init__(self, parent=None, modname=None, parse=True):
         self._parent = parent
@@ -77,7 +80,7 @@ class p2v():
                 sys.exit(rtrn)
         else:
             self._args = parent._args
-            self.tb = p2v_tb(self, seed=self._args.seed, max_seed=MAX_SEED) # regenerate to fix parent pointer
+            self.tb = p2v_tb(self, seed=self._args.seed, max_seed=MAX_SEED) # regenerate to fix parent pointer # pylint: disable=invalid-name
             self._logger = parent._logger
             self._outfiles = parent._outfiles
             self._connects = parent._connects
@@ -90,7 +93,7 @@ class p2v():
             self._depth = parent._depth + 1
             self._search = parent._search
 
-        self._assert(self._depth < MAX_DEPTH, f"reached max instance depth", fatal=True)
+        self._assert(self._depth < MAX_DEPTH, f"reached max instance depth of {MAX_DEPTH}", fatal=True)
 
     def _get_stack(self):
         stack = []
@@ -127,7 +130,7 @@ class p2v():
         try:
             filename = stack[stack_idx].filename
             lineno = stack[stack_idx].lineno
-        except:
+        except: # pylint: disable=bare-except
             filename = lineno = None
         self._error(message, filename=filename, lineno=lineno, warning=warning, fatal=fatal)
         if critical:
@@ -231,7 +234,7 @@ class p2v():
                     if self._assert(success, f"verilog simulation failed, logfile: {logfile}"):
                         self._logger.info("verilog simulation completed successfully")
                         return True
-                    self._logger.debug(f"verilog simulation completed with errors:\n{misc._read_file(logfile)}")
+                    self._logger.debug("verilog simulation completed with errors:\n %s", misc._read_file(logfile))
         return False
 
     def _get_gen_args(self, top_class):
@@ -242,13 +245,10 @@ class p2v():
         top_module = self._get_top_modname()
         module = __import__(top_module)
         try:
-            top_class = getattr(module, "_test")
-        except:
-            try:
-                top_class = getattr(module, top_module)
-            except:
-                self._raise(f"could not find class {self._get_top_modname()} in {self._get_top_filename()}")
-        self = top_class(self)
+            top_class = getattr(module, top_module)
+        except AttributeError:
+            self._raise(f"could not find class {self._get_top_modname()} in {self._get_top_filename()}")
+        self = top_class(self) # pylint: disable=self-cls-assignment
         self.tb = p2v_tb(self, seed=self._args.seed, max_seed=MAX_SEED)
         self._logger.info(f"starting with seed {self.tb.seed}")
 
@@ -270,10 +270,7 @@ class p2v():
                 self._logger.info(f"starting gen iteration {i}/{iter_num-1}")
             if self._args.sim or not gen_loop:
                 self.__init__(None, modname=misc.cond(not gen_loop, None, f"_tb{i}"), parse=False)
-                try:
-                    top_class.module(self, **self._args.params)
-                except Exception as e:
-                    self._raise(e)
+                top_class.module(self, **self._args.params)
 
                 for process in self._processes:
                     process.wait()
@@ -297,12 +294,12 @@ class p2v():
     def _param_type(self, value):
         if os.path.isfile(value):
             list_of_params = []
-            with open(value, newline='') as csvfile:
+            with open(value, newline='', encoding="utf-8") as csvfile:
                 reader = csv.DictReader(csvfile, skipinitialspace=True)
                 for row in reader:
                     args = {}
                     for key, val in row.items():
-                        args[key.strip()] = eval(val)
+                        args[key.strip()] = eval(val) # pylint: disable=eval-used
                     list_of_params.append(args)
             return list_of_params
         return ast.literal_eval(value)
@@ -427,10 +424,10 @@ class p2v():
 
     def _get_remark(self):
         return None # - TBD - performance
-        line = self._get_current_line()
-        if "#" in line:
-            return line.split("#")[-1]
-        return None
+        #line = self._get_current_line()
+        #if "#" in line:
+        #    return line.split("#")[-1]
+        #return None
 
     def _get_names(self, wire):
         self._assert_type(wire, str)
@@ -463,6 +460,36 @@ class p2v():
                 self._check_declared(name)
                 self._signals[name].used = True
 
+    def _set_driven_str(self, wire, allow=False):
+        arrays = []
+        names = []
+        for name in self._get_names(wire):
+            if f"[{name}]" in wire.replace(" ", ""):
+                if len(names) > 0:
+                    arrays.append(names[-1])
+                self._set_used(name) # array pointer
+            else:
+                names.append(name)
+        if len(names) > 0:
+            if len(names) > 1:
+                concat_wire = wire.replace(" ", "")
+                if concat_wire.startswith("{") and concat_wire.endswith("}"): # verilog concat
+                    concat_wire = concat_wire.lstrip("{").rstrip("}")
+                    for name in concat_wire.split(","):
+                        self._set_driven(name, allow=allow)
+                    return
+            self._assert(len(names) == 1, f"illegal assignment to multiple signals {names}", fatal=True)
+            name = names[0]
+            self._check_declared(name)
+            if name in arrays or self._get_signal_bits(wire) == self._signals[name].bits:
+                if self._assert(not self._signals[name].driven or allow, f"{name} was previously driven"):
+                    self._signals[name].driven = True
+            else:
+                msb, lsb = misc._get_bit_range(wire)
+                for i in range(lsb, msb+1):
+                    if self._assert(not self._signals[name].driven_bits[i] or allow, f"{misc.bit(name, i)} was previously driven"):
+                        self._signals[name].driven_bits[i] = True
+
     def _set_driven(self, wire, allow=False):
         if self._exists(): # is called from p2v_connect
             return
@@ -482,35 +509,7 @@ class p2v():
                     self._set_used(field_name, allow=allow)
         else:
             self._assert(isinstance(wire, str), f"unknown type {type(wire)} for signal", fatal=True)
-            arrays = []
-            names = []
-            for name in self._get_names(wire):
-                if f"[{name}]" in wire.replace(" ", ""):
-                    if len(names) > 0:
-                        arrays.append(names[-1])
-                    self._set_used(name) # array pointer
-                else:
-                    names.append(name)
-            if len(names) == 0:
-                return
-            if len(names) > 1:
-                concat_wire = wire.replace(" ", "")
-                if concat_wire.startswith("{") and concat_wire.endswith("}"): # verilog concat
-                    concat_wire = concat_wire.lstrip("{").rstrip("}")
-                    for name in concat_wire.split(","):
-                        self._set_driven(name, allow=allow)
-                    return
-            self._assert(len(names) == 1, f"illegal assignment to multiple signals {names}", fatal=True)
-            name = names[0]
-            self._check_declared(name)
-            if name in arrays or self._get_signal_bits(wire) == self._signals[name].bits:
-                if self._assert(not self._signals[name].driven or allow, f"{name} was previously driven"):
-                    self._signals[name].driven = True
-            else:
-                msb, lsb = misc._get_bit_range(wire)
-                for i in range(lsb, msb+1):
-                    if self._assert(not self._signals[name].driven_bits[i] or allow, f"{misc.bit(name, i)} was previously driven"):
-                        self._signals[name].driven_bits[i] = True
+            self._set_driven_str(wire, allow=allow)
 
     def _check_signals(self):
         for name in self._signals:
@@ -588,6 +587,7 @@ class p2v():
                 for bits_str in self._get_names(bits):
                     self._set_used(bits_str)
             self._add_signal(p2v_signal(kind, name, bits, used=used, driven=driven, remark=self._get_remark()))
+        return None
 
     def _find_file(self, filename, allow_dir=False, allow=False):
         found = None
@@ -600,12 +600,12 @@ class p2v():
                 return fullname
         if found is not None:
             return found
-        if allow:
-            return None
-        if os.path.isabs(filename):
-            self._raise(f"could not find file {filename}")
-        else:
-            self._raise(f"could not find file {filename} in:\n\t" + "\n\t".join(self._search))
+        if not allow:
+            if os.path.isabs(filename):
+                self._raise(f"could not find file {filename}")
+            else:
+                self._raise(f"could not find file {filename} in:\n\t" + "\n\t".join(self._search))
+        return None
 
     def _grep(self, pattern, filename):
         return len(re.findall(pattern, misc._read_file(filename))) > 0
@@ -632,14 +632,14 @@ class p2v():
         return None
 
 
-    def _empty_module(self, modname, ports):
+    def _empty_module(self, modname):
         filename = self._find_module(modname)
         s = misc._read_file(filename)
         s = misc._comment_remover(s)
 
         # extract relevant module
         s = re.sub(rf".*\bmodule *{modname}\b", f"module {modname} ", s, flags=re.S) # remove everything before relevant module
-        s = re.sub(r"\bendmodule\b.*", f"", s) # remove everything after relevant module
+        s = re.sub(r"\bendmodule\b.*", "", s) # remove everything after relevant module
 
         # ansi declare
         begin = re.findall(r"\bmodule\b[\s\S]*?;", s)
@@ -665,17 +665,17 @@ class p2v():
                 s = misc._read_file(filename)
                 misc._write_file(filename, f"{lint_off}\n{s}\n{lint_on}")
 
-    def _write_empty_module(self, modname, ports):
+    def _write_empty_module(self, modname):
         bbox_dir = os.path.join(self._args.outdir, "bbox")
         if not os.path.exists(bbox_dir):
             os.mkdir(bbox_dir)
         if modname not in self._bbox:
-            empty_lines = self._empty_module(modname, ports)
+            empty_lines = self._empty_module(modname)
             empty_outfile = os.path.join(bbox_dir, f"{modname}.sv")
             self._write_lines(empty_outfile, empty_lines, indent=False)
             self._fix_lint(empty_outfile)
             self._bbox[modname] = empty_outfile
-            self._logger.debug(f"created bbox: {os.path.basename(empty_outfile)}")
+            self._logger.debug("created bbox: %s", os.path.basename(empty_outfile))
 
     def _get_verilog_ports(self, modname, params=None):
         if params is None:
@@ -798,28 +798,10 @@ class p2v():
                     self.assign(src_field_name, tgt_field_name, keyword=keyword)
         self.line()
 
-
-
-    def set_modname(self, modname=None, suffix=True):
-        """
-        Sets module name.
-
-        Args:
-            modname([None, str]): explicitly set module name
-            suffix(bool): automatically suffix module name with parameter values
-
-        Returns:
-            True if module was already created False if not
-        """
-        self._assert_type(modname, [None, str])
-        self._assert_type(suffix, bool)
-
+    def _get_module_params(self, module_locals, suffix=True):
         simple_types = (int, bool, str)
-        suf = []
 
-        frame = inspect.currentframe()
-        module_locals = frame.f_back.f_locals
-        del module_locals["self"]
+        suf = []
         if len(module_locals) > 0:
             self.remark("module parameters:")
             for name in module_locals:
@@ -846,14 +828,34 @@ class p2v():
                 elif param_suffix != "":
                     suf.append(str(param_suffix))
                 else:
-                    if modname is None and suffix and not param_loose:
+                    if suffix and not param_loose:
                         self._assert(isinstance(val, simple_types), f"module name should be explicitly set when using parameter '{name}' of type {type_str}", fatal=True)
                     if isinstance(val, str):
                         val = misc._fix_legal_name(val)
                     if isinstance(val, simple_types):
                         suf.append(f"{name}{val}")
             self.line()
+        return suf
 
+
+    def set_modname(self, modname=None, suffix=True):
+        """
+        Sets module name.
+
+        Args:
+            modname([None, str]): explicitly set module name
+            suffix(bool): automatically suffix module name with parameter values
+
+        Returns:
+            True if module was already created False if not
+        """
+        self._assert_type(modname, [None, str])
+        self._assert_type(suffix, bool)
+
+        frame = inspect.currentframe()
+        module_locals = frame.f_back.f_locals
+        del module_locals["self"]
+        suf = self._get_module_params(module_locals, suffix=modname is None and suffix)
         if self._modname is None:
             self._modname = self._args.prefix
             if modname:
@@ -906,8 +908,8 @@ class p2v():
                 suffix = str(var)
         if not isinstance(kind, list):
             kind = [kind]
-        for n, k in enumerate(kind):
-            if k is None:
+        for n, next_kind in enumerate(kind):
+            if next_kind is None:
                 kind[n] = type(None)
         self._assert(isinstance(var, tuple(kind)), f"{name} is of type {misc._type2str(type(var))} while expecting it to be in {misc._type2str(kind)}", fatal=True)
         loose = condition is None
@@ -954,7 +956,7 @@ class p2v():
             override = {}
         self._assert_type(override, dict)
         self._assert("gen" in dir(self), f"{self._get_clsname()} is missing gen() function")
-        args = self.gen()
+        args = self.gen() # pylint: disable=no-member
         for name in self._args.sim_args:
             override[name] = self._args.sim_args[name]
         for name in override:
@@ -1094,7 +1096,7 @@ class p2v():
             initial([int, str, dict, None]): assignment value to signal using an initial statement
 
         Returns:
-            None
+            p2v struct if type is struct otherwise None
         """
         self._assert_type(name, [clock, str, list])
         self._assert_type(bits, SIGNAL_TYPES)
@@ -1106,7 +1108,7 @@ class p2v():
         elif isinstance(name, list):
             for n in name:
                 self.logic(n, bits=bits, assign=assign, initial=initial)
-            return
+            return None
         elif isinstance(bits, dict):
             signal = self._add_signal(p2v_signal("logic", name, bits=0, strct=bits, used=True, driven=True))
             fields = signal.strct.fields
@@ -1124,6 +1126,7 @@ class p2v():
         elif initial is not None:
             self.assign(name, initial, keyword="initial")
             self.line()
+        return None
 
     def assign(self, tgt, src, keyword="assign"):
         """
@@ -1265,11 +1268,10 @@ class p2v():
             self._assert(modname not in self._outfiles, f"module previosuly created with verilog module name {modname}", fatal=True)
             self._connects[modname]._parent = self
             return self._connects[modname]
-        else:
-            ports = self._get_verilog_ports(modname, params=params)
-            if self._args.lint:
-                self._write_empty_module(modname, ports)
-            return self._get_connects(parent=self, modname=modname, signals=ports, params=params)
+        ports = self._get_verilog_ports(modname, params=params)
+        if self._args.lint:
+            self._write_empty_module(modname)
+        return self._get_connects(parent=self, modname=modname, signals=ports, params=params)
 
     def assert_never(self, clk, condition, message, params=None, fatal=True):
         """
@@ -1282,7 +1284,7 @@ class p2v():
             fatal(bool): stop on error
 
         Returns:
-            success
+            NA
         """
         if params is None:
             params = []
@@ -1290,29 +1292,28 @@ class p2v():
         self._assert_type(message, str)
         self._assert_type(params, [str, list])
         self._assert_type(fatal, bool)
-        if self._exists():
-            return
-        name = misc._make_name_legal(message)
-        wire = f"assert_never__{name}"
-        self.logic(wire, assign=condition)
-        self._set_used([clk, wire])
-        full_messgae = f'"{message}"'
-        if isinstance(params, str):
-            params = [params]
-        for param in params:
-            full_messgae += f", {param}"
-        if isinstance(clk, str):
-            self._check_declared(clk)
-            self.line(f"""always @({clk})
-                              if ({wire})
-                                  {misc.cond(fatal, f'$fatal(0, {full_messgae});', f'$error({full_messgae});')}
-                        """)
-        else:
-            self._assert_type(clk, clock)
-            self.line(f"""always @(posedge {clk})
-                              if ({misc.cond(clk.rst_n is not None, f'{clk.rst_n} & ')}{wire})
-                                  {misc.cond(fatal, f'$fatal(0, {full_messgae});', f'$error({full_messgae});')}
-                        """)
+        if not self._exists():
+            name = misc._make_name_legal(message)
+            wire = f"assert_never__{name}"
+            self.logic(wire, assign=condition)
+            self._set_used([clk, wire])
+            full_messgae = f'"{message}"'
+            if isinstance(params, str):
+                params = [params]
+            for param in params:
+                full_messgae += f", {param}"
+            if isinstance(clk, str):
+                self._check_declared(clk)
+                self.line(f"""always @({clk})
+                                  if ({wire})
+                                      {misc.cond(fatal, f'$fatal(0, {full_messgae});', f'$error({full_messgae});')}
+                            """)
+            else:
+                self._assert_type(clk, clock)
+                self.line(f"""always @(posedge {clk})
+                                  if ({misc.cond(clk.rst_n is not None, f'{clk.rst_n} & ')}{wire})
+                                      {misc.cond(fatal, f'$fatal(0, {full_messgae});', f'$error({full_messgae});')}
+                            """)
 
     def assert_always(self, clk, condition, message, params=None, fatal=True):
         """
@@ -1325,7 +1326,7 @@ class p2v():
             fatal(bool): stop on error
 
         Returns:
-            success
+            NA
         """
         if params is None:
             params = []
@@ -1333,9 +1334,8 @@ class p2v():
         self._assert_type(message, str)
         self._assert_type(params, [str, list])
         self._assert_type(fatal, bool)
-        if self._exists():
-            return
-        self.assert_never(clk, condition=f"~({condition})", message=message, params=params, fatal=fatal)
+        if not self._exists():
+            self.assert_never(clk, condition=f"~({condition})", message=message, params=params, fatal=fatal)
 
     def check_never(self, condition, message, params=None, fatal=True):
         """
@@ -1348,7 +1348,7 @@ class p2v():
             fatal(bool): stop on error
 
         Returns:
-            success
+            Verilog assertion string
         """
         if params is None:
             params = []
@@ -1357,7 +1357,7 @@ class p2v():
         self._assert_type(params, [str, list])
         self._assert_type(fatal, bool)
         if self._exists():
-            return
+            return ""
         full_messgae = f'"{message}"'
         for param in params:
             full_messgae += f", {param}"
@@ -1374,7 +1374,7 @@ class p2v():
             fatal(bool): stop on error
 
         Returns:
-            success
+            Verilog assertion string
         """
         if params is None:
             params = []
@@ -1383,7 +1383,7 @@ class p2v():
         self._assert_type(params, [str, list])
         self._assert_type(fatal, bool)
         if self._exists():
-            return
+            return ""
         return self.check_never(condition=f"~({condition})", params=params, message=message, fatal=fatal)
 
     def assert_static(self, condition, message, fatal=True):
@@ -1424,7 +1424,7 @@ class p2v():
         outfile = self._get_outfile()
         self._update_outhash(self._modname, outfile, lines)
         self._write_lines(outfile, lines)
-        self._logger.debug(f"created: {os.path.basename(outfile)}")
+        self._logger.debug("created: %s", os.path.basename(outfile))
         return self._get_connects(parent=self._parent, modname=self._modname, signals=self._signals, params={})
 
 
