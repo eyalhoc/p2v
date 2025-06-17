@@ -401,9 +401,9 @@ def bits(name, bits, start=0):
     Returns:
         Verilog code
     """
-    assert isinstance(name, str)
-    assert isinstance(bits, int) and bits > 0, bits
-    assert isinstance(start, int), start
+    assert _is_legal_name(name), f"{name} does not a legal name"
+    assert isinstance(bits, int) and bits > 0, f"{name} cannot be of {bits} bits"
+    assert isinstance(start, int) and start >= 0, f"{name} bit range cannot start a bit {start}"
     end = start + bits - 1
     if start == end:
         return f"{name}[{start}]"
@@ -422,8 +422,8 @@ def bit(name, idx):
     Returns:
         Verilog code
     """
-    assert isinstance(name, str)
-    assert isinstance(idx, (int, str))
+    assert _is_legal_name(name), f"{name} does not a legal name"
+    assert isinstance(idx, (int, str)), f"{name} uses illegal index {idx}"
     return f"{name}[{idx}]"
 
 def is_hotone(var, bits, allow_zero=False):
