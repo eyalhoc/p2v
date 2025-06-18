@@ -24,6 +24,8 @@ https://steveicarus.github.io/iverilog/usage/installation.html
 # Using partially installed P2V	
 P2V can run without all its dependencies, but in order to do that the -allow_missing_tools should be added to the command line, that will allow, for example, running without indenting files if the indentation tool is not installed.
 
+# Documentation
+https://github.com/eyalhoc/p2v/blob/main/doc/p2v_spec.pdf
 
 # Hello World
 python3 p2v/tutorial/example0_hello_world/hello_world.py
