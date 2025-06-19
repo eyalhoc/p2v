@@ -78,7 +78,10 @@ class p2v():
                 sys.exit(rtrn)
         else:
             self._args = parent._args
-            self.tb = p2v_tb(self, seed=self._args.seed, max_seed=MAX_SEED) # regenerate to fix parent pointer # pylint: disable=invalid-name
+            try:
+                self.tb = p2v_tb(self, seed=self._parent.tb.seed) # pylint: disable=invalid-name
+            except AttributeError:
+                self.tb = p2v_tb(self, seed=self._args.seed, max_seed=MAX_SEED)
             self._logger = parent._logger
             self._outfiles = parent._outfiles
             self._connects = parent._connects
@@ -247,7 +250,10 @@ class p2v():
         except AttributeError:
             self._raise(f"could not find class {self._get_top_modname()} in {self._get_top_filename()}")
         self = top_class(self) # pylint: disable=self-cls-assignment
-        self.tb = p2v_tb(self, seed=self._args.seed, max_seed=MAX_SEED)
+        try:
+            self.tb.seed
+        except AttributeError:
+            self.tb = p2v_tb(self, seed=self._args.seed, max_seed=MAX_SEED)
         self._logger.info(f"starting with seed {self.tb.seed}")
 
         gen_loop = self._args.gen_num is not None or isinstance(self._args.params, list)
@@ -391,13 +397,17 @@ class p2v():
         filename = f"{self._modname}.{ext}"
         return os.path.join(self._get_rtldir(), filename)
 
-    def _get_modlines(self):
+    def _get_modlines(self, lint=True):
         lines = []
         if self._args.header is not None:
             if self._assert(os.path.isfile(self._args.header), f"header file {self._args.header} does not exist"):
                 lines += misc._read_file(self._args.header).split("\n")
         lines += self._get_module_header()
+        if not lint:
+            lines += [p2v_tools.lint_off()]
         lines += self._lines
+        if not lint:
+            lines += [p2v_tools.lint_on()]
         lines += self._get_module_footer()
         return lines
 
@@ -650,7 +660,7 @@ class p2v():
         s = re.sub(r"^.*?;\s*", "", s, flags=re.S) # remove module declare
         for name in ["task", "function"]:
             s = re.sub(rf"\b{name}\b[\s\S]*?\bend{name}\b", "", s)
-            
+
         declare = re.findall(r"^[ \t]*(?:`.*|input.*?;|output.*?;|inout.*?;|reg.*?;|parameter.*?;|localparam.*?;)", s, re.MULTILINE)
 
         return begin + declare + functions + end
@@ -961,7 +971,7 @@ class p2v():
             override[name] = self._args.sim_args[name]
         gen_args = {}
         if len(override) > 0:
-            sig = inspect.signature(self.gen)
+            sig = inspect.signature(self.gen) # pylint: disable=no-member
             for sig_name in list(sig.parameters.keys()):
                 if sig_name in override:
                     gen_args[sig_name] = override[sig_name]
@@ -1410,12 +1420,12 @@ class p2v():
         self._assert_type(fatal, bool)
         self._assert(condition, message, fatal=fatal)
 
-    def write(self):
+    def write(self, lint=True):
         """
         Write the Verilog file.
 
         Args:
-            NA
+            lint(bool): don't run lint on this module
 
         Returns:
             p2v_connects struct with connectivity information
@@ -1427,7 +1437,7 @@ class p2v():
         self._assert(self._modname not in self._bbox, f"module {self._modname} previosuly used as verilog module", fatal=True)
         self._check_signals()
         self._check_mod_loop()
-        lines = self._get_modlines()
+        lines = self._get_modlines(lint=lint)
         outfile = self._get_outfile()
         self._update_outhash(self._modname, outfile, lines)
         self._write_lines(outfile, lines)

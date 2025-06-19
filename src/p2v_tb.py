@@ -267,6 +267,8 @@ class p2v_tb():
         self._parent._assert_type(reset_cycles, int)
         self._parent._assert_type(pre_reset_cycles, int)
 
+        self._parent._assert(cycle >= 2, f"clock cycle of {cycle} cannot be generated", fatal=True)
+
         self._parent._check_declared(clk.name)
         cycle_low = cycle // 2
         cycle_high = cycle - cycle_low
