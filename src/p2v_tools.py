@@ -165,6 +165,30 @@ def sim(dirname, outdir, err_str=None, pass_str=tb.PASS_STATUS):
                 success = False
     return full_logfile, success
 
+def lint_off():
+    """
+    Marks the beginning of a code block not to run lint on.
+
+    Args:
+        NA
+
+    Returns:
+        Verilog ifdef statement
+    """
+    return f"`ifndef {LINT_BIN.upper()}"
+
+def lint_on():
+    """
+    Marks the end of a code block not to run lint on.
+
+    Args:
+        NA
+
+    Returns:
+        Verilog endif statement
+    """
+    return f"`endif // {LINT_BIN.upper()}"
+
 
 # External tools being used for each function
 INDENT_BIN = "verible-verilog-format"
