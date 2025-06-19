@@ -46,8 +46,6 @@ MAX_LOOP = 5
 
 SIGNAL_TYPES = [clock, dict, int, float, list, str, tuple]
 
-_start_time = time.time()
-
 class p2v():
     """
     This is the main p2v class. All p2v modules inherit this class.
@@ -194,7 +192,7 @@ class p2v():
     def _build_seach_path(self):
         sys.path = []
         search = [os.getcwd()]
-        for incdir in [os.path.dirname(self._get_top_filename())] + self._args.I:
+        for incdir in [os.path.dirname(self._get_top_filename())] + self._args.I + self._args.Im:
             dirname = os.path.abspath(incdir)
             if self._assert(os.path.isdir(dirname), f"search directory {dirname} does not exist (included by -I argument)"):
                 if dirname not in search:
@@ -265,6 +263,7 @@ class p2v():
             iter_num = 1
 
         for i in range(iter_num):
+            _start_time = time.time()
             if gen_loop:
                 self.tb._set_seed(gen_seeds[i])
                 self._logger.info(f"starting gen iteration {i}/{iter_num-1}")
@@ -310,6 +309,7 @@ class p2v():
         parser.add_argument("-rm_outdir", action="store_true", default=True, help="remove outdir at start")
         parser.add_argument("--rm_outdir", action="store_false", default=False, help="supress outdir removal")
         parser.add_argument('-I', default=[], action="append", help="append search directory")
+        parser.add_argument('-Im', default=[], nargs='*', help="append multiple search directories (supports wildcard *)")
         parser.add_argument("-prefix", type=str, default="", help="prefix all files")
         parser.add_argument("-params", type=self._param_type, default={}, help="top module parameters, dictionary or csv file")
         parser.add_argument("-stop_on", default="CRITICAL", choices=["WARNING", "ERROR", "CRITICAL"], help="stop after non critical errors")
@@ -650,7 +650,8 @@ class p2v():
         s = re.sub(r"^.*?;\s*", "", s, flags=re.S) # remove module declare
         for name in ["task", "function"]:
             s = re.sub(rf"\b{name}\b[\s\S]*?\bend{name}\b", "", s)
-        declare = re.findall(r"(?:input|output|inout|parameter|localparam).*?;", s)
+            
+        declare = re.findall(r"^[ \t]*(?:`.*|input.*?;|output.*?;|inout.*?;|reg.*?;|parameter.*?;|localparam.*?;)", s, re.MULTILINE)
 
         return begin + declare + functions + end
 
@@ -956,11 +957,17 @@ class p2v():
             override = {}
         self._assert_type(override, dict)
         self._assert("gen" in dir(self), f"{self._get_clsname()} is missing gen() function")
-        args = self.gen() # pylint: disable=no-member
         for name in self._args.sim_args:
             override[name] = self._args.sim_args[name]
+        gen_args = {}
+        if len(override) > 0:
+            sig = inspect.signature(self.gen)
+            for sig_name in list(sig.parameters.keys()):
+                if sig_name in override:
+                    gen_args[sig_name] = override[sig_name]
+        args = self.gen(**gen_args) # pylint: disable=no-member
         for name in override:
-            if self._assert(name in args, f"trying to override unknown arg {name}"):
+            if self._assert(name in args, f"trying to override unknown arg {name}, known: [{', '.join(args.keys())}]"):
                 args[name] = override[name]
         self.remark(args)
         self.tb.register_test(args)

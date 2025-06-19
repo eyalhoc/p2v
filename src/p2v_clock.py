@@ -40,15 +40,25 @@ class p2v_clock:
                self.rst_n == clock.rst_n and \
                self.reset == clock.reset
 
-    def _declare(self):
+    def _get_prefix(self):
         if self.name.endswith("clk"):
-            prefix = self.name[:-3]
-            if prefix != "":
-                prefix_str = f'"{prefix}"'
-            else:
-                prefix_str = ""
+            return self.name[:-3]
         else:
-            prefix = None
+            return None
+    
+    def _is_prefixed(self):
+        prefix = self._get_prefix()
+        if prefix is none:
+            return False
+        else:
+            return self._cmp(clk(prefix)) or self._cmp(clk_arst(prefix)) or self._cmp(clk_srst(prefix)) or self._cmp(clk_2rst(prefix))
+    
+    def _declare(self):
+        prefix = self._get_prefix()
+        if prefix is None:
+            prefix_str = ""
+        else:
+            prefix_str = f'"{prefix}"'
 
         if prefix is not None and self._cmp(clk(prefix)):
             return f'p2v_clock.clk({prefix_str})'
