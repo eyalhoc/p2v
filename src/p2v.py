@@ -197,7 +197,7 @@ class p2v():
         search = [os.getcwd()]
         for incdir in [os.path.dirname(self._get_top_filename())] + self._args.I + self._args.Im:
             dirname = os.path.abspath(incdir)
-            if self._assert(os.path.isdir(dirname), f"search directory {dirname} does not exist (included by -I argument)"):
+            if self._assert(os.path.isdir(dirname), f"search directory {incdir} does not exist (included by -I argument)", fatal=True):
                 if dirname not in search:
                     search.append(dirname)
         for path in search:
