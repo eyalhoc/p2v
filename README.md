@@ -9,8 +9,9 @@ P2V is meant for chip designers familiar with Verilog and Python.
 
 
 # Installation
+pip install p2v-compiler
+
 P2V is a native Python3 library, it needs no special installations for its basic function.
-Pip install TBD
 Beyond basic functionality P2V does take advantage of the following open-source tools, and their absence will shut off their corresponding features:
 1.	Verible – used for Verilog indentation
 https://github.com/chipsalliance/verible
