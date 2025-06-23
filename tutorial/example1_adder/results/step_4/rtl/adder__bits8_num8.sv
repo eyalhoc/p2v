@@ -15,7 +15,7 @@ module adder__bits8_num8 (
 );
 
     // module parameters:
-    // clk = p2v_clock.clk_arst() (p2v_clock)
+    // clk = clk_arst() (p2v_clock)
     // bits = 8 (int) # data width
     // num = 8 (int) # number of inputs
 

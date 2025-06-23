@@ -30,7 +30,7 @@ import csv
 import secrets # required internally by np.random # pylint: disable=unused-import
 
 import p2v_misc as misc
-import p2v_clock # needed for clock loading from gen csv file # # pylint: disable=unused-import
+from p2v_clock import clk_0rst, clk_arst, clk_srst, clk_2rst # needed for clock loading from gen csv file # # pylint: disable=unused-import
 from p2v_clock import p2v_clock as clock
 from p2v_clock import default_clk
 from p2v_signal import p2v_signal
@@ -299,13 +299,13 @@ class p2v():
                 self._logger.info(f"starting gen iteration {i}/{iter_num-1}")
             if self._args.sim or not gen_loop:
                 self.__init__(None, modname=misc.cond(not gen_loop, None, f"_tb{i}"), parse=False)
-                top_class.module(self, **self._args.params)
+                top_connect = top_class.module(self, **self._args.params)
 
                 for process in self._processes:
                     process.wait()
 
                 self._logger.info(f"verilog generation completed {misc.cond(self._err_num == 0, 'successfully', 'with errors')} ({misc.ceil(time.time() - _start_time)} sec)")
-                if self._err_num == 0:
+                if top_connect is not None and self._err_num == 0:
                     self._lint()
                     self._sim()
             else:
@@ -1457,7 +1457,7 @@ class p2v():
         self._assert_type(condition, bool)
         self._assert_type(message, str)
         self._assert_type(fatal, bool)
-        self._assert(condition, message, fatal=fatal)
+        return self._assert(condition, message, fatal=fatal)
 
     def write(self, lint=True):
         """

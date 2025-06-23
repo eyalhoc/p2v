@@ -56,12 +56,13 @@ class p2v_tb():
     def _set_seed(self, seed):
         random.seed(seed)
         np.random.seed(seed)
+        self.seed = seed
+        return seed
 
     def _set_random_seed(self, seed=0, max_seed=1024):
         if seed == 0:
             seed = random.randint(1, max_seed)
-        self._set_seed(seed)
-        return seed
+        return self._set_seed(seed)
 
 
     def rand_int(self, min_val, max_val=None):
@@ -389,7 +390,7 @@ class p2v_tb():
         """
         self._parent._assert_type(args, [None, dict])
 
-        col_width = 16
+        col_width = 20
         if args is None:
             args = {}
             for name in self._parent._params:
