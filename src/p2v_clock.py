@@ -49,7 +49,7 @@ class p2v_clock:
         prefix = self._get_prefix()
         if prefix is None:
             return False
-        return self._cmp(clk(prefix)) or self._cmp(clk_arst(prefix)) or self._cmp(clk_srst(prefix)) or self._cmp(clk_2rst(prefix))
+        return self._cmp(clk_0rst(prefix)) or self._cmp(clk_arst(prefix)) or self._cmp(clk_srst(prefix)) or self._cmp(clk_2rst(prefix))
 
     def _declare(self):
         prefix = self._get_prefix()
@@ -58,14 +58,14 @@ class p2v_clock:
         else:
             prefix_str = f'"{prefix}"'
 
-        if prefix is not None and self._cmp(clk(prefix)):
-            return f'p2v_clock.clk({prefix_str})'
+        if prefix is not None and self._cmp(clk_0rst(prefix)):
+            return f'clk_0rst({prefix_str})'
         if prefix is not None and self._cmp(clk_arst(prefix)):
-            return f'p2v_clock.clk_arst({prefix_str})'
+            return f'clk_arst({prefix_str})'
         if prefix is not None and self._cmp(clk_srst(prefix)):
-            return f'p2v_clock.clk_srst({prefix_str})'
+            return f'clk_srst({prefix_str})'
         if prefix is not None and self._cmp(clk_2rst(prefix)):
-            return f'p2v_clock.clk_2rst({prefix_str})'
+            return f'clk_2rst({prefix_str})'
 
         # non trivial clock
         declare = f"clock('{self.name}'"
@@ -96,7 +96,7 @@ class p2v_clock:
         return nets
 
 
-def clk(prefix=""):
+def clk_0rst(prefix=""):
     """
     Create a clock with no resets.
 
