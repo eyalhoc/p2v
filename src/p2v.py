@@ -27,6 +27,7 @@ import traceback
 import inspect
 import argparse
 import csv
+import secrets # required internally by np.random # pylint: disable=unused-import
 
 import p2v_misc as misc
 import p2v_clock # needed for clock loading from gen csv file # # pylint: disable=unused-import
@@ -164,9 +165,12 @@ class p2v():
         return f"{__class__.__name__}.log"
 
     def _create_outdir(self):
-        if os.path.exists(self._args.outdir) and self._args.rm_outdir:
-            assert os.path.isfile(os.path.join(self._args.outdir, self._get_logfile())), f"cannot remove {self._args.outdir}, it does not look like a {__class__.__name__} output directory"
-            shutil.rmtree(self._args.outdir, ignore_errors=True)
+        if os.path.exists(self._args.outdir):
+            if not os.listdir(self._args.outdir): # directory exists but it is empty
+                pass
+            elif self._args.rm_outdir:
+                assert os.path.isfile(os.path.join(self._args.outdir, self._get_logfile())), f"cannot remove {self._args.outdir}, it does not look like a {__class__.__name__} output directory"
+                shutil.rmtree(self._args.outdir, ignore_errors=True)
         if not os.path.exists(self._args.outdir):
             os.mkdir(self._args.outdir)
         rtl_dir = self._get_rtldir()
