@@ -10,9 +10,9 @@ module tb ();
     initial
         forever begin
             clk = 0;
-            #2;
+            #1;
             clk = 1;
-            #3;
+            #1;
         end
 
 
@@ -61,14 +61,14 @@ module tb ();
 
     initial begin
 
-        data_in_q.push_back({32'hc386_bbc4, 32'h414c_343c, 32'h7311_d8a3, 32'ha6ce_cc1b});
-        expected_q.push_back(32'h1eb3_94be);
-        data_in_q.push_back({32'hc9e9_c616, 32'h1807_2e8c, 32'hd5f4_b3b2, 32'h7204_e52d});
-        expected_q.push_back(32'h29ea_8d81);
-        data_in_q.push_back({32'hf1fd_42a2, 32'he6c3_f339, 32'h07d4_bedc, 32'h8a9a_021e});
-        expected_q.push_back(32'h6b2f_f6d5);
-        data_in_q.push_back({32'h3bab_6c39, 32'h0580_5975, 32'ha46d_6753, 32'hdc25_74bd});
-        expected_q.push_back(32'hc1be_a1be);
+        data_in_q.push_back({4{32'h0000_0000}});
+        expected_q.push_back(32'h0000_0000);
+        data_in_q.push_back({4{32'h0000_0000}});
+        expected_q.push_back(32'h0000_0000);
+        data_in_q.push_back({4{32'h0000_0000}});
+        expected_q.push_back(32'h0000_0000);
+        data_in_q.push_back({4{32'h0000_0000}});
+        expected_q.push_back(32'h0000_0000);
 
     end
 

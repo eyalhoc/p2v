@@ -59,7 +59,7 @@ class p2v_tb():
 
     def _set_random_seed(self, seed=0, max_seed=1024):
         if seed == 0:
-            seed = self.rand_int(1, max_seed)
+            seed = random.randint(1, max_seed)
         self._set_seed(seed)
         return seed
 
@@ -79,8 +79,12 @@ class p2v_tb():
         self._parent._assert_type(max_val, [None, int])
 
         if max_val is None:
-            return random.randint(0, min_val-1)
-        return random.randint(min_val, max_val)
+            actual_min_val, actual_max_val = 0, min_val - 1
+        else:
+            actual_min_val, actual_max_val = min_val, max_val
+        if self.seed == 1:
+            return actual_min_val
+        return random.randint(actual_min_val, actual_max_val)
 
     def rand_hex(self, bits):
         """

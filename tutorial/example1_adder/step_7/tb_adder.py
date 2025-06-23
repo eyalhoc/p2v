@@ -17,7 +17,7 @@ class tb_adder(p2v):
             clk = clock("clk", reset="reset")
         
         self.logic(clk)
-        self.tb.gen_clk(clk, cycle=self.tb.rand_int(1, 20))
+        self.tb.gen_clk(clk, cycle=self.tb.rand_int(2, 20))
         
         
         args = adder.adder(self).gen_rand_args(override={"float16":False}) # float16 is not yet supported
