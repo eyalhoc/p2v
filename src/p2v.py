@@ -38,7 +38,7 @@ from p2v_tb import p2v_tb
 import p2v_slang as slang
 import p2v_tools
 
-MAX_MODNAME = 128
+MAX_MODNAME = 150
 MAX_DEPTH = 16
 MAX_VAR_STR = 64
 MAX_SEED = 64 * 1024
@@ -242,18 +242,38 @@ class p2v():
         self._assert("gen" in dir(top_class), f"{top_class.__name__} is missing gen() function")
         return top_class.gen(self)
 
-    def _parse_top(self):
+    def _get_cmd(self):
+        cmd = sys.executable
+        for arg in sys.argv:
+            if '"' in arg:
+                arg = f"'{arg}'"
+            cmd += " " + arg
+        if self.tb.seed != 1:
+            cmd += f" -seed {self.tb.seed}"
+        return cmd
+
+    def _get_top_class(self):
         top_module = self._get_top_modname()
-        module = __import__(top_module)
+        try:
+            module = __import__(top_module)
+        except ValueError:
+            self._raise("p2v should not be imported only inherited")
         try:
             top_class = getattr(module, top_module)
         except AttributeError:
             self._raise(f"could not find class {self._get_top_modname()} in {self._get_top_filename()}")
+        return top_class
+
+    def _parse_top(self):
+        rtrn = 0
+
+        top_class = self._get_top_class()
         self = top_class(self) # pylint: disable=self-cls-assignment
         try:
             self.tb.seed
         except AttributeError:
             self.tb = p2v_tb(self, seed=self._args.seed, max_seed=MAX_SEED)
+        misc._write_file(os.path.join(self._args.outdir, f"{__class__.__name__}.cmd"), self._get_cmd()) # write command line to file
         self._logger.info(f"starting with seed {self.tb.seed}")
 
         gen_loop = self._args.gen_num is not None or isinstance(self._args.params, list)
@@ -279,9 +299,11 @@ class p2v():
 
                 for process in self._processes:
                     process.wait()
-                self._logger.info(f"verilog generation completed successfully ({misc.ceil(time.time() - _start_time)} sec)")
-                self._lint()
-                self._sim()
+
+                self._logger.info(f"verilog generation completed {misc.cond(self._err_num == 0, 'successfully', 'with errors')} ({misc.ceil(time.time() - _start_time)} sec)")
+                if self._err_num == 0:
+                    self._lint()
+                    self._sim()
             else:
                 self.__init__(None, parse=False)
                 if isinstance(self._args.params, list):
@@ -492,7 +514,8 @@ class p2v():
             name = names[0]
             self._check_declared(name)
             if name in arrays or self._get_signal_bits(wire) == self._signals[name].bits:
-                if self._assert(not self._signals[name].driven or allow, f"{name} was previously driven"):
+                if self._assert(not self._signals[name].driven or allow or name in arrays, \
+                                f"{name} was previously driven"): # multiple dimentional arrays are often multiple driven (2 write port)
                     self._signals[name].driven = True
             else:
                 msb, lsb = misc._get_bit_range(wire)
@@ -809,6 +832,17 @@ class p2v():
                     self.assign(src_field_name, tgt_field_name, keyword=keyword)
         self.line()
 
+    def _get_param_str(self, val):
+        if isinstance(val, clock):
+            val_str = val._declare()
+        elif isinstance(val, str):
+            val_str = f'"{val}"'
+        else:
+            val_str = str(val)
+        if len(val_str) > MAX_VAR_STR:
+            val_str = val_str[:MAX_VAR_STR] + "..."
+        return val_str
+
     def _get_module_params(self, module_locals, suffix=True):
         simple_types = (int, bool, str)
 
@@ -816,6 +850,8 @@ class p2v():
         if len(module_locals) > 0:
             self.remark("module parameters:")
             for name in module_locals:
+                if name.startswith("_"): # local parameter for set_param() modifications
+                    continue
                 if self._assert(name in self._params, f"module parameter {name} is missing set_param()"):
                     (_, param_remark, param_loose, param_suffix) = self._params[name]
                     if param_remark != "":
@@ -823,19 +859,11 @@ class p2v():
                 else:
                     (_, param_remark, param_loose, param_suffix) = (None, "", False, None)
                 val = module_locals[name]
-                if isinstance(val, clock):
-                    val_str = val._declare()
-                elif isinstance(val, str):
-                    val_str = f'"{val}"'
-                else:
-                    val_str = str(val)
-                if len(val_str) > MAX_VAR_STR:
-                    val_str = val_str[:MAX_VAR_STR] + "..."
+                val_str = self._get_param_str(val)
                 type_str = val.__class__.__name__
-                self.remark(f"{name} = {val_str} ({type_str}){param_remark}")
 
                 if param_suffix is None:
-                    pass
+                    param_remark += " (no affect on module name)"
                 elif param_suffix != "":
                     suf.append(str(param_suffix))
                 else:
@@ -845,6 +873,8 @@ class p2v():
                         val = misc._fix_legal_name(val)
                     if isinstance(val, simple_types):
                         suf.append(f"{name}{val}")
+
+                self.remark(f"{name} = {val_str} ({type_str}){param_remark}")
             self.line()
         return suf
 
@@ -875,7 +905,8 @@ class p2v():
                 self._modname += self._get_clsname()
                 if suffix and len(suf) > 0:
                     self._modname += "__" + "_".join(suf)
-                    self._assert(len(self._modname) <= MAX_MODNAME, f"module name should be explicitly set generated name {self._modname} is longer than {MAX_MODNAME} characters", fatal=True)
+                    self._assert(len(self._modname) <= MAX_MODNAME, \
+                    f"module name should be explicitly set generated name {self._modname} of {len(self._modname)} characters exceeds max od {MAX_MODNAME}", fatal=True)
         exists = self._exists()
         if exists:
             self._signals = self._connects[self._modname]._signals
@@ -892,7 +923,7 @@ class p2v():
             self._parent._sons.append(self._modname)
         return exists
 
-    def set_param(self, var, kind, condition=None, remark="", suffix=""):
+    def set_param(self, var, kind, condition=None, remark="", suffix="", default=None):
         """
         Declare module parameter and set assertions.
 
@@ -902,6 +933,7 @@ class p2v():
             condition([None, bool]): parameter constraints
             remark(str): comment
             suffix([None, str]): explicitly define parameter suffix
+            default: if value matches default the parameter will not affect module name
 
         Returns:
             None
@@ -910,11 +942,15 @@ class p2v():
         self._assert_type(remark, str)
         self._assert_type(suffix, [None, str])
 
+
         auto_suffix = suffix == ""
         line = self._get_current_line().replace(" ", "").split("#")[0]
         self._check_line_balanced(line)
         name = line.split("set_param(")[1].split(",")[0]
-        if kind is clock and auto_suffix:
+
+        if default is not None and var == default:
+            suffix = None
+        elif kind is clock and auto_suffix:
             if var != default_clk:
                 suffix = str(var)
         if not isinstance(kind, list):
@@ -977,9 +1013,8 @@ class p2v():
                     gen_args[sig_name] = override[sig_name]
         args = self.gen(**gen_args) # pylint: disable=no-member
         for name in override:
-            if self._assert(name in args, f"trying to override unknown arg {name}, known: [{', '.join(args.keys())}]"):
+            if self._assert(name in args, f"trying to override unknown arg {name}, known: [{', '.join(args.keys())}]", fatal=True):
                 args[name] = override[name]
-        self.remark(args)
         self.tb.register_test(args)
         return args
 
@@ -1442,9 +1477,11 @@ class p2v():
         self._update_outhash(self._modname, outfile, lines)
         self._write_lines(outfile, lines)
         self._logger.debug("created: %s", os.path.basename(outfile))
+        if self._parent is not None:
+            self._parent._err_num += self._err_num
         return self._get_connects(parent=self._parent, modname=self._modname, signals=self._signals, params={})
 
 
 # top constructor
-if __name__ != '__main__' and os.path.basename(sys.argv[0]) != "pydoc.py":
+if __name__ != "__main__" and os.path.basename(sys.argv[0]) != "pydoc.py":
     p2v()

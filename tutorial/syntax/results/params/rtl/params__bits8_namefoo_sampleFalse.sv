@@ -6,7 +6,7 @@ module params__bits8_namefoo_sampleFalse ();
     // name = "foo" (str)
     // sample = False (bool)
     // d = {} (dict)
-    // depth = 128 (int)
+    // depth = 128 (int) (no affect on module name)
 
 
 endmodule
