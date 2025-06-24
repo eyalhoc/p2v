@@ -25,6 +25,9 @@ import p2v_misc as misc
 PASS_STATUS = "PASSED"
 FAIL_STATUS = "FAILED"
 
+SYN_OFF = "synopsys translate_off"
+SYN_ON = "synopsys translate_on"
+
 class p2v_tb():
     """
     This class is a p2v test bench function wrapper.
@@ -399,19 +402,23 @@ class p2v_tb():
         if not os.path.isfile(filename):
             headers = []
             for name in args:
+                if name.startswith("_"): # private argument
+                    continue
                 headers.append(name.ljust(col_width))
             misc._write_file(filename, ", ".join(headers))
         vals = []
         for name in args:
+            if name.startswith("_"): # private argument
+                continue
             val = args[name]
             if isinstance(val, clock):
                 val_str = val._declare()
-            elif isinstance(val, bool): # bool must be before int since bool is also an int type
-                val_str = f"bool({val})"
-            elif isinstance(val, int):
-                val_str = f"int({val})"
+            #elif isinstance(val, bool): # bool must be before int since bool is also an int type
+            #    val_str = f"bool({val})"
+            #elif isinstance(val, int):
+            #    val_str = f"int({val})"
             elif isinstance(val, str):
-                val_str = f'"{val}"'
+                val_str = f"'{val}'"
             else:
                 val_str = str(val)
 
@@ -448,7 +455,11 @@ class p2v_tb():
         Returns:
             None
         """
-        self._parent.remark("synopsys translate_off")
+        last_idx, last_line = self._parent._get_last_line(skip_remark=False)
+        if last_line == misc._remark_line(SYN_ON):
+            self._parent._rm_line(last_idx)
+        else:
+            self._parent.remark(SYN_OFF)
 
     def syn_on(self):
         """
@@ -460,4 +471,8 @@ class p2v_tb():
         Returns:
             None
         """
-        self._parent.remark("synopsys translate_on")
+        last_idx, last_line = self._parent._get_last_line(skip_remark=False)
+        if last_line == misc._remark_line(SYN_OFF):
+            self._parent._rm_line(last_idx)
+        else:
+            self._parent.remark(SYN_ON)

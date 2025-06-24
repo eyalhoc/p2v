@@ -242,9 +242,11 @@ class p2v():
                     self._logger.debug("verilog simulation completed with errors:\n %s", misc._read_file(logfile))
         return False
 
-    def _get_gen_args(self, top_class):
+    def _get_gen_args(self, top_class, params=None):
+        if params is None:
+            params = {}
         self._assert("gen" in dir(top_class), f"{top_class.__name__} is missing gen() function")
-        return top_class.gen(self)
+        return top_class.gen(self, **params)
 
     def _get_cmd(self):
         cmd = sys.executable
@@ -313,10 +315,9 @@ class p2v():
                 if isinstance(self._args.params, list):
                     args = self._args.params[i]
                 else:
-                    args = self._get_gen_args(top_class)
+                    args = self._get_gen_args(top_class, params=self._args.params)
                 top_class.module(self, **args)
                 self._lint()
-                self.tb.register_test(args)
 
         rtrn = int(self._err_num > 0)
         self._logger.info(f"completed {misc.cond(rtrn==0, 'successfully', 'with errors')}")
@@ -370,6 +371,21 @@ class p2v():
         if self.__class__.__name__ == __class__.__name__:
             return self._get_top_modname()
         return self.__class__.__name__
+
+    def _get_last_line(self, skip_empty=True, skip_remark=False):
+        line_idx = len(self._lines)
+        while line_idx > 0:
+            line_idx -= 1
+            last_line = self._lines[line_idx]
+            if skip_remark and misc._remove_spaces(last_line).startswith("//"):
+                continue
+            if skip_empty and misc._remove_spaces(last_line) == "":
+                continue
+            return line_idx, last_line
+        return -1, None
+
+    def _rm_line(self, line_idx):
+        del self._lines[line_idx]
 
     def _add_signal(self, signal):
         if self._exists(): # is called from p2v_connect
@@ -925,6 +941,7 @@ class p2v():
             self._modules[self._modname] = module_locals
         if self._parent is not None:
             self._parent._sons.append(self._modname)
+        self.tb.register_test(module_locals)
         return exists
 
     def set_param(self, var, kind, condition=None, remark="", suffix="", default=None):
@@ -1019,7 +1036,6 @@ class p2v():
         for name in override:
             if self._assert(name in args, f"trying to override unknown arg {name}, known: [{', '.join(args.keys())}]", fatal=True):
                 args[name] = override[name]
-        self.tb.register_test(args)
         return args
 
     def line(self, line="", remark=None):
@@ -1038,7 +1054,7 @@ class p2v():
         if self._exists():
             return
         if remark is not None:
-            line += f" // {remark}"
+            line += misc._remark_line(remark)
         for l in line.split("\n"):
             self._lines.append(l)
 
@@ -1442,13 +1458,14 @@ class p2v():
             return ""
         return self.check_never(condition=f"~({condition})", params=params, message=message, fatal=fatal)
 
-    def assert_static(self, condition, message, fatal=True):
+    def assert_static(self, condition, message, warning=False, fatal=True):
         """
         Assertion on Python varibales.
 
         Args:
             condition(bool): Error occurs when condition is False
             message(str): Error message
+            warning(bool): issue warning instead of error
             fatal(bool): stop on error
 
         Returns:
@@ -1456,8 +1473,9 @@ class p2v():
         """
         self._assert_type(condition, bool)
         self._assert_type(message, str)
+        self._assert_type(warning, bool)
         self._assert_type(fatal, bool)
-        return self._assert(condition, message, fatal=fatal)
+        return self._assert(condition, message, warning=warning, fatal=fatal and not warning)
 
     def write(self, lint=True):
         """

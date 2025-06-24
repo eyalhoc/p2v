@@ -56,7 +56,7 @@ class p2v_clock:
         if prefix is None or prefix == "":
             prefix_str = ""
         else:
-            prefix_str = f'"{prefix}"'
+            prefix_str = f"'{prefix}'"
 
         if prefix is not None and self._cmp(clk_0rst(prefix)):
             return f'clk_0rst({prefix_str})'
