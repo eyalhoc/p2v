@@ -80,9 +80,9 @@ class p2v():
         else:
             self._args = parent._args
             try:
-                self.tb = p2v_tb(self, seed=self._parent.tb.seed) # pylint: disable=invalid-name
+                self.tb = p2v_tb(self, seed=self._parent.tb.seed, set_seed=False) # pylint: disable=invalid-name
             except AttributeError:
-                self.tb = p2v_tb(self, seed=self._args.seed, max_seed=MAX_SEED)
+                self.tb = p2v_tb(self, seed=self._args.seed, max_seed=MAX_SEED, set_seed=True)
             self._logger = parent._logger
             self._outfiles = parent._outfiles
             self._connects = parent._connects
@@ -941,7 +941,8 @@ class p2v():
             self._modules[self._modname] = module_locals
         if self._parent is not None:
             self._parent._sons.append(self._modname)
-        self.tb.register_test(module_locals)
+        if self._parent.__class__.__name__ != self.__class__.__name__: # ignore nested recursions
+            self.tb.register_test(module_locals)
         return exists
 
     def set_param(self, var, kind, condition=None, remark="", suffix="", default=None):
