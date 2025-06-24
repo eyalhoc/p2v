@@ -1,2 +1,5 @@
-float16             , bits                , num                 
-bool(False)         , int(32)             , int(4)              
+clk                 , bits                , num                 , float16             
+"clock('clk', rst_n='resetn')", 32                  , 4                   , False               
+"clock('clk', rst_n='resetn')", 32                  , 2                   , False               
+"clock('clk', rst_n='resetn')", 32                  , 2                   , False               
+"clock('clk', rst_n='resetn')", 32                  , 2                   , False               

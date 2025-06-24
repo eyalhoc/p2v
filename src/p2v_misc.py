@@ -186,6 +186,12 @@ def _comment_remover(s):
     s = re.sub(re.compile(r"//.*?\n" ), "\n", s)
     return s
 
+def _remove_spaces(line):
+    return line.replace(" ", "").replace("\t", "")
+
+def _remark_line(line):
+    return " // " + line
+
 
 def ceil(n):
     """
@@ -244,7 +250,7 @@ def roundup(num, round_to):
         rounded += round_to
     return rounded
 
-def cond(condition, true_var, false_var=None):
+def cond(condition, true_var, false_var=""):
     """
     Converts a Python list into Verilog concatenation or join list of signals with operator.
 
@@ -260,9 +266,7 @@ def cond(condition, true_var, false_var=None):
 
     if condition:
         return true_var
-    if false_var is not None:
-        return false_var
-    return ""
+    return false_var
 
 def concat(vals, sep=None, nl_every=None):
     """
