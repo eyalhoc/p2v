@@ -33,9 +33,15 @@ class p2v_tb():
     This class is a p2v test bench function wrapper.
     """
 
-    def __init__(self, parent, seed, max_seed=1024):
+    def __init__(self, parent, seed, max_seed=1024, set_seed=True):
         self._parent = parent
-        self.seed = self._set_random_seed(seed, max_seed=max_seed)
+        if seed == 0:
+            self.seed = random.randint(1, max_seed)
+        else:
+            self.seed = seed
+        if set_seed:
+            self._set_seed(self.seed)
+
 
     def _test_finish(self, status, condition=None, message=None, params=None):
         if params is None:
@@ -59,14 +65,6 @@ class p2v_tb():
     def _set_seed(self, seed):
         random.seed(seed)
         np.random.seed(seed)
-        self.seed = seed
-        return seed
-
-    def _set_random_seed(self, seed=0, max_seed=1024):
-        if seed == 0:
-            seed = random.randint(1, max_seed)
-        return self._set_seed(seed)
-
 
     def rand_int(self, min_val, max_val=None):
         """

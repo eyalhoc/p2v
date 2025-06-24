@@ -1,11 +1,2 @@
 clk                 , bits                , num                 
 clk_arst()          , 8                   , 8                   
-clk_arst()          , 8                   , 4                   
-clk_arst()          , 8                   , 2                   
-clk_arst()          , 8                   , 2                   
-clk_arst()          , 8                   , 2                   
-clk_arst()          , 8                   , 4                   
-clk_arst()          , 8                   , 2                   
-clk_arst()          , 8                   , 2                   
-clk_arst()          , 8                   , 2                   
-clk_arst()          , 8                   , 2                   
