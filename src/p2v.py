@@ -145,9 +145,12 @@ class p2v():
     def _error(self, s, filename=None, lineno=None, warning=False, fatal=False):
         details = ""
         if filename is not None:
-            details += filename
+            details += os.path.basename(filename)
             if lineno is not None:
                 details += f"@{lineno}"
+            vfilename = self._get_filename()
+            if vfilename is not None:
+                details += f"->{vfilename}"
             details += ": "
         err_str = f"{details}{s}"
         if err_str not in self._errors or fatal:
@@ -214,7 +217,7 @@ class p2v():
                 if self._modname is None:
                     top_filename = None
                 else:
-                    top_filename = f"{self._modname}.sv"
+                    top_filename = self._get_filename()
                 logfile, success = p2v_tools.lint(dirname=self._get_rtldir(), outdir=self._args.outdir, filename=top_filename)
                 if self._assert(success, f"lint completed with errors:\n{misc._read_file(logfile)}"):
                     self._logger.info("verilog lint completed successfully")
@@ -255,7 +258,9 @@ class p2v():
                 arg = f"'{arg}'"
             cmd += " " + arg
         if self.tb.seed != 1:
-            cmd += f" -seed {self.tb.seed}"
+            seed_str = f" -seed {self.tb.seed}"
+            if not cmd.endswith(seed_str):
+                cmd += seed_str
         return cmd
 
     def _get_top_class(self):
@@ -331,7 +336,11 @@ class p2v():
                 for row in reader:
                     args = {}
                     for key, val in row.items():
-                        args[key.strip()] = eval(val) # pylint: disable=eval-used
+                        key, val = key.strip(), val.strip()
+                        try:
+                            args[key] = eval(val) # pylint: disable=eval-used
+                        except NameError:
+                            args[key] = eval(f'"{val}"') # pylint: disable=eval-used
                     list_of_params.append(args)
             return list_of_params
         return ast.literal_eval(value)
@@ -539,9 +548,10 @@ class p2v():
                     self._signals[name].driven = True
             else:
                 msb, lsb = misc._get_bit_range(wire)
-                for i in range(lsb, msb+1):
-                    if self._assert(not self._signals[name].driven_bits[i] or allow, f"{misc.bit(name, i)} was previously driven"):
-                        self._signals[name].driven_bits[i] = True
+                if self._assert(msb < self._signals[name].bits, f"trying to drive {wire} when {name} has only {self._signals[name].bits} bits"):
+                    for i in range(lsb, msb+1):
+                        if self._assert(not self._signals[name].driven_bits[i] or allow, f"{misc.bit(name, i)} was previously driven"):
+                            self._signals[name].driven_bits[i] = True
 
     def _set_driven(self, wire, allow=False):
         if self._exists(): # is called from p2v_connect
@@ -719,6 +729,13 @@ class p2v():
                 s = misc._read_file(filename)
                 misc._write_file(filename, f"{lint_off}\n{s}\n{lint_on}")
 
+    def _get_filename(self, modname=None):
+        if self._modname is None:
+            return None
+        if modname is None:
+            return f"{self._modname}.sv"
+        return f"{modname}.sv"
+
     def _write_empty_module(self, modname):
         bbox_dir = os.path.join(self._args.outdir, "bbox")
         if not os.path.exists(bbox_dir):
@@ -732,6 +749,7 @@ class p2v():
             self._logger.debug("created bbox: %s", os.path.basename(empty_outfile))
 
     def _get_verilog_ports(self, modname, params=None):
+        self._assert_type(modname, str)
         if params is None:
             params = {}
         filename = self._find_module(modname)
@@ -913,9 +931,13 @@ class p2v():
         self._assert_type(modname, [None, str])
         self._assert_type(suffix, bool)
 
+        # create a new dictionary and remove self since it is illegal to delete items from locals
+        module_locals = {}
         frame = inspect.currentframe()
-        module_locals = frame.f_back.f_locals
-        del module_locals["self"]
+        for name, value in frame.f_back.f_locals.items():
+            if name != "self":
+                module_locals[name] = value
+
         suf = self._get_module_params(module_locals, suffix=modname is None and suffix)
         if self._modname is None:
             self._modname = self._args.prefix
@@ -932,8 +954,9 @@ class p2v():
             self._signals = self._connects[self._modname]._signals
             if module_locals != self._modules[self._modname]:
                 for name in module_locals:
-                    self._assert(module_locals[name] == self._modules[self._modname][name], \
-                    f"module {self._modname} was generated with different {name} values but it does not affect module name", fatal=True)
+                    if not name.startswith("_"):
+                        self._assert(module_locals[name] == self._modules[self._modname][name], \
+                        f"module {self._modname} was generated with different {name} values but it does not affect module name", fatal=True)
         else:
             clsname = self._get_clsname()
             if clsname != "_test":

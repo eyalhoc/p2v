@@ -416,7 +416,7 @@ class p2v_tb():
             #elif isinstance(val, int):
             #    val_str = f"int({val})"
             elif isinstance(val, str):
-                val_str = f"'{val}'"
+                val_str = f'"{val}"'
             else:
                 val_str = str(val)
 
