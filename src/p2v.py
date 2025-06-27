@@ -209,6 +209,7 @@ class p2v():
                     search.append(dirname)
         for path in search:
             sys.path.append(path)
+        search.append(self._get_rtldir())
         return search
 
     def _lint(self):
@@ -671,7 +672,7 @@ class p2v():
         return None
 
     def _grep(self, pattern, filename):
-        return len(re.findall(pattern, misc._read_file(filename))) > 0
+        return len(re.findall(pattern, misc._read_file(filename)))
 
     def _find_module(self, modname, ext=None, allow=False):
         if ext is None:
@@ -681,28 +682,39 @@ class p2v():
         for e in ext:
             filename = self._find_file(modname + e, allow=True)
             if filename is not None:
+                if self._grep(r"\Wmodule ", filename) > 1 and filename not in self._libs: # multiple module file
+                    self._libs.append(filename)
                 return filename
         # coudln't find file maybe it is in library
         for dirname in self._search:
             for e in ext:
                 for filename in glob.glob(f"{dirname}/*{e}"):
-                    if self._grep(rf"\Wmodule *{modname}\W", filename):
-                        if filename not in self._libs:
-                            self._libs.append(filename)
+                    if self._grep(rf"\Wmodule *{modname}\W", filename) and filename not in self._libs:
+                        self._libs.append(filename)
                         return filename
         if not allow:
             self._raise(f"could not find file for module {modname} in:\n\t" + "\n\t".join(self._search))
         return None
 
-
-    def _empty_module(self, modname):
+    def _extract_module(self, modname, remove_comments=True):
         filename = self._find_module(modname)
         s = misc._read_file(filename)
-        s = misc._comment_remover(s)
+        if remove_comments:
+            s = misc._comment_remover(s).replace("  ", " ").replace(f"{modname}(", f"{modname} (")
 
         # extract relevant module
-        s = re.sub(rf".*\bmodule *{modname}\b", f"module {modname} ", s, flags=re.S) # remove everything before relevant module
-        s = re.sub(r"\bendmodule\b.*", "", s) # remove everything after relevant module
+        #s = re.sub(rf".*?\bmodule *{modname}\b", f"module {modname} ", s, flags=re.S) # remove everything before relevant module
+        #s = re.sub(r"\bendmodule\b.*", "", s, flags=re.DOTALL) # remove everything after relevant module
+        # performance problems - rewrote without regex
+        while not s.startswith(f"module {modname} "):
+            self._assert(f"module {modname} " in s, f"failed to extract module {modname} from {filename}", fatal=True)
+            replace = s.split(f"module {modname} ")[0]
+            s = s.replace(replace, "", 1)
+        s = s.split("endmodule")[0] + " endmodule"
+        return s
+
+    def _empty_module(self, modname):
+        s = self._extract_module(modname=modname, remove_comments=True)
 
         # ansi declare
         begin = re.findall(r"\bmodule\b[\s\S]*?;", s)
