@@ -21,6 +21,7 @@ import numpy as np
 
 from p2v_clock import p2v_clock as clock
 import p2v_misc as misc
+import p2v_tools
 
 PASS_STATUS = "PASSED"
 FAIL_STATUS = "FAILED"
@@ -457,6 +458,7 @@ class p2v_tb():
         if last_line == misc._remark_line(SYN_ON):
             self._parent._rm_line(last_idx)
         else:
+            self._parent.line(p2v_tools.lint_off())
             self._parent.remark(SYN_OFF)
 
     def syn_on(self):
@@ -474,3 +476,4 @@ class p2v_tb():
             self._parent._rm_line(last_idx)
         else:
             self._parent.remark(SYN_ON)
+            self._parent.line(p2v_tools.lint_on())

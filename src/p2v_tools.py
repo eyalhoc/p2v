@@ -18,7 +18,6 @@ import os
 import subprocess
 
 import p2v_misc as misc
-import p2v_tb as tb
 
 
 def system(dirname, outdir, cmd, logfile, log_out=True, log_err=True):
@@ -139,15 +138,15 @@ def comp(dirname, outdir, modname=None, search=None, libs=None):
     success = os.path.isfile(ofile)
     return full_logfile, success
 
-def sim(dirname, outdir, err_str=None, pass_str=tb.PASS_STATUS):
+def sim(dirname, outdir, pass_str, err_str=None):
     """
     Run simulation on Verilog file.
 
     Args:
         dirname(str): directory of Verilog file
         outdir(str): directory for log file
-        err_str(list): string that count as error if detected in log file
         pass_str(str): string that marks a successful simulation
+        err_str(list): string that count as error if detected in log file
 
     Returns:
         full path of logfile and a boolean if simulation completed successfully

@@ -35,7 +35,7 @@ from p2v_clock import p2v_clock as clock
 from p2v_clock import default_clk
 from p2v_signal import p2v_signal
 from p2v_connect import p2v_connect
-from p2v_tb import p2v_tb
+from p2v_tb import p2v_tb, PASS_STATUS
 import p2v_slang as slang
 import p2v_tools
 
@@ -62,11 +62,11 @@ class p2v():
 
         if parent is None:
             self._outfiles = {}
-            self._connects = {}
             self._modules = {}
             self._bbox = {}
             self._processes = []
             self._libs = []
+            self._cache = {"files":{}, "ports":{}, "conn":{}}
             self._depth = 0
             if parse:
                 self._errors = []
@@ -80,16 +80,18 @@ class p2v():
         else:
             self._args = parent._args
             try:
+                # create new tb instance to sort out parent links but use previous seed
                 self.tb = p2v_tb(self, seed=self._parent.tb.seed, set_seed=False) # pylint: disable=invalid-name
             except AttributeError:
+                # create first tb instance and generate seed
                 self.tb = p2v_tb(self, seed=self._args.seed, max_seed=MAX_SEED, set_seed=True)
             self._logger = parent._logger
             self._outfiles = parent._outfiles
-            self._connects = parent._connects
             self._modules = parent._modules
             self._bbox = parent._bbox
             self._processes = parent._processes
             self._libs = parent._libs
+            self._cache = parent._cache
             self._errors = parent._errors
             self._err_num = parent._err_num
             self._depth = parent._depth + 1
@@ -239,7 +241,7 @@ class p2v():
         if self._args.sim:
             if self._assert(p2v_tools.en[p2v_tools.SIM_BIN], f"cannot perform verilog simulation, {p2v_tools.SIM_BIN} is not installed", warning=self._args.allow_missing_tools):
                 if self._comp():
-                    logfile, success = p2v_tools.sim(dirname=self._args.outdir, outdir=self._args.outdir)
+                    logfile, success = p2v_tools.sim(dirname=self._args.outdir, outdir=self._args.outdir, pass_str=PASS_STATUS)
                     if self._assert(success, f"verilog simulation failed, logfile: {logfile}"):
                         self._logger.info("verilog simulation completed successfully")
                         return True
@@ -470,11 +472,11 @@ class p2v():
                 self._processes.append(p2v_tools.indent(outfile))
 
     def _exists(self):
-        return self._modname in self._connects
+        return self._modname in self._cache["conn"]
 
     def _get_connects(self, parent, modname, signals, params):
         connects = p2v_connect(parent, modname, signals, params=params)
-        self._connects[modname] = connects
+        self._cache["conn"][modname] = connects
         return connects
 
     def _get_current_line(self):
@@ -654,6 +656,8 @@ class p2v():
         return None
 
     def _find_file(self, filename, allow_dir=False, allow=False):
+        if filename in self._cache["files"]:
+            return self._cache["files"][filename]
         found = None
         for dirname in self._search:
             fullname = os.path.join(dirname, filename)
@@ -661,8 +665,9 @@ class p2v():
                 self._assert(found is None, f"found different versions of file in srarch path: {found} {fullname}")
                 found = fullname
             elif allow_dir and os.path.isdir(fullname):
-                return fullname
+                found = fullname
         if found is not None:
+            self._cache["files"][filename] = found
             return found
         if not allow:
             if os.path.isabs(filename):
@@ -682,6 +687,9 @@ class p2v():
         for e in ext:
             filename = self._find_file(modname + e, allow=True)
             if filename is not None:
+                if self._grep(rf"\Wmodule *{modname}\W", filename) == 0:
+                    self._assert(self._grep(rf"\Wmodule *{modname.upper()}\W", filename) == 0, f"could not find {modname} in {filename} but found the module there in uppercase", fatal=True)
+                    self._assert(self._grep(rf"\Wmodule *{modname.lower()}\W", filename) == 0, f"could not find {modname} in {filename} but found the module there in lowercase", fatal=True)
                 if self._grep(r"\Wmodule ", filename) > 1 and filename not in self._libs: # multiple module file
                     self._libs.append(filename)
                 return filename
@@ -764,10 +772,14 @@ class p2v():
         self._assert_type(modname, str)
         if params is None:
             params = {}
+        if modname in self._cache["ports"]:
+            return self._cache["ports"][modname]
         filename = self._find_module(modname)
         ast = slang.get_ast(filename, modname, params=params)
         self._assert(ast is not None, f"failed to parse verilog file {filename}, manually create wrapper for module", fatal=True)
-        return slang.get_ports(ast)
+        ports =  slang.get_ports(ast)
+        self._cache["ports"][modname] = ports
+        return ports
 
     def _assign_clocks(self, tgt, src):
         self._assert_type(tgt, clock)
@@ -963,7 +975,7 @@ class p2v():
                     f"module name should be explicitly set generated name {self._modname} of {len(self._modname)} characters exceeds max od {MAX_MODNAME}", fatal=True)
         exists = self._exists()
         if exists:
-            self._signals = self._connects[self._modname]._signals
+            self._signals = self._cache["conn"][self._modname]._signals
             if module_locals != self._modules[self._modname]:
                 for name in module_locals:
                     if not name.startswith("_"):
@@ -1374,8 +1386,8 @@ class p2v():
         self._assert_type(params, dict)
         if self._exists():
             self._assert(modname not in self._outfiles, f"module previosuly created with verilog module name {modname}", fatal=True)
-            self._connects[modname]._parent = self
-            return self._connects[modname]
+            self._cache["conn"][modname]._parent = self
+            return self._cache["conn"][modname]
         ports = self._get_verilog_ports(modname, params=params)
         if self._args.lint:
             self._write_empty_module(modname)
@@ -1524,8 +1536,8 @@ class p2v():
             p2v_connects struct with connectivity information
         """
         if self._exists():
-            self._connects[self._modname]._parent = self._parent
-            return self._connects[self._modname]
+            self._cache["conn"][self._modname]._parent = self._parent
+            return self._cache["conn"][self._modname]
         self._assert(self._modname is not None, "module name was not set (set_modname() was not called)", fatal=True)
         self._assert(self._modname not in self._bbox, f"module {self._modname} previosuly used as verilog module", fatal=True)
         self._check_signals()
