@@ -447,33 +447,42 @@ class p2v_tb():
     def syn_off(self):
         """
         Start of non-synthesizable code.
-
-        Args:
-            NA
-
-        Returns:
-            None
         """
+        self.lint_off()
         last_idx, last_line = self._parent._get_last_line(skip_remark=False)
         if last_line == misc._remark_line(SYN_ON):
             self._parent._rm_line(last_idx)
         else:
-            self._parent.line(p2v_tools.lint_off())
             self._parent.remark(SYN_OFF)
 
     def syn_on(self):
         """
         End of non-synthesizable code.
-
-        Args:
-            NA
-
-        Returns:
-            None
         """
         last_idx, last_line = self._parent._get_last_line(skip_remark=False)
         if last_line == misc._remark_line(SYN_OFF):
             self._parent._rm_line(last_idx)
         else:
             self._parent.remark(SYN_ON)
+        self.lint_on()
+
+    def lint_off(self):
+        """
+        Start of non-lintable code.
+        """
+        last_idx, last_line = self._parent._get_last_line(skip_remark=False)
+        if last_line == p2v_tools.lint_on():
+            self._parent._rm_line(last_idx)
+        else:
+            self._parent.line("")
+            self._parent.line(p2v_tools.lint_off())
+
+    def lint_on(self):
+        """
+        End of non-lintable code.
+        """
+        last_idx, last_line = self._parent._get_last_line(skip_remark=False)
+        if last_line == p2v_tools.lint_off():
+            self._parent._rm_line(last_idx)
+        else:
             self._parent.line(p2v_tools.lint_on())

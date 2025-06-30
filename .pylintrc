@@ -4,7 +4,7 @@ good-names=c,s,l,n,m,x,y,z,i,j,q,e
 
 [DESIGN]
 class-naming-style=snake_case
-max-args=8
+max-args=10
 max-attributes=20
 max-locals=20
 max-statements=64
