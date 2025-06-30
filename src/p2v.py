@@ -52,9 +52,10 @@ class p2v():
     This is the main p2v class. All p2v modules inherit this class.
     """
 
-    def __init__(self, parent=None, modname=None, parse=True):
+    def __init__(self, parent=None, modname=None, parse=True, register=True):
         self._parent = parent
         self._modname = modname
+        self._register = register
         self._signals = {}
         self._lines = []
         self._params = {}
@@ -315,9 +316,10 @@ class p2v():
                     process.wait()
 
                 self._logger.info(f"verilog generation completed {misc.cond(self._err_num == 0, 'successfully', 'with errors')} ({misc.ceil(time.time() - _start_time)} sec)")
-                if top_connect is not None and self._err_num == 0:
+                if self._err_num == 0:
                     self._lint()
-                    self._sim()
+                    if top_connect:
+                        self._sim()
             else:
                 self.__init__(None, parse=False)
                 if isinstance(self._args.params, list):
@@ -688,8 +690,10 @@ class p2v():
             filename = self._find_file(modname + e, allow=True)
             if filename is not None:
                 if self._grep(rf"\Wmodule *{modname}\W", filename) == 0:
-                    self._assert(self._grep(rf"\Wmodule *{modname.upper()}\W", filename) == 0, f"could not find {modname} in {filename} but found the module there in uppercase", fatal=True)
-                    self._assert(self._grep(rf"\Wmodule *{modname.lower()}\W", filename) == 0, f"could not find {modname} in {filename} but found the module there in lowercase", fatal=True)
+                    self._assert(self._grep(rf"\Wmodule *{modname.upper()}\W", filename) == 0, \
+                                 f"could not find {modname} in {filename} but found the module there in uppercase {modname.upper()}", fatal=True)
+                    self._assert(self._grep(rf"\Wmodule *{modname.lower()}\W", filename) == 0, \
+                                 f"could not find {modname} in {filename} but found the module there in lowercase {modname.lower()}", fatal=True)
                 if self._grep(r"\Wmodule ", filename) > 1 and filename not in self._libs: # multiple module file
                     self._libs.append(filename)
                 return filename
@@ -899,6 +903,11 @@ class p2v():
             val_str = val._declare()
         elif isinstance(val, str):
             val_str = f'"{val}"'
+        elif isinstance(val, list):
+            list_str = []
+            for v in val:
+                list_str.append(self._get_param_str(v))
+            val_str = "[" + ", ".join(list_str) + "]"
         else:
             val_str = str(val)
         if len(val_str) > MAX_VAR_STR:
@@ -988,7 +997,7 @@ class p2v():
             self._modules[self._modname] = module_locals
         if self._parent is not None:
             self._parent._sons.append(self._modname)
-        if self._parent.__class__.__name__ != self.__class__.__name__: # ignore nested recursions
+        if self._register and self._parent.__class__.__name__ != self.__class__.__name__: # ignore nested recursions
             self.tb.register_test(module_locals)
         return exists
 

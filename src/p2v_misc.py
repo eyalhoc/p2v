@@ -319,10 +319,10 @@ def pad(left, name, right=0, val=0):
     Returns:
         Verilog code
     """
-    assert isinstance(name, str), name
-    assert isinstance(left, int) and left >= 0, left
-    assert isinstance(right, int) and right >= 0, right
-    assert isinstance(val, int), val
+    assert isinstance(name, str), f"illegal pad signal {name}"
+    assert isinstance(left, int) and left >= 0, f"illegal left padding {left}"
+    assert isinstance(right, int) and right >= 0, f"illegal left padding {right}"
+    assert isinstance(val, int), f"illegal pad value {val}"
     vals = []
     if left > 0:
         vals.append(dec(val, left))
