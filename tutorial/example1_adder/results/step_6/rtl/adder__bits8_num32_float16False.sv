@@ -38,11 +38,11 @@ module adder__bits8_num32_float16False (
     output logic valid_out
 );
 
-    // module parameters:
-    // clk = clk_arst() (p2v_clock)
-    // bits = 8 (int) # data width
-    // num = 32 (int) # number of inputs
-    // float16 = False (bool) # use a float16 adder
+    // adder module parameters:
+    //  * clk = clk_arst() (p2v_clock)
+    //  * bits = 8 (int) # data width
+    //  * num = 32 (int) # number of inputs
+    //  * float16 = False (bool) # use a float16 adder
 
     logic [7:0] o0;
     logic valid_out0;

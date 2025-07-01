@@ -27,7 +27,6 @@ import traceback
 import inspect
 import argparse
 import csv
-import secrets # required internally by np.random # pylint: disable=unused-import
 
 import p2v_misc as misc
 from p2v_clock import clk_0rst, clk_arst, clk_srst, clk_2rst # needed for clock loading from gen csv file # # pylint: disable=unused-import
@@ -203,7 +202,6 @@ class p2v():
         return logger
 
     def _build_seach_path(self):
-        sys.path = []
         search = [os.getcwd()]
         for incdir in [os.path.dirname(self._get_top_filename())] + self._args.I + self._args.Im:
             dirname = os.path.abspath(incdir)
@@ -289,7 +287,8 @@ class p2v():
         except AttributeError:
             self.tb = p2v_tb(self, seed=self._args.seed, max_seed=MAX_SEED)
         misc._write_file(os.path.join(self._args.outdir, f"{__class__.__name__}.cmd"), self._get_cmd()) # write command line to file
-        self._logger.info(f"starting with seed {self.tb.seed}")
+        if self._args.sim or self._args.gen_num is not None:
+            self._logger.info(f"starting with seed {self.tb.seed}")
 
         gen_loop = self._args.gen_num is not None or isinstance(self._args.params, list)
         if gen_loop:
@@ -360,7 +359,7 @@ class p2v():
         parser.add_argument("-prefix", type=str, default="", help="prefix all files")
         parser.add_argument("-params", type=self._param_type, default={}, help="top module parameters, dictionary or csv file")
         parser.add_argument("-stop_on", default="CRITICAL", choices=["WARNING", "ERROR", "CRITICAL"], help="stop after non critical errors")
-        parser.add_argument("-log", default="DEBUG", choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], help="logging level")
+        parser.add_argument("-log", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], help="logging level")
         parser.add_argument("-allow_missing_tools", action="store_true", default=False, help="do not stop on missing dependencies")
         parser.add_argument("-lint", action="store_true", default=True, help="enable lint")
         parser.add_argument("--lint", action="store_false", default=False, help="supress lint")
@@ -372,6 +371,7 @@ class p2v():
         parser.add_argument("-indent", action="store_true", default=True, help="enable indent")
         parser.add_argument("--indent", action="store_false", default=False, help="supress indent")
         parser.add_argument("-header", type=str, help="copyright header for generated files")
+        parser.add_argument("-help", action="store_true", default=False, help="print module top parameters")
         parser.add_argument("-debug", action="store_true", default=False, help=argparse.SUPPRESS)
         return parser.parse_args()
 
@@ -905,8 +905,8 @@ class p2v():
             val_str = f'"{val}"'
         elif isinstance(val, list):
             list_str = []
-            for v in val:
-                list_str.append(self._get_param_str(v))
+            for next_val in val:
+                list_str.append(self._get_param_str(next_val))
             val_str = "[" + ", ".join(list_str) + "]"
         else:
             val_str = str(val)
@@ -917,9 +917,9 @@ class p2v():
     def _get_module_params(self, module_locals, suffix=True):
         simple_types = (int, bool, str)
 
+        comments = [f"{self._get_clsname()} module parameters:"]
         suf = []
         if len(module_locals) > 0:
-            self.remark("module parameters:")
             for name in module_locals:
                 if name.startswith("_"): # local parameter for set_param() modifications
                     continue
@@ -934,7 +934,7 @@ class p2v():
                 type_str = val.__class__.__name__
 
                 if param_suffix is None:
-                    param_remark += " (no affect on module name)"
+                    param_remark += " (no effect on module name)"
                 elif param_suffix != "":
                     suf.append(str(param_suffix))
                 else:
@@ -945,8 +945,16 @@ class p2v():
                     if isinstance(val, simple_types):
                         suf.append(f"{name}{val}")
 
-                self.remark(f"{name} = {val_str} ({type_str}){param_remark}")
-            self.line()
+                comments.append(f" * {name} = {val_str} ({type_str}){param_remark}")
+
+        if self._args.help:
+            for comment in comments:
+                print(comment)
+            sys.exit(0)
+
+        for comment in comments:
+            self.remark(comment)
+        self.line()
         return suf
 
 
@@ -1555,7 +1563,7 @@ class p2v():
         outfile = self._get_outfile()
         self._update_outhash(self._modname, outfile, lines)
         self._write_lines(outfile, lines)
-        self._logger.debug("created: %s", os.path.basename(outfile))
+        self._logger.info("created: %s", os.path.basename(outfile))
         if self._parent is not None:
             self._parent._err_num += self._err_num
         return self._get_connects(parent=self._parent, modname=self._modname, signals=self._signals, params={})
