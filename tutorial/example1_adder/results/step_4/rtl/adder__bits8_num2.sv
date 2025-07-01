@@ -8,10 +8,10 @@ module adder__bits8_num2 (
     output logic valid_out
 );
 
-    // module parameters:
-    // clk = clk_arst() (p2v_clock)
-    // bits = 8 (int) # data width
-    // num = 2 (int) # number of inputs
+    // adder module parameters:
+    //  * clk = clk_arst() (p2v_clock)
+    //  * bits = 8 (int) # data width
+    //  * num = 2 (int) # number of inputs
 
     always_ff @(posedge clk or negedge rst_n)
         if (!rst_n) o <= 8'd0;

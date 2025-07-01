@@ -8,11 +8,11 @@ module adder__clk_bits32_num2_float16False (
     output logic valid_out
 );
 
-    // module parameters:
-    // clk = "clock('clk', rst_n='resetn')" (p2v_clock)
-    // bits = 32 (int) # data width
-    // num = 2 (int) # number of inputs
-    // float16 = False (bool) # use a float16 adder
+    // adder module parameters:
+    //  * clk = "clock('clk', rst_n='resetn')" (p2v_clock)
+    //  * bits = 32 (int) # data width
+    //  * num = 2 (int) # number of inputs
+    //  * float16 = False (bool) # use a float16 adder
 
     logic [31:0] o_pre;
     assign o_pre = i0 + i1;
