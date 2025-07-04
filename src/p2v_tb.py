@@ -85,8 +85,7 @@ class p2v_tb():
             actual_min_val, actual_max_val = 0, min_val - 1
         else:
             actual_min_val, actual_max_val = min_val, max_val
-        if self.seed == 1:
-            return actual_min_val
+        self._parent.assert_static(actual_max_val >= actual_min_val, f"random max value {actual_max_val} is less than min value {actual_min_val}", fatal=True)
         return random.randint(actual_min_val, actual_max_val)
 
     def rand_hex(self, bits):
@@ -100,6 +99,7 @@ class p2v_tb():
             Verilog hex number
         """
         self._parent._assert_type(bits, int)
+        self._parent.assert_static(bits > 0, f"cannot generate a hex number with {bits} bits")
         return misc.hex(self.rand_int(1<<bits), bits=bits)
 
     def rand_bool(self):

@@ -69,11 +69,11 @@ class tb_adder(p2v):
                 if float16:
                     val = val.view(np.uint16)
                     
-                input_vec.append(misc.hex(val, bits))
+                input_vec.append(misc.hex(int(val), bits))
             if float16:
                 input_sum = input_sum.view(np.uint16)
             self.line(f"data_in_q.push_back({misc.concat(input_vec)});")
-            self.line(f"expected_q.push_back({misc.hex(input_sum, bits)});")
+            self.line(f"expected_q.push_back({misc.hex(int(input_sum), bits)});")
         self.line(f"""
                         end
                    """)

@@ -12,7 +12,7 @@ do
 	echo ""
 	echo "starting step $step"
 	if [ -e $SCRIPT_DIR/step_$step/tb_adder.py ];then
-		python3 $SCRIPT_DIR/step_$step/tb_adder.py -sim -outdir $OUTDIR/step_$step  -params '{"size":4}' -sim_args '{"bits":32,"num":4}' -allow_missing_tools
+		python3 $SCRIPT_DIR/step_$step/tb_adder.py -sim -outdir $OUTDIR/step_$step  -params '{"size":4}' -sim_args '{"bits":16,"num":4}' -allow_missing_tools
 	else
 		python3 $SCRIPT_DIR/step_$step/adder.py -outdir $OUTDIR/step_$step -allow_missing_tools
 	fi
