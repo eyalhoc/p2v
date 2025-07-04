@@ -368,7 +368,7 @@ def hex(num, bits=None, add_sep=4, prefix="'h"):
     Returns:
         Verilog code
     """
-    assert isinstance(num, int), num
+    assert isinstance(num, int), f"hex() expects integer value but got {type(num)}"
     assert isinstance(bits, (type(None), int)), bits
     assert isinstance(add_sep, int) and add_sep >= 0, add_sep
     assert isinstance(prefix, str), prefix

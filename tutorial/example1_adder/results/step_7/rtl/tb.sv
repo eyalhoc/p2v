@@ -10,9 +10,9 @@ module tb ();
     initial
         forever begin
             clk = 0;
-            #1;
+            #3;
             clk = 1;
-            #1;
+            #3;
         end
 
 
@@ -25,21 +25,21 @@ module tb ();
     end
 
     logic valid;
-    logic [31:0] i0;
-    initial i0 = 32'd0;
+    logic [15:0] i0;
+    initial i0 = 16'd0;
 
-    logic [31:0] i1;
-    initial i1 = 32'd0;
+    logic [15:0] i1;
+    initial i1 = 16'd0;
 
-    logic [31:0] i2;
-    initial i2 = 32'd0;
+    logic [15:0] i2;
+    initial i2 = 16'd0;
 
-    logic [31:0] i3;
-    initial i3 = 32'd0;
+    logic [15:0] i3;
+    initial i3 = 16'd0;
 
-    logic [31:0] o;
+    logic [15:0] o;
     logic valid_out;
-    adder__clk_bits32_num4_float16False adder (
+    adder__clk_bits16_num4_float16False adder (
         .clk(clk),  // input
         .resetn(resetn),  // input
         .valid(valid),  // input
@@ -58,25 +58,25 @@ module tb ();
         if (!resetn) valid <= 1'd0;
         else valid <= en;
 
-    reg   [127:0] data_in_q [$];
-    reg   [ 31:0] expected_q[$];
-    logic [127:0] data_in;
-    initial data_in = 128'd0;
+    reg   [63:0] data_in_q [$];
+    reg   [15:0] expected_q[$];
+    logic [63:0] data_in;
+    initial data_in = 64'd0;
 
-    logic [31:0] expected;
-    initial expected = 32'd0;
+    logic [15:0] expected;
+    initial expected = 16'd0;
 
 
     initial begin
 
-        data_in_q.push_back({4{32'h0000_0000}});
-        expected_q.push_back(32'h0000_0000);
-        data_in_q.push_back({4{32'h0000_0000}});
-        expected_q.push_back(32'h0000_0000);
-        data_in_q.push_back({4{32'h0000_0000}});
-        expected_q.push_back(32'h0000_0000);
-        data_in_q.push_back({4{32'h0000_0000}});
-        expected_q.push_back(32'h0000_0000);
+        data_in_q.push_back({16'h8298, 16'h3c5f, 16'hfda9, 16'he623});
+        expected_q.push_back(16'ha2c3);
+        data_in_q.push_back({16'hf1ca, 16'hc25c, 16'h6b7f, 16'h300e});
+        expected_q.push_back(16'h4fb3);
+        data_in_q.push_back({16'hf9c8, 16'h0e83, 16'hc795, 16'hdd93});
+        expected_q.push_back(16'had73);
+        data_in_q.push_back({16'h0114, 16'he409, 16'h885c, 16'h7520});
+        expected_q.push_back(16'he299);
 
     end
 

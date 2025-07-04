@@ -10,9 +10,9 @@ module tb ();
     initial
         forever begin
             clk = 0;
-            #1;
+            #3;
             clk = 1;
-            #1;
+            #3;
         end
 
 
@@ -27,21 +27,21 @@ module tb ();
     logic valid;
     initial valid = 1'd0;
 
-    logic [31:0] i0;
-    initial i0 = 32'd0;
+    logic [15:0] i0;
+    initial i0 = 16'd0;
 
-    logic [31:0] i1;
-    initial i1 = 32'd0;
+    logic [15:0] i1;
+    initial i1 = 16'd0;
 
-    logic [31:0] i2;
-    initial i2 = 32'd0;
+    logic [15:0] i2;
+    initial i2 = 16'd0;
 
-    logic [31:0] i3;
-    initial i3 = 32'd0;
+    logic [15:0] i3;
+    initial i3 = 16'd0;
 
-    logic [31:0] o;
+    logic [15:0] o;
     logic valid_out;
-    adder__clk_bits32_num4_float16False adder (
+    adder__clk_bits16_num4_float16True adder (
         .clk(clk),  // input
         .resetn(resetn),  // input
         .valid(valid),  // input
@@ -67,27 +67,27 @@ module tb ();
             repeat ($urandom(_gen_busy_en_seed) % 10) @(posedge clk);
         end
 
-    reg [127:0] data_in_q [$];
-    reg [ 31:0] expected_q[$];
+    reg [63:0] data_in_q [$];
+    reg [15:0] expected_q[$];
 
     initial begin
 
-        data_in_q.push_back({4{32'h0000_0000}});
-        expected_q.push_back(32'h0000_0000);
-        data_in_q.push_back({4{32'h0000_0000}});
-        expected_q.push_back(32'h0000_0000);
-        data_in_q.push_back({4{32'h0000_0000}});
-        expected_q.push_back(32'h0000_0000);
-        data_in_q.push_back({4{32'h0000_0000}});
-        expected_q.push_back(32'h0000_0000);
+        data_in_q.push_back({16'h36ac, 16'h39c3, 16'h077f, 16'h34d6});
+        expected_q.push_back(16'h3dc2);
+        data_in_q.push_back({16'h30b2, 16'h2de9, 16'h31f6, 16'h3587});
+        expected_q.push_back(16'h3a2a);
+        data_in_q.push_back({16'h3659, 16'h384f, 16'h36b5, 16'h397b});
+        expected_q.push_back(16'h4014);
+        data_in_q.push_back({16'h328b, 16'h3b06, 16'h2703, 16'h395d});
+        expected_q.push_back(16'h3f1e);
 
     end
 
-    logic [127:0] data_in;
-    initial data_in = 128'd0;
+    logic [63:0] data_in;
+    initial data_in = 64'd0;
 
-    logic [31:0] expected;
-    initial expected = 32'd0;
+    logic [15:0] expected;
+    initial expected = 16'd0;
 
 
     initial begin
@@ -110,7 +110,7 @@ module tb ();
     always @(posedge clk)
         if (valid_out) begin
             expected = expected_q.pop_front();
-            if (o !== expected) begin
+            if (o > expected ? (o - expected) > 64 : (expected - o) > 64) begin
                 $display("%0d: test FAILED (mismatch expected: 0x%0h, actual: 0x%0h)", $time,
                          expected, o);
                 #10;

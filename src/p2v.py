@@ -43,6 +43,7 @@ MAX_DEPTH = 16
 MAX_VAR_STR = 64
 MAX_SEED = 64 * 1024
 MAX_LOOP = 5
+MAX_BITS = 8 * 1024
 
 SIGNAL_TYPES = [clock, dict, int, float, list, str, tuple]
 
@@ -318,7 +319,8 @@ class p2v():
                 if self._err_num == 0:
                     self._lint()
                     if top_connect:
-                        self._sim()
+                        if not self._sim():
+                            break
             else:
                 self.__init__(None, parse=False)
                 if isinstance(self._args.params, list):
@@ -406,6 +408,8 @@ class p2v():
             return self._signals[signal.name]
         self._assert(self._modname is not None, "module name was not set (set_modname() was not called)", fatal=True)
         if self._assert(signal.name not in self._signals, f"{signal.name} was previously defined"):
+            if isinstance(signal.bits, int):
+                self._assert(abs(signal.bits) <= MAX_BITS, f"{signal.name} uses {abs(signal.bits)} bits which exceeds maximum of {MAX_BITS}", warning=True)
             self._signals[signal.name] = signal
         return signal
 
@@ -694,15 +698,17 @@ class p2v():
                                  f"could not find {modname} in {filename} but found the module there in uppercase {modname.upper()}", fatal=True)
                     self._assert(self._grep(rf"\Wmodule *{modname.lower()}\W", filename) == 0, \
                                  f"could not find {modname} in {filename} but found the module there in lowercase {modname.lower()}", fatal=True)
-                if self._grep(r"\Wmodule ", filename) > 1 and filename not in self._libs: # multiple module file
-                    self._libs.append(filename)
-                return filename
+                if self._grep(r"\Wmodule ", filename) > 1:
+                    if filename not in self._libs: # multiple module file
+                        self._libs.append(filename)
+                    return filename
         # coudln't find file maybe it is in library
         for dirname in self._search:
             for e in ext:
                 for filename in glob.glob(f"{dirname}/*{e}"):
-                    if self._grep(rf"\Wmodule *{modname}\W", filename) and filename not in self._libs:
-                        self._libs.append(filename)
+                    if self._grep(rf"\Wmodule *{modname}\W", filename):
+                        if filename not in self._libs:
+                            self._libs.append(filename)
                         return filename
         if not allow:
             self._raise(f"could not find file for module {modname} in:\n\t" + "\n\t".join(self._search))
@@ -997,7 +1003,7 @@ class p2v():
                 for name in module_locals:
                     if not name.startswith("_"):
                         self._assert(module_locals[name] == self._modules[self._modname][name], \
-                        f"module {self._modname} was generated with different {name} values but it does not affect module name", fatal=True)
+                        f"module {self._modname} was recreated with different content (variable {name} does not affect module name)", fatal=True)
         else:
             clsname = self._get_clsname()
             if clsname != "_test":
@@ -1415,6 +1421,7 @@ class p2v():
         Assertion on Verilog signals with clock (ignores condition during async reset if present).
 
         Args:
+            clk([clock, str]): triggering clock or trigerring event
             condition(str): Error occurs when condition is True
             message(str): Error message
             params([str, list]): parameters for Verilog % format string
@@ -1457,6 +1464,7 @@ class p2v():
         Assertion on Verilog signals with clock (ignores condition during async reset if present).
 
         Args:
+            clk([clock, str]): triggering clock or trigerring event
             condition(str): Error occurs when condition is False
             message(str): Error message
             params([str, list]): parameters for Verilog % format string
@@ -1496,6 +1504,8 @@ class p2v():
         if self._exists():
             return ""
         full_messgae = f'"{message}"'
+        if isinstance(params, str):
+            params = [params]
         for param in params:
             full_messgae += f", {param}"
         return f"""if ({condition}) {misc.cond(fatal, f'$fatal(0, {full_messgae});', f'$error("{full_messgae}");')}"""
