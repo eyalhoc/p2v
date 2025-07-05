@@ -65,9 +65,9 @@ class p2v():
             self._outfiles = {}
             self._modules = {}
             self._bbox = {}
-            self._processes = []
             self._libs = []
-            self._cache = {"files":{}, "ports":{}, "conn":{}}
+            self._processes = []
+            self._cache = {"files":{}, "modules":{}, "ports":{}, "conn":{}, "src":[]}
             self._depth = 0
             if parse:
                 self._errors = []
@@ -90,14 +90,17 @@ class p2v():
             self._outfiles = parent._outfiles
             self._modules = parent._modules
             self._bbox = parent._bbox
+            self._libs =  parent._libs
             self._processes = parent._processes
-            self._libs = parent._libs
             self._cache = parent._cache
             self._errors = parent._errors
             self._err_num = parent._err_num
             self._depth = parent._depth + 1
             self._search = parent._search
 
+        srcfile = __import__(self._get_clsname()).__file__
+        if srcfile not in self._cache["src"]:
+            self._cache["src"].append(srcfile)
         self._assert(self._depth < MAX_DEPTH, f"reached max instance depth of {MAX_DEPTH}", fatal=True)
 
     def _get_stack(self):
@@ -204,7 +207,11 @@ class p2v():
 
     def _build_seach_path(self):
         search = [os.getcwd()]
-        for incdir in [os.path.dirname(self._get_top_filename())] + self._args.I + self._args.Im:
+        incdirs = [os.path.dirname(self._get_top_filename())] + self._args.I
+        for incdir in self._args.Im:
+            if os.path.isdir(incdir):
+                incdirs.append(incdir)
+        for incdir in incdirs:
             dirname = os.path.abspath(incdir)
             if self._assert(os.path.isdir(dirname), f"search directory {incdir} does not exist (included by -I argument)", fatal=True):
                 if dirname not in search:
@@ -330,9 +337,27 @@ class p2v():
                 top_class.module(self, **args)
                 self._lint()
 
+        self._write_srcfiles()
         rtrn = int(self._err_num > 0)
         self._logger.info(f"completed {misc.cond(rtrn==0, 'successfully', 'with errors')}")
         return rtrn
+
+    def _write_srcfiles(self):
+        srcfiles = self._cache["src"] + list(self._cache["modules"].values())
+        misc._write_file(os.path.join(self._args.outdir, "src.list"), "\n".join(srcfiles), append=True)
+        dirnames = []
+        for srcfile in srcfiles:
+            dirname = os.path.dirname(srcfile)
+            if dirname not in dirnames:
+                dirnames.append(dirname)
+
+        incdirs = self._args.I
+        for incdir in self._args.Im:
+            if os.path.isdir(incdir):
+                incdirs.append(incdir)
+        for incdir in incdirs:
+            incdir = os.path.abspath(incdir)
+            self._assert(incdir in dirnames, f"include directory {incdir} never used", warning=True)
 
     def _param_type(self, value):
         if os.path.isfile(value):
@@ -686,6 +711,8 @@ class p2v():
         return len(re.findall(pattern, misc._read_file(filename)))
 
     def _find_module(self, modname, ext=None, allow=False):
+        if modname in self._cache["modules"]:
+            return self._cache["modules"][modname]
         if ext is None:
             ext = [".v", ".sv"]
         if isinstance(ext, str):
@@ -698,17 +725,17 @@ class p2v():
                                  f"could not find {modname} in {filename} but found the module there in uppercase {modname.upper()}", fatal=True)
                     self._assert(self._grep(rf"\Wmodule *{modname.lower()}\W", filename) == 0, \
                                  f"could not find {modname} in {filename} but found the module there in lowercase {modname.lower()}", fatal=True)
-                if self._grep(r"\Wmodule ", filename) > 1:
-                    if filename not in self._libs: # multiple module file
-                        self._libs.append(filename)
-                    return filename
+                if self._grep(r"\Wmodule ", filename) > 1: # file has multiple modules
+                    self._libs.append(filename)
+                self._cache["modules"][modname] = filename
+                return filename
         # coudln't find file maybe it is in library
         for dirname in self._search:
             for e in ext:
-                for filename in glob.glob(f"{dirname}/*{e}"):
-                    if self._grep(rf"\Wmodule *{modname}\W", filename):
-                        if filename not in self._libs:
-                            self._libs.append(filename)
+                for filename in glob.glob(f"{dirname}/*{e}"): # look for module in all verilog files in path
+                    if self._grep(rf"\Wmodule *{modname}\W", filename): # found module in file that does not match module name
+                        self._libs.append(filename)
+                        self._cache["modules"][modname] = filename
                         return filename
         if not allow:
             self._raise(f"could not find file for module {modname} in:\n\t" + "\n\t".join(self._search))
@@ -1134,15 +1161,23 @@ class p2v():
         Insert a Verilog remark.
 
         Args:
-            comment([str, dict]): string comment or one comment like per dictionary pair
+            comment([str, dict, list]): string comment or one comment like per dictionary pair
 
         Returns:
             None
         """
-        self._assert_type(comment, [str, dict])
+        self._assert_type(comment, [str, dict, list])
         if isinstance(comment, dict):
             for key in comment:
                 self.remark(f"{key} = {comment[key]}")
+            self.line()
+        elif isinstance(comment, list):
+            line = self._get_current_line().replace(" ", "").split("#")[0]
+            self._check_line_balanced(line)
+            remark_val = line.split("remark(")[1][:-1]
+            if self._assert(len(remark_val) > 2 and remark_val[0] == "[" and remark_val[-1] == "]", f"unepxected reamrk {remark_val}"):
+                for n, name in enumerate(remark_val[1:-1].split(",")):
+                    self.remark(f"{name} = {comment[n]}")
             self.line()
         else:
             self.line("", remark=comment)
@@ -1572,6 +1607,7 @@ class p2v():
         lines = self._get_modlines(lint=lint)
         outfile = self._get_outfile()
         self._update_outhash(self._modname, outfile, lines)
+        # write Verilog file
         self._write_lines(outfile, lines)
         self._logger.info("created: %s", os.path.basename(outfile))
         if self._parent is not None:
