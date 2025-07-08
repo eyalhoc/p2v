@@ -53,6 +53,8 @@ class p2v_connect():
                 self._parent._assert(pin not in self._params, f"parameter {pin} was previosuly assigned")
                 self._params[pin] = wire
             else:
+                if isinstance(wire, int):
+                    wire = misc.dec(wire, self._signals[pin].bits)
                 self._parent._assert(isinstance(wire, str), f"wire {wire} is of type {misc._type2str(type(wire))} while expecting type str", fatal=True)
                 self._parent._assert(pin not in self._pins, f"pin {pin} was previosuly assigned")
                 if self._signals[pin].bits != 0:
@@ -99,7 +101,8 @@ class p2v_connect():
         if wire == "":
             wire = pin
         self._connect(pin, wire, kind="input")
-        self._parent._set_used(wire)
+        if not isinstance(wire, int):
+            self._parent._set_used(wire)
 
     def connect_out(self, pin, wire=""):
         """

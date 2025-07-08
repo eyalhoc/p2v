@@ -46,6 +46,9 @@ MAX_LOOP = 5
 MAX_BITS = 8 * 1024
 
 SIGNAL_TYPES = [clock, dict, int, float, list, str, tuple]
+ENUM_NAME = "__name"
+ENUM_BITS = "__bits"
+ENUM_DEFAULT = "DEFAULT"
 
 class p2v():
     """
@@ -837,9 +840,11 @@ class p2v():
             else:
                 self.assign(tgt.reset, src.reset)
 
-    def _get_strct_signals(self, strct, data_only=True, ctrl_only=False):
+    def _get_strct_signals(self, strct, data_only=True, ctrl_only=False, fields=None):
         signals = []
         for name in strct:
+            if fields is not None and name not in fields:
+                continue
             field_name = strct[name]
             if field_name in self._signals:
                 signal = self._signals[field_name]
@@ -1084,13 +1089,14 @@ class p2v():
             self._assert(condition, f"{name} = {var_str} failed to pass its assertions", fatal=True)
         self._params[name] = (var, remark, loose, suffix)
 
-    def get_fields(self, strct, attrib="name"):
+    def get_fields(self, strct, attrib="name", fields=None):
         """
         Get struct fields.
 
         Args:
             strct(dict): p2v struct
             attrib(str): field attribute to extract
+            fields(list): list of specific fields to extract
 
         Returns:
             list of field names (or other attribute)
@@ -1098,7 +1104,7 @@ class p2v():
         self._assert_type(strct, dict)
         self._assert_type(attrib, str)
         vals = []
-        signals = self._get_strct_signals(strct)
+        signals = self._get_strct_signals(strct, fields=fields)
         for signal in signals:
             if attrib == "name":
                 vals.append(signal.name)
@@ -1203,6 +1209,45 @@ class p2v():
         if local:
             self.line(f"localparam {name} = {val};", remark=self._get_remark())
 
+    def enum(self, names):
+        """
+        Declare an enumerated type.
+
+        Args:
+            names([list, dict]): enum names
+
+        Returns:
+            The enum dictionary
+        """
+        self._assert_type(names, [list, dict])
+        if self._exists():
+            return []
+
+        enum_name = self._get_current_line().split("=")[0].strip()
+        self._assert(misc._is_legal_name(enum_name), "enum() return value must be used by a Python variable", fatal=True)
+
+        if isinstance(names, list):
+            enum_names = {}
+            for n, name in enumerate(names):
+                enum_names[name] = n
+        else:
+            enum_names = names
+        self._assert(len(enum_names) > 0, "enumerated type cannot be empty", fatal=True)
+        max_val = 0
+        for name, val in enum_names.items():
+            self._assert(misc._is_legal_name(name), f"enumerated type {name} does not use a legal name", fatal=True)
+            self._assert(name != ENUM_DEFAULT, f"enum cannot use reserevd name {ENUM_DEFAULT}", fatal=True)
+            self._assert(isinstance(val, int), f"enumerated type {name} is of type {type(val)} while expecting type int", fatal=True)
+            max_val = max(max_val, val)
+        max_val_bin = misc.bin(max_val, add_sep=0, prefix=None)
+        enum_bits = len(max_val_bin)
+        for name, val in enum_names.items():
+            self.parameter(name, misc.dec(val, enum_bits), local=True)
+        self.line()
+        enum_names[ENUM_NAME] = enum_name
+        enum_names[ENUM_BITS] = enum_bits
+        return enum_names
+
     def input(self, name, bits=1):
         """
         Create an input port.
@@ -1280,6 +1325,10 @@ class p2v():
         self._assert_type(bits, SIGNAL_TYPES)
         self._assert_type(assign, [int, str, dict, None])
         self._assert_type(initial, [int, str, dict, None])
+
+        if isinstance(bits, dict) and ENUM_BITS in bits:
+            bits = bits[ENUM_BITS]
+
         if isinstance(name, clock):
             for net in name.get_nets():
                 self.logic(net)
@@ -1339,7 +1388,7 @@ class p2v():
                 self._set_used(src, drive=False)
                 self.line(f"{keyword} {tgt} = {src};", remark=self._get_remark())
 
-    def sample(self, clk, tgt, src, valid=None, reset_val=0, bits=None):
+    def sample(self, clk, tgt, src, valid=None, reset=None, reset_val=0, bits=None, bypass=False):
         """
         Sample signal using FFs.
 
@@ -1348,8 +1397,10 @@ class p2v():
             tgt(str): target signal
             src(str): source signal
             valid([str, None]): qualifier signal
+            reset([str, None]): sync reset
             reset_val([int, str]): reset values
             bits([int, None]): explicitly specify number of bits
+            bypass(bool): replace ff with async assignment
 
         Returns:
             None
@@ -1360,9 +1411,21 @@ class p2v():
         self._assert_type(src, str)
         self._assert_type(tgt, str)
         self._assert_type(valid, [str, None])
+        self._assert_type(reset, [str, None])
         self._assert_type(reset_val, [int, str])
         self._assert_type(bits, [int, None])
+        self._assert_type(bypass, bool)
         self._set_used(src, drive=False)
+        if valid is not None:
+            self.allow_unused(valid)
+        if reset is not None:
+            self.allow_unused(reset)
+
+        if bypass:
+            self.allow_unused(clk)
+            self.assign(tgt, src)
+            return
+
         if (tgt in self._signals and (self._signals[tgt].strct is not None)) or (src in self._signals and (self._signals[src].strct is not None)):
             self._sample_structs(clk, tgt, src, ext_valid=valid)
         else:
@@ -1383,8 +1446,13 @@ class p2v():
             conds = []
             if clk.rst_n is not None:
                 conds.append(f"if (!{clk.rst_n}) {tgt} <= {reset_val};")
+            sync_reset = []
             if clk.reset is not None:
-                conds.append(f"if ({clk.reset}) {tgt} <= {reset_val};")
+                sync_reset.append(clk.reset)
+            if reset is not None:
+                sync_reset.append(reset)
+            if len(sync_reset) > 0:
+                conds.append(f"if ({' | '.join(sync_reset)}) {tgt} <= {reset_val};")
             if valid is not None:
                 self._check_declared(valid)
                 self._set_used(valid)
@@ -1451,7 +1519,7 @@ class p2v():
             self._write_empty_module(modname)
         return self._get_connects(parent=self, modname=modname, signals=ports, params=params)
 
-    def assert_never(self, clk, condition, message, params=None, fatal=True):
+    def assert_never(self, clk, condition, message, params=None, name=None, fatal=True, property_type="assert"):
         """
         Assertion on Verilog signals with clock (ignores condition during async reset if present).
 
@@ -1460,7 +1528,9 @@ class p2v():
             condition(str): Error occurs when condition is True
             message(str): Error message
             params([str, list]): parameters for Verilog % format string
+            name([None, str]): Explicit assertion name
             fatal(bool): stop on error
+            property(str): assert or assume
 
         Returns:
             NA
@@ -1470,40 +1540,65 @@ class p2v():
         self._assert_type(condition, str)
         self._assert_type(message, str)
         self._assert_type(params, [str, list])
+        self._assert_type(name, [None, str])
         self._assert_type(fatal, bool)
+        self._assert_type(property_type, str)
+        self._assert(property_type in ["assert", "assume", "cover"], f"unknown assertion property {property_type}")
+        self._check_line_balanced(condition)
+
         if not self._exists():
-            name = misc._make_name_legal(message)
-            wire = f"assert_never__{name}"
-            self.logic(wire, assign=condition)
-            self._set_used([clk, wire])
+            if name is None:
+                name = misc._make_name_legal(message)
+            else:
+                self._assert(misc._is_legal_name(name), f"assertion name '{name}' is illegal", fatal=True)
             full_messgae = f'"{message}"'
             if isinstance(params, str):
                 params = [params]
             for param in params:
                 full_messgae += f", {param}"
+
+            if property_type == "cover":
+                err_str = f"$info({full_messgae})"
+            elif fatal:
+                err_str = f"$fatal(1, {full_messgae})"
+            else:
+                err_str = f"$error({full_messgae})"
+
+            self._set_used(clk)
             if isinstance(clk, str):
                 self._check_declared(clk)
                 self.line(f"""always @({clk})
-                                  if ({wire})
-                                      {misc.cond(fatal, f'$fatal(0, {full_messgae});', f'$error({full_messgae});')}
+                                  if ({condition}) {err_str};
                             """)
             else:
                 self._assert_type(clk, clock)
-                self.line(f"""always @(posedge {clk})
-                                  if ({misc.cond(clk.rst_n is not None, f'{clk.rst_n} & ')}{wire})
-                                      {misc.cond(fatal, f'$fatal(0, {full_messgae});', f'$error({full_messgae});')}
-                            """)
+                disable_str = misc.cond(clk.rst_n is not None, f"disable iff (!{clk.rst_n})")
+                self.line(f"""{name}_{property_type}: {property_type} property (@(posedge {clk}){disable_str} {misc.invert(condition)})
+                                         {misc.cond(property_type != "cover", "else")} {err_str};
+                          """)
 
-    def assert_always(self, clk, condition, message, params=None, fatal=True):
+                if self._args.sim and property_type != "cover":
+                    self.remark("CODE ADDED TO SUPPORT LEGACY SIMULATION THAT DOES NOT SUPPORT CONCURRENT ASSERTIONS")
+                    wire = f"assert_never__{name}"
+                    self.logic(wire, assign=condition)
+                    self.allow_unused(wire)
+                    self.line(f"""always @(posedge {clk})
+                                      if ({misc.cond(clk.rst_n is not None, f'{clk.rst_n} & ')}{wire})
+                                          {err_str};
+                                """)
+
+    def assert_always(self, clk, condition, message, params=None, name=None, fatal=True, property_type="assert"):
         """
         Assertion on Verilog signals with clock (ignores condition during async reset if present).
 
         Args:
             clk([clock, str]): triggering clock or trigerring event
-            condition(str): Error occurs when condition is False
+            condition(str): Error occurs when condition is True
             message(str): Error message
             params([str, list]): parameters for Verilog % format string
+            name([None, str]): Explicit assertion name
             fatal(bool): stop on error
+            property(str): assert or assume
 
         Returns:
             NA
@@ -1515,7 +1610,7 @@ class p2v():
         self._assert_type(params, [str, list])
         self._assert_type(fatal, bool)
         if not self._exists():
-            self.assert_never(clk, condition=f"~({condition})", message=message, params=params, fatal=fatal)
+            self.assert_never(clk, condition=misc.invert(condition), message=message, params=params, name=name, fatal=fatal, property_type=property_type)
 
     def check_never(self, condition, message, params=None, fatal=True):
         """
@@ -1566,7 +1661,7 @@ class p2v():
         self._assert_type(fatal, bool)
         if self._exists():
             return ""
-        return self.check_never(condition=f"~({condition})", params=params, message=message, fatal=fatal)
+        return self.check_never(condition=misc.invert(condition), params=params, message=message, fatal=fatal)
 
     def assert_static(self, condition, message, warning=False, fatal=True):
         """

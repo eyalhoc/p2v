@@ -127,14 +127,14 @@ def comp(dirname, outdir, modname=None, search=None, libs=None):
     if libs is None:
         libs = []
     logfile = "p2v_comp.log"
-    flags = ""
+    flags = "-g2005-sv -gsupported-assertions"
     if len(search) > 0:
         flags += " -Y .v -Y .sv"
         flags += " -y " + " -y ".join(search)
         flags += " -I " + " -I ".join(search)
     topmodule = misc.cond(modname is not None, f"-s {modname}")
     ofile = os.path.join(os.path.abspath(outdir), f'{COMP_BIN}.o')
-    full_logfile = system(dirname, outdir, f"{COMP_BIN} -g2005-sv {topmodule} {' '.join(libs)} *.* -o {ofile} {flags}", logfile, log_out=False, log_err=True)
+    full_logfile = system(dirname, outdir, f"{COMP_BIN} {flags} {topmodule} {' '.join(libs)} *.* -o {ofile} {flags}", logfile, log_out=False, log_err=True)
     success = os.path.isfile(ofile)
     return full_logfile, success
 
