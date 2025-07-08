@@ -23,7 +23,8 @@ class p2v_clock:
         self.name = name
         self.rst_n = rst_n
         self.reset = reset
-        self.remark = remark
+        self._ready = False
+        self._remark = remark
 
     def __str__(self):
         return self.name
