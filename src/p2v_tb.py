@@ -141,7 +141,7 @@ class p2v_tb():
         self._parent._assert_type(l, list)
         return l[self.rand_int(len(l))]
 
-    def rand_clock(self, prefix="", has_async=None, has_sync=None):
+    def rand_clock(self, prefix="", has_async=None, has_sync=None, must_have_reset=False):
         """
         Create clock with random resets.
 
@@ -149,6 +149,7 @@ class p2v_tb():
             prefix(str): prefix all signal names
             has_async([None, bool]): use async reset, None is random
             has_sync([None, bool]): use sync reset, None is random
+            must_have_reset(bool): use at least one reset
 
         Returns:
             clock
@@ -165,7 +166,7 @@ class p2v_tb():
 
         if has_sync is None:
             has_sync = self.rand_bool()
-        if has_sync:
+        if has_sync or (must_have_reset and not has_async):
             reset = prefix + "reset"
         else:
             reset = None
@@ -183,14 +184,26 @@ class p2v_tb():
         """
         self._parent._assert_type(filename, str)
 
-        self._parent.line(f"""
-                              initial
-                                  begin
-                                      $dumpfile("{filename}");
-                                      $dumpvars;
-                                      $dumpon;
-                                  end
-                           """)
+        dump_format = filename.split(".")[-1]
+        self._parent._assert(dump_format in ["vcd", "fst", "fsdb"], f"unknown dump format {dump_format}", fatal=True)
+
+        if dump_format == "fsdb":
+            self._parent.line(f"""
+                                  initial
+                                      begin
+                                          $fsdbDumpfile("{filename}");
+                                          $fsdbDumpvars;
+                                      end
+                               """)
+        else:
+            self._parent.line(f"""
+                                  initial
+                                      begin
+                                          $dumpfile("{filename}");
+                                          $dumpvars;
+                                          $dumpon;
+                                      end
+                               """)
 
     def test_pass(self, condition=None, message=None, params=None):
         """
@@ -306,6 +319,10 @@ class p2v_tb():
                                  initial
                                      begin
                                          {clk.reset} = 0;
+                                         repeat ({pre_reset_cycles}) @(posedge {clk});
+                                         {clk.reset} = 1;
+                                         repeat ({reset_cycles}) @(posedge {clk});
+                                         {clk.reset} = 0;
                                      end
                               """)
             self._parent.allow_undriven(clk.reset)
@@ -374,11 +391,14 @@ class p2v_tb():
         self._parent._assert_type(clk, clock)
         self._parent._assert_type(timeout, int)
 
-        self._parent.logic(f"_count_{clk}", 32, initial=0)
+        wire = f"_count_{clk}"
+        self._parent.logic(wire, 32, initial=0)
         self._parent.line(f"""
-                             always @(posedge {clk}) _count_{clk} <= _count_{clk} + 'd1;
+                             always @(posedge {clk}) {wire} <= {wire} + 'd1;
                           """)
-        self._parent.assert_never(clk, f"_count_{clk} >= 'd{timeout}", f"reached timeout after {timeout} cycles of {clk}")
+        self._parent.assert_never(clk, f"{wire} >= 'd{timeout}", f"reached timeout after {timeout} cycles of {clk}")
+        self._parent.allow_unused(wire)
+
 
     def register_test(self, args=None):
         """

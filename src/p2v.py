@@ -348,19 +348,21 @@ class p2v():
     def _write_srcfiles(self):
         srcfiles = self._cache["src"] + list(self._cache["modules"].values())
         misc._write_file(os.path.join(self._args.outdir, "src.list"), "\n".join(srcfiles), append=True)
-        dirnames = []
-        for srcfile in srcfiles:
-            dirname = os.path.dirname(srcfile)
-            if dirname not in dirnames:
-                dirnames.append(dirname)
 
-        incdirs = self._args.I
-        for incdir in self._args.Im:
-            if os.path.isdir(incdir):
-                incdirs.append(incdir)
-        for incdir in incdirs:
-            incdir = os.path.abspath(incdir)
-            self._assert(incdir in dirnames, f"include directory {incdir} never used", warning=True)
+        if not self._args.sim: # directories might be used for Verilog files
+            dirnames = []
+            for srcfile in srcfiles:
+                dirname = os.path.dirname(srcfile)
+                if dirname not in dirnames:
+                    dirnames.append(dirname)
+
+            incdirs = self._args.I
+            for incdir in self._args.Im:
+                if os.path.isdir(incdir):
+                    incdirs.append(incdir)
+            for incdir in incdirs:
+                incdir = os.path.abspath(incdir)
+                self._assert(incdir in dirnames, f"include directory {incdir} never used", warning=True)
 
     def _param_type(self, value):
         if os.path.isfile(value):
@@ -1564,7 +1566,7 @@ class p2v():
             else:
                 err_str = f"$error({full_messgae})"
 
-            self._set_used(clk)
+            self._set_used([clk, condition])
             if isinstance(clk, str):
                 self._check_declared(clk)
                 self.line(f"""always @({clk})
