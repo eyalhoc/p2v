@@ -28,6 +28,8 @@ def _get_hash(s):
 def _is_legal_name(name):
     if not isinstance(name, str) or len(name) == 0:
         return False
+    if name.startswith("__"):
+        return False
     return (name[0].isalpha() or name[0] == "_") and name.replace("_", "").isalnum()
 
 def _fix_legal_name(name):
@@ -72,6 +74,16 @@ def _is_quote_closed(line, q='"'):
 def _is_paren_balanced(line, open="(", close=")"):
     return _get_paren_depth(line, open=open, close=close) == 0
 
+def _is_in_paren(line, open="(", close=")"):
+    if len(line) < 4:
+        return False
+    line = line.strip()
+    if line[0] == open and line[-1] == close and _is_paren_balanced(line, open=open, close=close):
+        if line[1] == open and line[-2] == close:
+            return _is_in_paren(line[1:-1], open=open, close=close)
+        return True
+    return False
+
 def _get_bit_range(wire):
     if "[" not in wire:
         return None, None
@@ -110,6 +122,7 @@ def  _get_base_str(base):
     raise Exception(f"unknown base {base} for decimal conversion")
 
 def _base(base, n, bits=None, add_sep=4, prefix=None):
+    assert prefix is None or len(prefix) > 0, f"illegal base prefix {prefix}"
     base_s = _get_base_str(base)
     n = _to_int(n)
 
@@ -131,7 +144,14 @@ def _base(base, n, bits=None, add_sep=4, prefix=None):
                 new_s += "_"
             new_s += c
         s =  new_s[::-1] # reverse
-    if prefix is not None:
+    if prefix is None:
+        if bits is None:
+            while s.startswith("0") or s.startswith("_"):
+                if s == "0":
+                    break
+                s = s.replace("0", "", 1)
+                s = s.replace("_", "", 1)
+    else:
         s = prefix + s
         if bits is not None and not s.startswith(f"{n_bits}'"):
             s = str(n_bits) + s
@@ -189,8 +209,17 @@ def _comment_remover(s):
 def _remove_spaces(line):
     return line.replace(" ", "").replace("\t", "")
 
+def _remove_extra_paren(line, open="(", close=")"):
+    if _is_in_paren(line, open=open, close=close):
+        while _is_in_paren(line, open=open, close=close): # remove all paren
+            line = line[1:-1]
+        line = f"{open}{line}{close}" # put one back
+    return line
+
+
 def _remark_line(line):
-    return " // " + line
+    line = re.sub("\n *","\n ", line)
+    return " // " + line.replace("\n", "\n// ")
 
 
 def ceil(n):
@@ -363,7 +392,7 @@ def hex(num, bits=None, add_sep=4, prefix="'h"):
         num(int): input value
         bits([None, int]): number of bits for value
         add_sep(int): add underscore every few characters for easier reading of large numbers
-        prefix(str): hexadecimal annotation
+        prefix([None, str]): hexadecimal annotation
 
     Returns:
         Verilog code
@@ -371,7 +400,7 @@ def hex(num, bits=None, add_sep=4, prefix="'h"):
     assert isinstance(num, int), f"hex() expects integer value but got {type(num)}"
     assert isinstance(bits, (type(None), int)), bits
     assert isinstance(add_sep, int) and add_sep >= 0, add_sep
-    assert isinstance(prefix, str), prefix
+    assert isinstance(prefix, (type(None), str)), prefix
     return _base(16, num, bits, add_sep, prefix)
 
 def bin(num, bits=None, add_sep=4, prefix="'b"):
@@ -382,7 +411,7 @@ def bin(num, bits=None, add_sep=4, prefix="'b"):
         num(int): input value
         bits([None, int]): number of bits for value
         add_sep(int): add underscore every few characters for easier reading of large numbers
-        prefix(str): binary annotation
+        prefix([None, str]): hexadecimal annotation
 
     Returns:
         Verilog code
@@ -390,7 +419,7 @@ def bin(num, bits=None, add_sep=4, prefix="'b"):
     assert isinstance(num, int), num
     assert isinstance(bits, (type(None), int)), bits
     assert isinstance(add_sep, int) and add_sep >= 0, add_sep
-    assert isinstance(prefix, str), prefix
+    assert isinstance(prefix, (type(None), str)), prefix
     return _base(2, num, bits, add_sep, prefix)
 
 def bits(name, bits, start=0):
@@ -449,4 +478,21 @@ def is_hotone(var, bits, allow_zero=False):
         if allow_zero:
             return "1'b1"
         return var
-    return f"(~|({var} & ({var} - {dec(1, bits)})))" + cond(allow_zero, f" | (~|{var})")
+    return f"(({var} & ({var} - {dec(1, bits)})) == {dec(0, bits)})" + cond(allow_zero, f" | ({var} == {dec(0, bits)})")
+
+def invert(var, not_op="~"):
+    """
+    Verilog not expression, removed previous not if present.
+
+    Args:
+        var(str): Verilog expression
+        not_op(str): not operand
+
+    Returns:
+        Verilog code
+    """
+    if var.startswith(not_op):
+        var_not = var.replace(not_op, "", 1)
+        if _is_in_paren(var_not):
+            return _remove_extra_paren(var_not)
+    return f"{not_op}({var})"
