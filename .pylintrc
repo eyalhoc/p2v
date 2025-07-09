@@ -13,4 +13,4 @@ max-module-lines=2000
 max-branches=20
 
 [MESSAGES CONTROL]
-disable=redefined-builtin,redefined-outer-name,protected-access,consider-using-dict-items,no-self-use
+disable=protected-access,too-many-positional-arguments

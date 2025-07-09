@@ -128,7 +128,7 @@ class p2v():
         stack = self._get_stack()
         if critical:
             if self._args.debug:
-                raise Exception(message)
+                raise RuntimeError(message)
             err_stack = []
             for s in stack:
                 err_stack.append(f"  File {s.filename}, line {s.lineno}, in {s.name}\n    {s.line}")
@@ -319,7 +319,7 @@ class p2v():
                 self.tb._set_seed(gen_seeds[i])
                 self._logger.info(f"starting gen iteration {i}/{iter_num-1}")
             if self._args.sim or not gen_loop:
-                self.__init__(None, modname=misc.cond(not gen_loop, None, f"_tb{i}"), parse=False)
+                self.__init__(None, modname=misc.cond(not gen_loop, None, f"_tb{i}"), parse=False) # pylint: disable=unnecessary-dunder-call
                 top_connect = top_class.module(self, **self._args.params)
 
                 for process in self._processes:
@@ -332,7 +332,7 @@ class p2v():
                         if not self._sim():
                             break
             else:
-                self.__init__(None, parse=False)
+                self.__init__(None, parse=False) # pylint: disable=unnecessary-dunder-call
                 if isinstance(self._args.params, list):
                     args = self._args.params[i]
                 else:
@@ -631,14 +631,14 @@ class p2v():
                 count[name] = count[name] + 1
             else:
                 count[name] = 1
-        for name in count:
-            self._assert(count[name] < MAX_LOOP, f"{name} was created {count[name]} times in module (performance loss)")
+        for name, val in count.items():
+            self._assert(val < MAX_LOOP, f"{name} was created {val} times in module (performance loss)")
 
     def _check_line_balanced(self, line):
-        for (open, close) in [("(", ")"), ("[", "]"), ("{", "}")]:
+        for (open_char, close_char) in [("(", ")"), ("[", "]"), ("{", "}")]:
             for c in line:
-                if c in [open, close]:
-                    self._assert(misc._is_paren_balanced(line, open=open, close=close), f"unbalanced parentheses in: {line}", fatal=True)
+                if c in [open_char, close_char]:
+                    self._assert(misc._is_paren_balanced(line, open_char=open_char, close_char=close_char), f"unbalanced parentheses in: {line}", fatal=True)
                     break
         for q in ['"']:
             for c in line:
@@ -817,9 +817,9 @@ class p2v():
         if modname in self._cache["ports"]:
             return self._cache["ports"][modname]
         filename = self._find_module(modname)
-        ast = slang.get_ast(filename, modname, params=params)
-        self._assert(ast is not None, f"failed to parse verilog file {filename}, manually create wrapper for module", fatal=True)
-        ports =  slang.get_ports(ast)
+        _ast = slang.get_ast(filename, modname, params=params)
+        self._assert(_ast is not None, f"failed to parse verilog file {filename}, manually create wrapper for module", fatal=True)
+        ports =  slang.get_ports(_ast)
         self._cache["ports"][modname] = ports
         return ports
 
@@ -1034,9 +1034,9 @@ class p2v():
         if exists:
             self._signals = self._cache["conn"][self._modname]._signals
             if module_locals != self._modules[self._modname]:
-                for name in module_locals:
+                for name, val in module_locals.items():
                     if not name.startswith("_"):
-                        self._assert(module_locals[name] == self._modules[self._modname][name], \
+                        self._assert(val == self._modules[self._modname][name], \
                         f"module {self._modname} was recreated with different content (variable {name} does not affect module name)", fatal=True)
         else:
             clsname = self._get_clsname()

@@ -202,5 +202,5 @@ tools[COMP_BIN] = "compilation"
 tools[SIM_BIN] = "simulation"
 
 en = {}
-for tool_bin in tools:
-    en[tool_bin] = check(tool_bin)
+for name in tools:
+    en[name] = check(name)

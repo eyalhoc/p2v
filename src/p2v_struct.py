@@ -36,10 +36,10 @@ class p2v_struct():
         self.fields = self.prefix_fields(name, fields)
 
         self.valid = self.ready = None
-        for field_name in self._ctrl_fields:
-            if self._ctrl_fields[field_name] == 1.0:
+        for field_name, val in self._ctrl_fields.items():
+            if val == 1.0:
                 self.valid = field_name
-            elif self._ctrl_fields[field_name] == -1.0:
+            elif val == -1.0:
                 self.ready = field_name
 
     def _name_fields(self, name, fields, data_only=False, ctrl_only=False):
@@ -129,8 +129,8 @@ class p2v_struct():
             full_field_name = self.get_field_name(name, field_name)
             if isinstance(bits, dict):
                 son_fields = self.prefix_fields(full_field_name, bits, data_only=data_only, ctrl_only=ctrl_only)
-                for son_name in son_fields:
-                    new_fields[son_name] = son_fields[son_name]
+                for son_name, val in son_fields.items():
+                    new_fields[son_name] = val
             else:
                 if isinstance(bits, float):
                     if data_only:
