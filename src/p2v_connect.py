@@ -191,8 +191,8 @@ class p2v_connect():
             lines[-1] = lines[-1].rstrip(",")
             lines.append(")")
         lines.append(f"{instname} (")
-        for name in self._pins:
-            lines.append(f".{name}({self._pins[name]}), // {self._signals[name].kind}{misc.cond(self._signals[name].ctrl, ' ctrl')}")
+        for name, val in self._pins.items():
+            lines.append(f".{name}({val}), // {self._signals[name].kind}{misc.cond(self._signals[name].ctrl, ' ctrl')}")
         lines[-1] = lines[-1].replace(", //", " //", 1)
         lines.append(");")
         lines.append("")

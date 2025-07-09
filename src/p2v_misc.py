@@ -58,10 +58,10 @@ def _get_names(s):
             names.append(name)
     return names
 
-def _get_paren_depth(line, open="(", close=")"):
+def _get_paren_depth(line, open_char="(", close_char=")"):
     depth = 0
     for c in line:
-        depth = depth + (c == open) - (c == close)
+        depth = depth + (c == open_char) - (c == close_char)
     return depth
 
 def _is_quote_closed(line, q='"'):
@@ -71,23 +71,23 @@ def _is_quote_closed(line, q='"'):
             closed = not closed
     return closed
 
-def _is_paren_balanced(line, open="(", close=")"):
-    return _get_paren_depth(line, open=open, close=close) == 0
+def _is_paren_balanced(line, open_char="(", close_char=")"):
+    return _get_paren_depth(line, open_char=open_char, close_char=close_char) == 0
 
-def _is_in_paren(line, open="(", close=")"):
+def _is_in_paren(line, open_char="(", close_char=")"):
     if len(line) < 4:
         return False
     line = line.strip()
-    if line[0] == open and line[-1] == close and _is_paren_balanced(line, open=open, close=close):
-        if line[1] == open and line[-2] == close:
-            return _is_in_paren(line[1:-1], open=open, close=close)
+    if line[0] == open_char and line[-1] == close_char and _is_paren_balanced(line, open_char=open_char, close_char=close_char):
+        if line[1] == open_char and line[-2] == close_char:
+            return _is_in_paren(line[1:-1], open_char=open_char, close_char=close_char)
         return True
     return False
 
 def _get_bit_range(wire):
     if "[" not in wire:
         return None, None
-    assert _is_paren_balanced(wire, open="[", close="]"), wire
+    assert _is_paren_balanced(wire, open_char="[", close_char="]"), wire
     paren = wire.split("]")[0].split("[")[-1].replace(" ", "")
     if ":" in paren:
         subs = paren.split(":")
@@ -112,16 +112,16 @@ def _to_int(n, allow=False):
         return int(n)
     if allow:
         return n
-    raise Exception(f"cannot convert {n} to int")
+    raise RuntimeError(f"cannot convert {n} to int")
 
 def  _get_base_str(base):
     if base == 16:
         return "x"
     if base == 2:
         return "b"
-    raise Exception(f"unknown base {base} for decimal conversion")
+    raise RuntimeError(f"unknown base {base} for decimal conversion")
 
-def _base(base, n, bits=None, add_sep=4, prefix=None):
+def _base(base, n, bits=None, add_sep=4, prefix=None): # pylint: disable=redefined-outer-name
     assert prefix is None or len(prefix) > 0, f"illegal base prefix {prefix}"
     base_s = _get_base_str(base)
     n = _to_int(n)
@@ -209,11 +209,11 @@ def _comment_remover(s):
 def _remove_spaces(line):
     return line.replace(" ", "").replace("\t", "")
 
-def _remove_extra_paren(line, open="(", close=")"):
-    if _is_in_paren(line, open=open, close=close):
-        while _is_in_paren(line, open=open, close=close): # remove all paren
+def _remove_extra_paren(line, open_char="(", close_char=")"):
+    if _is_in_paren(line, open_char=open_char, close_char=close_char):
+        while _is_in_paren(line, open_char=open_char, close_char=close_char): # remove all paren
             line = line[1:-1]
-        line = f"{open}{line}{close}" # put one back
+        line = f"{open_char}{line}{close_char}" # put one back
     return line
 
 
@@ -360,7 +360,7 @@ def pad(left, name, right=0, val=0):
         vals.append(dec(val, right))
     return concat(vals)
 
-def dec(num, bits=1):
+def dec(num, bits=1): # pylint: disable=redefined-outer-name
     """
     Represent integer in Verilog decimal representation.
 
@@ -384,7 +384,7 @@ def dec(num, bits=1):
         return bin(num + (1<<bits), bits)
     return f"{bits}'d{num}"
 
-def hex(num, bits=None, add_sep=4, prefix="'h"):
+def hex(num, bits=None, add_sep=4, prefix="'h"): # pylint: disable=redefined-builtin,redefined-outer-name
     """
     Represent integer in Verilog hexademical representation.
 
@@ -403,7 +403,7 @@ def hex(num, bits=None, add_sep=4, prefix="'h"):
     assert isinstance(prefix, (type(None), str)), prefix
     return _base(16, num, bits, add_sep, prefix)
 
-def bin(num, bits=None, add_sep=4, prefix="'b"):
+def bin(num, bits=None, add_sep=4, prefix="'b"): # pylint: disable=redefined-builtin,redefined-outer-name
     """
     Represent integer in Verilog binary representation.
 
@@ -422,7 +422,7 @@ def bin(num, bits=None, add_sep=4, prefix="'b"):
     assert isinstance(prefix, (type(None), str)), prefix
     return _base(2, num, bits, add_sep, prefix)
 
-def bits(name, bits, start=0):
+def bits(name, bits, start=0): # pylint: disable=redefined-outer-name
     """
     Extract a partial range from a Verilog bus.
 
@@ -459,7 +459,7 @@ def bit(name, idx):
     assert isinstance(idx, (int, str)), f"{name} uses illegal index {idx}"
     return f"{name}[{idx}]"
 
-def is_hotone(var, bits, allow_zero=False):
+def is_hotone(var, bits, allow_zero=False): # pylint: disable=redefined-outer-name
     """
     Check if a Verilog expression is hot one.
 
