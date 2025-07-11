@@ -194,6 +194,10 @@ def _write_file(filename, s, append=False):
     with open(filename, cond(append, "a", "w"), encoding="utf-8") as file:
         file.write(s + "\n")
         file.close()
+        
+def _compare_files(filename1, filename2):
+    with open(filename1, 'r', encoding='utf-8') as f1, open(filename2, 'r', encoding='utf-8') as f2:
+        return f1.read() == f2.read()
 
 def _link(src, name):
     if not os.path.exists(name):

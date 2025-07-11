@@ -19,13 +19,12 @@ p2v_preparse module. Responsible for preparsing p2v modules. Enables creation of
 import os
 import argparse
 import re
-import glob
 
 import p2v_misc as misc
 
 def _parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-filename", type=str, required=True, help="p2v flie to parse or dirname")
+    parser.add_argument('-filenames', default=[], nargs='*', help="p2v flies to parse")
     parser.add_argument("-outdir", type=str, default=None, help="name of output directory")
     parser.add_argument('-defines', default=[], nargs='*', help="defines for pre parsing")
     return parser.parse_args()
@@ -50,6 +49,7 @@ def _parse_file(filename, outdir=None, defines=None):
 
     # keep all defined ifdef blocks
     for name in defines:
+        assert misc._is_legal_name(name), f"define {name} does not have a legal name"
         s = re.sub(rf"#_IFDEF *{name}\b.*\n", "", s)
         s = re.sub(rf"#_ENDIF *{name}\b.*\n", "", s)
 
@@ -69,15 +69,16 @@ def _write_file(filename, s):
             print(line)
     else:
         misc._write_file(filename, s)
-        print(f"wrote {filename}")
+        path = os.path.abspath(filename).replace(os.getcwd(), "", 1).strip("/")
+        print(f"wrote {path}")
 
 def _main():
     args = _parse_args()
-    if os.path.isdir(args.filename):
-        for filename in glob.glob(f"{args.filename}/*.py"):
-            _parse_file(filename, outdir=args.outdir, defines=args.defines)
-    else:
-        _parse_file(args.filename, outdir=args.outdir, defines=args.defines)
+    if args.outdir is not None:
+        assert os.path.isdir(args.outdir), f"directory {args.outdir} does not exist"
+
+    for filename in args.filenames:
+        _parse_file(filename, outdir=args.outdir, defines=args.defines)
 
 
 if __name__ == '__main__':
