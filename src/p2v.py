@@ -664,6 +664,7 @@ class p2v():
             self._outfiles[modname] = outhash
 
     def _port(self, kind, name, bits=1, used=False, driven=False):
+        self._assert(misc._is_legal_name(str(name)), f"{kind} port {name} has an illegal name")
         self._assert(type(bits) in SIGNAL_TYPES, f"unknown type {bits} for port", fatal=True)
         if isinstance(name, clock):
             self._assert(bits == 1, f"{kind} clock {name} must be declared with bits = 1")
@@ -698,8 +699,10 @@ class p2v():
         for dirname in self._search:
             fullname = os.path.join(dirname, filename)
             if os.path.isfile(fullname):
-                self._assert(found is None, f"found different versions of file in srarch path: {found} {fullname}")
-                found = fullname
+                if found is None:
+                    found = fullname
+                else:
+                    self._assert(misc._compare_files(found, fullname), f"found different versions of file in srarch path: {found} {fullname}")
             elif allow_dir and os.path.isdir(fullname):
                 found = fullname
         if found is not None:
@@ -974,7 +977,7 @@ class p2v():
                 type_str = val.__class__.__name__
 
                 if param_suffix is None:
-                    param_remark += " (no effect on module name)"
+                    pass # param_remark += " (no effect on module name)"
                 elif param_suffix != "":
                     suf.append(str(param_suffix))
                 else:
@@ -1019,7 +1022,12 @@ class p2v():
             if name != "self":
                 module_locals[name] = value
 
+        if self._register and self._parent.__class__.__name__ != self.__class__.__name__: # ignore nested recursions
+            self.tb.register_test(module_locals)
+            
         suf = self._get_module_params(module_locals, suffix=modname is None and suffix)
+        if modname == "": # just a wrapper - no Verilog module
+            return False
         if self._modname is None:
             self._modname = self._args.prefix
             if modname:
@@ -1045,8 +1053,6 @@ class p2v():
             self._modules[self._modname] = module_locals
         if self._parent is not None:
             self._parent._sons.append(self._modname)
-        if self._register and self._parent.__class__.__name__ != self.__class__.__name__: # ignore nested recursions
-            self.tb.register_test(module_locals)
         return exists
 
     def set_param(self, var, kind, condition=None, remark="", suffix="", default=None):

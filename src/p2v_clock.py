@@ -97,6 +97,14 @@ class p2v_clock:
         return nets
 
 
+def _get_name(prefix=""):
+    if prefix is None:
+        return ""
+    elif not prefix.startswith("clk"):
+        return prefix + "clk"
+    else:
+        return prefix.strip("_")
+    
 def clk_0rst(prefix=""):
     """
     Create a clock with no resets.
@@ -107,7 +115,8 @@ def clk_0rst(prefix=""):
     Returns:
         p2v clock
     """
-    return p2v_clock(prefix+"clk", remark="clock with no reset")
+    name = _get_name(prefix)
+    return p2v_clock(name, remark="clock with no reset")
 
 def clk_arst(prefix=""):
     """
@@ -119,7 +128,8 @@ def clk_arst(prefix=""):
     Returns:
         p2v clock
     """
-    return p2v_clock(prefix+"clk", rst_n=prefix+"rst_n", remark="clock with async reset")
+    name = _get_name(prefix)
+    return p2v_clock(name, rst_n=name+"rst_n", remark="clock with async reset")
 
 def clk_srst(prefix=""):
     """
@@ -131,7 +141,8 @@ def clk_srst(prefix=""):
     Returns:
         p2v clock
     """
-    return p2v_clock(prefix+"clk", reset=prefix+"reset", remark="clock with sync reset")
+    name = _get_name(prefix)
+    return p2v_clock(name, reset=name+"reset", remark="clock with sync reset")
 
 def clk_2rst(prefix=""):
     """
@@ -143,6 +154,7 @@ def clk_2rst(prefix=""):
     Returns:
         p2v clock
     """
-    return p2v_clock(prefix+"clk", rst_n=prefix+"rst_n", reset=prefix+"reset", remark="clock with both async and sync resets")
+    name = _get_name(prefix)
+    return p2v_clock(name, rst_n=name+"rst_n", reset=name+"reset", remark="clock with both async and sync resets")
 
 default_clk = clk_arst()
