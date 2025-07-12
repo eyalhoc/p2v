@@ -516,18 +516,19 @@ class p2v():
         return connects
 
     def _get_current_line(self):
-        extracted = traceback.extract_stack()
-        i = -1
-        while extracted[i].filename == __file__:
-            i -= 1
-        return extracted[i].line
+        # Get the previous frame
+        prev_frame = inspect.currentframe().f_back.f_back
 
-    def _get_remark(self):
-        return None # - TBD - performance
-        #line = self._get_current_line()
-        #if "#" in line:
-        #    return line.split("#")[-1]
-        #return None
+        # Get frame info: filename, line number, function name, code context, index
+        frame_info = inspect.getframeinfo(prev_frame)
+        return frame_info.code_context[0].strip()
+
+    def _get_remark(self, line=None):
+        if line is None:
+            line = self._get_current_line()
+        if "#" in line:
+            return line.split("#")[-1]
+        return None
 
     def _get_names(self, wire):
         self._assert_type(wire, str)
@@ -689,7 +690,7 @@ class p2v():
             if isinstance(bits, str):
                 for bits_str in self._get_names(bits):
                     self._set_used(bits_str)
-            self._add_signal(p2v_signal(kind, name, bits, used=used, driven=driven, remark=self._get_remark()))
+            self._add_signal(p2v_signal(kind, name, bits, used=used, driven=driven))
         return None
 
     def _find_file(self, filename, allow_dir=False, allow=False):
@@ -1055,7 +1056,7 @@ class p2v():
             self._parent._sons.append(self._modname)
         return exists
 
-    def set_param(self, var, kind, condition=None, remark="", suffix="", default=None):
+    def set_param(self, var, kind, condition=None, suffix="", default=None, remark=None):
         """
         Declare module parameter and set assertions.
 
@@ -1063,22 +1064,24 @@ class p2v():
             var: module parameter
             kind([type, list of type]): type of var
             condition([None, bool]): parameter constraints
-            remark(str): comment
             suffix([None, str]): explicitly define parameter suffix
             default: if value matches default the parameter will not affect module name
+            remark: legacy parameter - use Python remarks instead
 
         Returns:
             None
         """
         self._assert_type(condition, [None, bool])
-        self._assert_type(remark, str)
         self._assert_type(suffix, [None, str])
 
+        self._assert(remark is None, "don't use legacy parameter remark, use Python remarks they will be transfered to Verilog", warning=True)
 
         auto_suffix = suffix == ""
-        line = self._get_current_line().replace(" ", "").split("#")[0]
+        current_line = self._get_current_line()
+        line = current_line.replace(" ", "").split("#")[0]
         self._check_line_balanced(line)
         name = line.split("set_param(")[1].split(",")[0]
+        remark = self._get_remark(current_line)
 
         if default is not None and var == default:
             suffix = None
@@ -1213,9 +1216,9 @@ class p2v():
         self._assert_type(local, bool)
         if self._exists():
             return
-        self._add_signal(p2v_signal(misc.cond(local, "localparam", "parameter"), name, val, driven=True, remark=self._get_remark()))
+        self._add_signal(p2v_signal(misc.cond(local, "localparam", "parameter"), name, val, driven=True))
         if local:
-            self.line(f"localparam {name} = {val};", remark=self._get_remark())
+            self.line(f"localparam {name} = {val};")
 
     def enum(self, names):
         """
@@ -1353,7 +1356,7 @@ class p2v():
         else:
             for bits_str in self._get_names(str(bits)):
                 self._set_used(bits_str)
-            signal = self._add_signal(p2v_signal("logic", name, bits, remark=self._get_remark()))
+            signal = self._add_signal(p2v_signal("logic", name, bits))
             self.line(signal.declare())
         if assign is not None:
             self.assign(name, assign, keyword="assign")
@@ -1394,7 +1397,7 @@ class p2v():
                     self._assert(bits > 0, f"illegal assignment to signal {tgt} of 0 bits")
                     src = misc.dec(src, bits)
                 self._set_used(src, drive=False)
-                self.line(f"{keyword} {tgt} = {src};", remark=self._get_remark())
+                self.line(f"{keyword} {tgt} = {src};")
 
     def sample(self, clk, tgt, src, valid=None, reset=None, reset_val=0, bits=None, bypass=False):
         """
