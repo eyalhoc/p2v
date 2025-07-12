@@ -1,4 +1,4 @@
-# P2V
+# P2V - designing chip in Python
 Python to Verilog compiler
 
 # What is P2V?
