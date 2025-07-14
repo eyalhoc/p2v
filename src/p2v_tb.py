@@ -19,7 +19,7 @@ import os
 import random
 import numpy as np
 
-from p2v_clock import p2v_clock as clock
+from p2v_clock import p2v_clock as clock, clk_0rst, clk_arst, clk_srst, clk_2rst
 import p2v_misc as misc
 import p2v_tools
 
@@ -157,20 +157,18 @@ class p2v_tb():
         self._parent._assert_type(prefix, str)
         self._parent._assert_type(has_async, [None, bool])
         self._parent._assert_type(has_sync, [None, bool])
+        
         if has_async is None:
             has_async = self.rand_bool()
-        if has_async:
-            rst_n = prefix + "rst_n"
-        else:
-            rst_n = None
-
         if has_sync is None:
             has_sync = self.rand_bool()
-        if has_sync or (must_have_reset and not has_async):
-            reset = prefix + "reset"
-        else:
-            reset = None
-        return clock(prefix + "clk", rst_n=rst_n, reset=reset)
+        if has_async and has_sync:
+            return clk_2rst(prefix)
+        if has_async:
+            return clk_arst(prefix)
+        if has_sync:
+            return clk_srst(prefix)
+        return clk_0rst(prefix)
 
     def dump(self, filename="dump.fst"):
         """
