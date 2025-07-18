@@ -9,11 +9,11 @@ class adder(p2v):
         self.set_param(bits, int, bits > 0, remark="data width") # set_param(var, type, constraints)
         self.set_modname()
         
-        self.input("a", bits)
-        self.input("b", bits)
-        self.output("o", bits)
+        a = self.input("a", bits)
+        b = self.input("b", bits)
+        o = self.output("o", bits)
         
-        self.assign("o", "a + b")
+        self.assign(o, a + b)
         
         return self.write()
 

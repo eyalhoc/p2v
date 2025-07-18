@@ -23,9 +23,9 @@ module adder__bits8_num16 (
 );
 
     // adder module parameters:
-    //  * clk = clk_arst() (p2v_clock)
-    //  * bits = 8 (int) # data width
-    //  * num = 16 (int) # number of inputs
+    //  * clk = clk_arst() (p2v_clock) # None
+    //  * bits = 8 (int) #  data width
+    //  * num = 16 (int) #  number of inputs
 
     logic [7:0] o0;
     logic valid_out0;

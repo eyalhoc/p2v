@@ -9,8 +9,8 @@ module adder__bits8 (
 );
 
     // adder module parameters:
-    //  * clk = clk_arst() (p2v_clock)
-    //  * bits = 8 (int) # data width
+    //  * clk = clk_arst() (p2v_clock) # None
+    //  * bits = 8 (int) #  data width
 
     always_ff @(posedge clk or negedge rst_n)
         if (!rst_n) o <= 8'd0;

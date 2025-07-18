@@ -44,7 +44,7 @@ class p2v_tb():
             self._set_seed(self.seed)
 
 
-    def _test_finish(self, status, condition=None, message=None, params=None):
+    def _test_finish(self, status, condition=None, message=None, params=None, stop=True):
         if params is None:
             params = []
         param_str = ", $time"
@@ -55,11 +55,13 @@ class p2v_tb():
             if isinstance(params, str):
                 params = [params]
             if len(params) > 0:
+                for n, name in enumerate(params):
+                    params[n] = str(name)
                 param_str += ", " + ", ".join(params)
         return f""" {misc.cond(condition is not None, f"if ({condition})")}
                     begin
                         $display("%0d: test {status}{msg}"{param_str});
-                        #10; $finish;
+                        {misc.cond(stop, "#10; $finish;")}
                     end
                 """
 

@@ -58,7 +58,53 @@ class p2v_signal:
         self.remark = remark
 
     def __str__(self):
-        return f"{self.kind} {self._declare_bits()} {self.name} (driven={self.driven}, used={self.used})"
+        return self.name
+
+    def __add__(self, other):
+        return f"{self} + {other}"
+
+    def __sub__(self, other):
+        return f"{self} - {other}"
+
+    def __mul__(self, other):
+        return f"{self} * {other}"
+
+    def __eq__(self, other):
+        return f"{self} == {other}"
+
+    def __ne__(self, other):
+        return f"{self} != {other}"
+
+    def __lt__(self, other):
+        return f"{self} < {other}"
+
+    def __le__(self, other):
+        return f"{self} <= {other}"
+
+    def __gt__(self, other):
+        return f"{self} > {other}"
+
+    def __ge__(self, other):
+        return f"{self} >= {other}"
+
+    def __and__(self, other):
+        return f"{self} & {other}"
+
+    def __or__(self, other):
+        return f"{self} | {other}"
+
+    def __xor__(self, other):
+        return f"{self} ^ {other}"
+
+    def __invert__(self):
+        return f"~{self}"
+
+    def __lshift__(self, other):
+        return f"{self} << {other}"
+
+    def __rshift__(self, other):
+        return f"{self} >> {other}"
+
 
     def _declare_bits_dim(self, bits):
         if isinstance(bits, str):

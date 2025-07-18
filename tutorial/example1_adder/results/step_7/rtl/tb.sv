@@ -1,8 +1,8 @@
 module tb ();
 
     // tb_adder module parameters:
-    //  * async_reset = True (bool) # sync reset or async reset
-    //  * size = 4 (int) # number of inputs to test
+    //  * async_reset = True (bool) #  sync reset or async reset
+    //  * size = 4 (int) #  number of inputs to test
 
     logic clk;
     logic resetn;
@@ -98,7 +98,7 @@ module tb ();
     always @(posedge clk)
         if (valid_out) begin
             expected = expected_q.pop_front();
-            if (o !== expected) begin
+            if (o != expected) begin
                 $display("%0d: test FAILED (mismatch expected: 0x%0h, actual: 0x%0h)", $time,
                          expected, o);
                 #10;

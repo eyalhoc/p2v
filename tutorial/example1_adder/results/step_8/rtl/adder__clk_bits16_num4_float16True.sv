@@ -11,10 +11,10 @@ module adder__clk_bits16_num4_float16True (
 );
 
     // adder module parameters:
-    //  * clk = "clock('clk', rst_n='resetn')" (p2v_clock)
-    //  * bits = 16 (int) # data width
-    //  * num = 4 (int) # number of inputs
-    //  * float16 = True (bool) # use a float16 adder
+    //  * clk = "clock('clk', rst_n='resetn')" (p2v_clock) # None
+    //  * bits = 16 (int) #  data width
+    //  * num = 4 (int) #  number of inputs
+    //  * float16 = True (bool) #  use a float16 adder
 
     logic [15:0] o0;
     logic valid_out0;

@@ -87,6 +87,15 @@ class p2v_connect():
         self._connect(name, val, kind="parameter")
         self._parent._set_used(val)
 
+    def _get_wire(self, pin, wire):
+        if isinstance(wire, p2v_signal):
+            return str(wire)
+        elif wire == "":
+            return pin
+        elif wire is None:
+            return ""
+        return wire
+        
     def connect_in(self, pin, wire=""):
         """
         Connect input port to instance.
@@ -98,8 +107,7 @@ class p2v_connect():
         Returns:
             None
         """
-        if wire == "":
-            wire = pin
+        wire = self._get_wire(pin, wire)
         self._connect(pin, wire, kind="input")
         if not isinstance(wire, int):
             self._parent._set_used(wire)
@@ -115,10 +123,7 @@ class p2v_connect():
         Returns:
             None
         """
-        if wire == "":
-            wire = pin
-        elif wire is None:
-            wire = ""
+        wire = self._get_wire(pin, wire)
         self._connect(pin, wire, kind="output")
         self._parent._set_driven(wire)
 
@@ -133,8 +138,7 @@ class p2v_connect():
         Returns:
             None
         """
-        if wire == "":
-            wire = pin
+        wire = self._get_wire(pin, wire)
         self._connect(pin, wire, kind="inout")
 
     def connect_auto(self, ports=False, suffix=""):

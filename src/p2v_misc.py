@@ -320,6 +320,7 @@ def concat(vals, sep=None, nl_every=None):
     new_vals = []
     for n, val in enumerate(vals):
         if val is not None:
+            val = str(val)
             if nl_every is not None and ((n > 0) and (n%nl_every) == 0):
                 val += "\n"
             new_vals.append(val)

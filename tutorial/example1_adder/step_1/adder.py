@@ -7,11 +7,11 @@ class adder(p2v):
     def module(self):
         self.set_modname()
         
-        self.input("a", 8)
-        self.input("b", 8)
-        self.output("o", 8)
+        a = self.input("a", 8)
+        b = self.input("b", 8)
+        o = self.output("o", 8)
         
-        self.assign("o", "a + b")
+        self.assign(o, a + b)
         
         return self.write()
 
