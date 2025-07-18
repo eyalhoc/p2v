@@ -355,7 +355,6 @@ def pad(left, name, right=0, val=0):
         Verilog code
     """
     name = str(name)
-    assert _is_legal_name(name), f"{name} is not a legal name"
     assert isinstance(left, int) and left >= 0, f"illegal left padding {left}"
     assert isinstance(right, int) and right >= 0, f"illegal left padding {right}"
     assert isinstance(val, int), f"illegal pad value {val}"
