@@ -27,6 +27,7 @@ import traceback
 import inspect
 import argparse
 import csv
+from types import SimpleNamespace as p2v_enum
 
 import p2v_misc as misc
 from p2v_clock import clk_0rst, clk_arst, clk_srst, clk_2rst # needed for clock loading from gen csv file # # pylint: disable=unused-import
@@ -45,10 +46,7 @@ MAX_SEED = 64 * 1024
 MAX_LOOP = 5
 MAX_BITS = 8 * 1024
 
-SIGNAL_TYPES = [clock, dict, int, float, list, str, tuple]
-ENUM_NAME = "__name"
-ENUM_BITS = "__bits"
-ENUM_DEFAULT = "DEFAULT"
+SIGNAL_TYPES = [clock, dict, int, float, list, str, tuple, p2v_enum]
 
 class p2v():
     """
@@ -515,9 +513,12 @@ class p2v():
         self._cache["conn"][modname] = connects
         return connects
 
-    def _get_current_line(self):
+    def _get_current_line(self, depth=1):
         # Get the previous frame
         prev_frame = inspect.currentframe().f_back.f_back
+        while depth > 1:
+            prev_frame = prev_frame.f_back
+            depth -= 1
 
         # Get frame info: filename, line number, function name, code context, index
         frame_info = inspect.getframeinfo(prev_frame)
@@ -671,6 +672,9 @@ class p2v():
             self._outfiles[modname] = outhash
 
     def _port(self, kind, name, bits=1, used=False, driven=False):
+        if name == "":
+            name = self._get_receive_name(kind, depth=2)
+            
         self._assert(misc._is_legal_name(str(name)), f"{kind} port {name} has an illegal name")
         self._assert(type(bits) in SIGNAL_TYPES, f"unknown type {bits} for port", fatal=True)
         if isinstance(name, clock):
@@ -1228,6 +1232,13 @@ class p2v():
         if local:
             self.line(f"localparam {name} = {val};")
 
+    def _get_receive_name(self, cmd, depth=1):
+        current_line = self._get_current_line(depth=depth+1)
+        line = current_line.replace(" ", "").split("#")[0]
+        name = line.split(f"{cmd}(")[0].split("=")[0]
+        self._assert(misc._is_legal_name(name), f"missing receive variable for {cmd}", fatal=True)
+        return name
+
     def enum(self, names):
         """
         Declare an enumerated type.
@@ -1242,9 +1253,6 @@ class p2v():
         if self._exists():
             return []
 
-        enum_name = self._get_current_line().split("=")[0].strip()
-        self._assert(misc._is_legal_name(enum_name), "enum() return value must be used by a Python variable", fatal=True)
-
         if isinstance(names, list):
             enum_names = {}
             for n, name in enumerate(names):
@@ -1255,19 +1263,23 @@ class p2v():
         max_val = 0
         for name, val in enum_names.items():
             self._assert(misc._is_legal_name(name), f"enumerated type {name} does not use a legal name", fatal=True)
-            self._assert(name != ENUM_DEFAULT, f"enum cannot use reserevd name {ENUM_DEFAULT}", fatal=True)
+            self._assert(name not in ["NAME", "BITS", "DEFAULT"], f"enum cannot use reserevd name {name}", fatal=True)
             self._assert(isinstance(val, int), f"enumerated type {name} is of type {type(val)} while expecting type int", fatal=True)
             max_val = max(max_val, val)
         max_val_bin = misc.bin(max_val, add_sep=0, prefix=None)
         enum_bits = len(max_val_bin)
+        
+        enum_vals = {}
         for name, val in enum_names.items():
             self.parameter(name, misc.dec(val, enum_bits), local=True)
+            enum_vals[name] = name
+            enum_vals[f"__{name}"] = val
         self.line()
-        enum_names[ENUM_NAME] = enum_name
-        enum_names[ENUM_BITS] = enum_bits
-        return enum_names
+        enum_vals["NAME"] = self._get_receive_name("enum")
+        enum_vals["BITS"] = enum_bits
+        return p2v_enum(**enum_vals)
 
-    def input(self, name, bits=1):
+    def input(self, name="", bits=1):
         """
         Create an input port.
 
@@ -1283,11 +1295,14 @@ class p2v():
         Returns:
             p2v struct if type is struct otherwise None
         """
+        if not isinstance(name, (str, list, clock)):
+            bits = name
+            name = ""
         self._assert_type(name, [str, list ,clock])
         self._assert_type(bits, SIGNAL_TYPES)
         return self._port("input", name, bits, driven=True)
 
-    def output(self, name, bits=1):
+    def output(self, name="", bits=1):
         """
         Create an output port.
 
@@ -1303,11 +1318,14 @@ class p2v():
         Returns:
             p2v struct if type is struct otherwise None
         """
+        if not isinstance(name, (str, list, clock)):
+            bits = name
+            name = ""
         self._assert_type(name, [str, list, clock])
         self._assert_type(bits, SIGNAL_TYPES)
         return self._port("output", name, bits, used=True)
 
-    def inout(self, name):
+    def inout(self, name=""):
         """
         Create an inout port.
 
@@ -1322,7 +1340,7 @@ class p2v():
             return
         self._port("inout", name, bits=1, used=True, driven=True)
 
-    def logic(self, name, bits=1, assign=None, initial=None):
+    def logic(self, name="", bits=1, assign=None, initial=None):
         """
         Declare a Verilog signal.
 
@@ -1340,6 +1358,12 @@ class p2v():
         Returns:
             p2v struct if type is struct otherwise None
         """
+        if not isinstance(name, (str, list, clock)):
+            bits = name
+            name = ""
+        if name == "":
+            name = self._get_receive_name("logic")
+            
         self._assert_type(name, [clock, p2v_signal, str, list])
         self._assert_type(bits, SIGNAL_TYPES)
         self._assert_type(assign, [p2v_signal, int, str, dict, None])
@@ -1348,8 +1372,8 @@ class p2v():
         if isinstance(name, p2v_signal):
             name = str(name)
             
-        if isinstance(bits, dict) and ENUM_BITS in bits:
-            bits = bits[ENUM_BITS]
+        if isinstance(bits, p2v_enum):
+            bits = bits.BITS
 
         rtrn = None
         if isinstance(name, clock):
@@ -1440,7 +1464,7 @@ class p2v():
         self._assert_type(src, [p2v_signal, str])
         self._assert_type(tgt, [p2v_signal, str])
         self._assert_type(valid, [p2v_signal, str, None])
-        self._assert_type(reset, [str, None])
+        self._assert_type(reset, [p2v_signal, str, None])
         self._assert_type(reset_val, [int, str])
         self._assert_type(bits, [int, None])
         self._assert_type(bypass, bool)
@@ -1451,6 +1475,8 @@ class p2v():
             src = str(src)
         if isinstance(valid, p2v_signal):
             valid = str(valid)
+        if isinstance(reset, p2v_signal):
+            reset = str(reset)
         self._set_used(src, drive=False)
         if valid is not None:
             self.allow_unused(valid)

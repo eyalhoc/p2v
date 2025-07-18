@@ -13,11 +13,11 @@ class adder(p2v):
         
         self.input(clk) # default clock uses an async reset
         
-        valid = self.input("valid") # default width is 1 bit
-        a = self.input("a", bits)
-        b = self.input("b", bits)
-        o = self.output("o", bits)
-        valid_out = self.output("valid_out")
+        valid = self.input() # default width is 1 bit
+        a = self.input(bits)
+        b = self.input(bits)
+        o = self.output(bits)
+        valid_out = self.output()
         
         self.sample(clk, o, a + b, valid=valid)
         self.sample(clk, valid_out, valid)

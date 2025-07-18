@@ -6,12 +6,12 @@ from p2v import p2v
 
 class adder(p2v):
     def module(self, bits=8):
-        self.set_param(bits, int, bits > 0, remark="data width") # set_param(var, type, constraints)
+        self.set_param(bits, int, bits > 0) # data width
         self.set_modname()
         
-        a = self.input("a", bits)
-        b = self.input("b", bits)
-        o = self.output("o", bits)
+        a = self.input(bits)
+        b = self.input(bits)
+        o = self.output(bits)
         
         self.assign(o, a + b)
         

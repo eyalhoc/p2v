@@ -21,6 +21,7 @@ import numpy as np
 
 from p2v_clock import p2v_clock as clock, clk_0rst, clk_arst, clk_srst, clk_2rst
 import p2v_misc as misc
+from p2v_signal import p2v_signal
 import p2v_tools
 
 PASS_STATUS = "PASSED"
@@ -160,6 +161,10 @@ class p2v_tb():
         self._parent._assert_type(has_async, [None, bool])
         self._parent._assert_type(has_sync, [None, bool])
         
+        if must_have_reset and has_async is None and has_sync is None:
+            has_async = self.rand_bool()
+            has_sync = not has_async
+            
         if has_async is None:
             has_async = self.rand_bool()
         if has_sync is None:
@@ -219,7 +224,7 @@ class p2v_tb():
         """
         if params is None:
             params = []
-        self._parent._assert_type(condition, [None, str])
+        self._parent._assert_type(condition, [None, str, p2v_signal])
         self._parent._assert_type(message, [None, str])
         self._parent._assert_type(params, [str, list])
         return self._test_finish(PASS_STATUS, condition=condition, message=message, params=params)
@@ -238,7 +243,7 @@ class p2v_tb():
         """
         if params is None:
             params = []
-        self._parent._assert_type(condition, [None, str])
+        self._parent._assert_type(condition, [None, str, p2v_signal])
         self._parent._assert_type(message, [None, str])
         self._parent._assert_type(params, [str, list])
         return self._test_finish(FAIL_STATUS, condition=condition, message=message, params=params)

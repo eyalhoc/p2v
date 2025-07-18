@@ -24,8 +24,9 @@ class p2v_signal:
     """
     def __init__(self, kind, name, bits=None, strct=None, used=False, driven=False, remark=None):
         assert isinstance(name, str), f"{kind} {name} is of type {type(name)} while expecting str"
-        assert isinstance(bits, (str, int, list, tuple, float)), bits
-        assert misc._is_legal_name(name), f"{name} does not have a legal name"
+        if kind is not None:
+            assert isinstance(bits, (str, int, list, tuple, float)), bits
+            assert misc._is_legal_name(name), f"{name} does not have a legal name"
         self.kind = kind
         self.name = name
         if strct is None:
@@ -61,49 +62,49 @@ class p2v_signal:
         return self.name
 
     def __add__(self, other):
-        return f"{self} + {other}"
+        return p2v_signal(None, f"({self} + {other})", bits=self.bits)
 
     def __sub__(self, other):
-        return f"{self} - {other}"
+        return p2v_signal(None, f"({self} - {other})", bits=self.bits)
 
     def __mul__(self, other):
-        return f"{self} * {other}"
+        return p2v_signal(None, f"({self} * {other})", bits=self.bits)
 
     def __eq__(self, other):
-        return f"{self} == {other}"
+        return p2v_signal(None, f"({self} == {other})", bits=self.bits)
 
     def __ne__(self, other):
-        return f"{self} != {other}"
+        return p2v_signal(None, f"({self} != {other})", bits=self.bits)
 
     def __lt__(self, other):
-        return f"{self} < {other}"
+        return p2v_signal(None, f"({self} < {other})", bits=self.bits)
 
     def __le__(self, other):
-        return f"{self} <= {other}"
+        return p2v_signal(None, f"({self} <= {other})", bits=self.bits)
 
     def __gt__(self, other):
-        return f"{self} > {other}"
+        return p2v_signal(None, f"({self} > {other})", bits=self.bits)
 
     def __ge__(self, other):
-        return f"{self} >= {other}"
+        return p2v_signal(None, f"({self} >= {other})", bits=self.bits)
 
     def __and__(self, other):
-        return f"{self} & {other}"
+        return p2v_signal(None, f"({self} & {other})", bits=self.bits)
 
     def __or__(self, other):
-        return f"{self} | {other}"
+        return p2v_signal(None, f"({self} | {other})", bits=self.bits)
 
     def __xor__(self, other):
-        return f"{self} ^ {other}"
+        return p2v_signal(None, f"({self} ^ {other})", bits=self.bits)
 
     def __invert__(self):
-        return f"~{self}"
+        return p2v_signal(None, f"~{self}")
 
     def __lshift__(self, other):
-        return f"{self} << {other}"
+        return p2v_signal(None, f"({self} << {other})", bits=self.bits)
 
     def __rshift__(self, other):
-        return f"{self} >> {other}"
+        return p2v_signal(None, f"({self} >> {other})", bits=self.bits)
 
 
     def _declare_bits_dim(self, bits):

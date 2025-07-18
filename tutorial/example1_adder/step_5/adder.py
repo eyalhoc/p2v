@@ -16,12 +16,12 @@ class adder(p2v):
         
         self.input(clk)
         
-        valid = self.input("valid")
+        valid = self.input()
         data_in = []
         for n in range(num):
             data_in.append(self.input(f"i{n}", bits))
-        o = self.output("o", bits)
-        valid_out = self.output("valid_out")
+        o = self.output(bits)
+        valid_out = self.output()
         
         if num == 2:            
             self.sample(clk, o, data_in[0] + data_in[1], valid=valid)

@@ -15,7 +15,7 @@ module adder__bits8_num2 (
 
     always_ff @(posedge clk or negedge rst_n)
         if (!rst_n) o <= 8'd0;
-        else if (valid) o <= i0 + i1;
+        else if (valid) o <= (i0 + i1);
 
     always_ff @(posedge clk or negedge rst_n)
         if (!rst_n) valid_out <= 1'd0;

@@ -24,15 +24,15 @@ class adder(p2v):
         
         self.input(clk)
         
-        valid = self.input("valid")
+        valid = self.input()
         data_in = []
         for n in range(num):
             data_in.append(self.input(f"i{n}", bits))
-        o = self.output("o", bits)
-        valid_out = self.output("valid_out")
+        o = self.output(bits)
+        valid_out = self.output()
         
         if num == 2:                
-            o_pre = self.logic("o_pre", bits)
+            o_pre = self.logic(bits)
             if float16:
                 float16_stat = ["overflow", "zero", "NaN", "precisionLost"]
                 self.logic(float16_stat)

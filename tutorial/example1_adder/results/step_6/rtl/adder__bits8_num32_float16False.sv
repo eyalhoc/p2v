@@ -99,7 +99,7 @@ module adder__bits8_num32_float16False (
     adder__bits8_num2_float16False adder_out (
         .clk(clk),  // input
         .rst_n(rst_n),  // input
-        .valid(valid_out0 & valid_out1),  // input
+        .valid((valid_out0 & valid_out1)),  // input
         .i0(o0),  // input
         .i1(o1),  // input
         .o(o),  // output

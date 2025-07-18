@@ -43,7 +43,7 @@ module adder__clk_bits16_num4_float16False (
     adder__clk_bits16_num2_float16False adder_out (
         .clk(clk),  // input
         .resetn(resetn),  // input
-        .valid(valid_out0 & valid_out1),  // input
+        .valid((valid_out0 & valid_out1)),  // input
         .i0(o0),  // input
         .i1(o1),  // input
         .o(o),  // output
