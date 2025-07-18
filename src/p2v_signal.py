@@ -98,7 +98,7 @@ class p2v_signal:
         return p2v_signal(None, f"({self} ^ {other})", bits=self.bits)
 
     def __invert__(self):
-        return p2v_signal(None, f"~{self}")
+        return p2v_signal(None, f"~{self}", bits=self.bits)
 
     def __lshift__(self, other):
         return p2v_signal(None, f"({self} << {other})", bits=self.bits)

@@ -601,7 +601,7 @@ class p2v():
         if self._exists(): # is called from p2v_connect
             return
         if isinstance(wire, p2v_signal):
-            name = str(wire)
+            wire = str(wire)
             
         if isinstance(wire, clock):
             for net in wire.get_nets():
