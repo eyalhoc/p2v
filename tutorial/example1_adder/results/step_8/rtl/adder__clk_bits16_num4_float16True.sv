@@ -51,4 +51,4 @@ module adder__clk_bits16_num4_float16True (
     );
 
 
-endmodule
+endmodule  // adder__clk_bits16_num4_float16True

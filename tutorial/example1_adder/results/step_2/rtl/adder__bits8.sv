@@ -9,4 +9,4 @@ module adder__bits8 (
 
     assign o = (a + b);
 
-endmodule
+endmodule  // adder__bits8

@@ -20,6 +20,8 @@ import hashlib
 import math
 import os
 
+from p2v_signal import p2v_signal #pylint: disable=cyclic-import
+
 def _get_hash(s):
     assert isinstance(s, str), s
     hash_object = hashlib.sha1(s.encode())
@@ -191,10 +193,14 @@ def _read_file(filename):
         return s
 
 def _write_file(filename, s, append=False):
-    with open(filename, cond(append, "a", "w"), encoding="utf-8") as file:
+    if append:
+        mode = "a"
+    else:
+        mode = "w"
+    with open(filename, mode, encoding="utf-8") as file:
         file.write(s + "\n")
         file.close()
-        
+
 def _compare_files(filename1, filename2):
     with open(filename1, 'r', encoding='utf-8') as f1, open(filename2, 'r', encoding='utf-8') as f2:
         return f1.read() == f2.read()
@@ -296,8 +302,9 @@ def cond(condition, true_var, false_var=""):
         Selected input parameter
     """
     if not isinstance(condition, bool): # verilog condition
-        return f"{condition} ? {true_var} : {false_var}"
-        
+        rtrn = f"{condition} ? {true_var} : {false_var}"
+        return p2v_signal(None, rtrn, bits=bits)
+
     if condition:
         return true_var
     return false_var
@@ -339,7 +346,8 @@ def concat(vals, sep=None, nl_every=None):
                 vals[i] = f"({val})"
     if len(sep) == 1:
         sep = f" {sep} "
-    return sep.join(vals)
+    rtrn = sep.join(vals)
+    return p2v_signal(None, rtrn, bits=bits)
 
 def pad(left, name, right=0, val=0):
     """
@@ -364,7 +372,8 @@ def pad(left, name, right=0, val=0):
     vals.append(str(name))
     if right > 0:
         vals.append(dec(val, right))
-    return concat(vals)
+    rtrn = concat(vals)
+    return p2v_signal(None, rtrn, bits=1)
 
 def dec(num, bits=1): # pylint: disable=redefined-outer-name
     """
@@ -388,7 +397,8 @@ def dec(num, bits=1): # pylint: disable=redefined-outer-name
         return "{" + str(bits) + "{1'b1}}"
     if num < 0:
         return bin(num + (1<<bits), bits)
-    return f"{bits}'d{num}"
+    rtrn = f"{bits}'d{num}"
+    return p2v_signal(None, rtrn, bits=bits)
 
 def hex(num, bits=None, add_sep=4, prefix="'h"): # pylint: disable=redefined-builtin,redefined-outer-name
     """
@@ -407,7 +417,8 @@ def hex(num, bits=None, add_sep=4, prefix="'h"): # pylint: disable=redefined-bui
     assert isinstance(bits, (type(None), int)), bits
     assert isinstance(add_sep, int) and add_sep >= 0, add_sep
     assert isinstance(prefix, (type(None), str)), prefix
-    return _base(16, num, bits, add_sep, prefix)
+    rtrn = _base(16, num, bits, add_sep, prefix)
+    return p2v_signal(None, rtrn, bits=bits)
 
 def bin(num, bits=None, add_sep=4, prefix="'b"): # pylint: disable=redefined-builtin,redefined-outer-name
     """
@@ -426,7 +437,8 @@ def bin(num, bits=None, add_sep=4, prefix="'b"): # pylint: disable=redefined-bui
     assert isinstance(bits, (type(None), int)), bits
     assert isinstance(add_sep, int) and add_sep >= 0, add_sep
     assert isinstance(prefix, (type(None), str)), prefix
-    return _base(2, num, bits, add_sep, prefix)
+    rtrn = _base(2, num, bits, add_sep, prefix)
+    return p2v_signal(None, rtrn, bits=bits)
 
 def bits(name, bits, start=0): # pylint: disable=redefined-outer-name
     """
@@ -449,7 +461,8 @@ def bits(name, bits, start=0): # pylint: disable=redefined-outer-name
         return f"{name}[{start}]"
     if start > end:
         return None
-    return f"{name}[{end}:{start}]"
+    rtrn = f"{name}[{end}:{start}]"
+    return p2v_signal(None, rtrn, bits=bits)
 
 def bit(name, idx):
     """
@@ -465,7 +478,8 @@ def bit(name, idx):
     name = str(name)
     assert _is_legal_name(name), f"{name} is not a legal name"
     assert isinstance(idx, (int, str)), f"{name} uses illegal index {idx}"
-    return f"{name}[{idx}]"
+    rtrn = f"{name}[{idx}]"
+    return p2v_signal(None, rtrn, bits=1)
 
 def is_hotone(var, bits, allow_zero=False): # pylint: disable=redefined-outer-name
     """
@@ -504,3 +518,17 @@ def invert(var, not_op="~"):
         if _is_in_paren(var_not):
             return _remove_extra_paren(var_not)
     return f"{not_op}({var})"
+
+def add_paren(expr, open_char="(", close_char=")"):
+    """
+    Verilog not expression, removed previous not if present.
+
+    Args:
+        expr(str): Verilog expression
+        open_char(str): open paren
+        close_char(str): close paren
+
+    Returns:
+        Verilog code
+    """
+    return _remove_extra_paren(open_char + expr + close_char)

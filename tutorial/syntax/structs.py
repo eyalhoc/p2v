@@ -27,20 +27,20 @@ class structs(p2v):
         
         
         # async assignment - full axi struct
-        mstr0 = self.input("master0", axi_strct) # axi input port
-        slv0 = self.output("slave0", axi_strct) # axi output port
+        mstr0 = self.input(axi_strct) # axi input port
+        slv0 = self.output(axi_strct) # axi output port
         
-        self.assign("slave0", "master0") # assign axi structs with change of write address
+        self.assign(slv0, mstr0) # assign axi structs with change of write address
         
         
         # async assignment - full axi struct with field change
-        self.input("write_addr", addr_bits)
-        mstr1 = self.input("master1", axi_strct) # axi input port
-        slv1 = self.output("slave1", axi_strct) # axi output port
+        write_addr = self.input(addr_bits)
+        mstr1 = self.input(axi_strct) # axi input port
+        slv1 = self.output(axi_strct) # axi output port
         
-        self.assign(slv1["aw"]["addr"], "write_addr") # assign awaddr field
-        self.assign("slave1", "master1") # assign axi structs with change of write address
-        self.allow_unused(mstr1["aw"]["addr"]) # don't give lint error on unused master awaddr
+        self.assign(slv1.aw.addr, write_addr) # assign awaddr field
+        self.assign(slv1, mstr1) # assign axi structs with change of write address
+        self.allow_unused(mstr1.aw.addr) # don't give lint error on unused master awaddr
         
         
         # async assignment - sub structs one by one
@@ -60,21 +60,21 @@ class structs(p2v):
                 
 
         # basic struct
-        self.input("bi", basic)
-        self.output("bo", basic)
-        self.assign("bo", "bi")
+        bi = self.input(basic)
+        bo = self.output(basic)
+        self.assign(bo, bi)
        
        
         # basic struct with additonla field c
-        self.input("bci", basic_with_c)
-        self.output("bco", basic_with_c)
-        self.assign("bco", "bci")
+        bci = self.input(basic_with_c)
+        bco = self.output(basic_with_c)
+        self.assign(bco, bci)
        
        
         # casting between basic and basic_with_c
-        cast_o = self.output("cast_o", basic_with_c)
-        self.assign("cast_o", "bi")
-        self.assign(cast_o["c"], "2'd2")
+        cast_o = self.output(basic_with_c)
+        self.assign(cast_o, bi)
+        self.assign(cast_o.c, "2'd2")
        
         return self.write()
 

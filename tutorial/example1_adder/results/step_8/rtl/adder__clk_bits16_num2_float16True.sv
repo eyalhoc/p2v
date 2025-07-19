@@ -74,4 +74,4 @@ module adder__clk_bits16_num2_float16True (
         else valid_out <= valid;
 
 
-endmodule
+endmodule  // adder__clk_bits16_num2_float16True

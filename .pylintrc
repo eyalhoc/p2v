@@ -10,7 +10,7 @@ max-locals=20
 max-statements=64
 max-public-methods=25
 max-module-lines=2000
-max-branches=20
+max-branches=25
 
 [MESSAGES CONTROL]
 disable=protected-access,too-many-positional-arguments

@@ -1,123 +1,123 @@
-module structs__addr_bits32_data_bits512 (
+module structs__clkclk_addr_bits32_data_bits512 (
     input logic clk,
     input logic rst_n,
-    input logic [3:0] master0__awid,
-    input logic [31:0] master0__awaddr,
-    input logic [1:0] master0__awburst,
-    input logic [7:0] master0__awlen,
-    input logic [2:0] master0__awsize,
-    input logic master0__awvalid,
-    output logic master0__awready,
-    input logic [3:0] master0__arid,
-    input logic [31:0] master0__araddr,
-    input logic [1:0] master0__arburst,
-    input logic [7:0] master0__arlen,
-    input logic [2:0] master0__arsize,
-    input logic master0__arvalid,
-    output logic master0__arready,
-    input logic [511:0] master0__wdata,
-    input logic [63:0] master0__wstrb,
-    input logic master0__wlast,
-    input logic master0__wvalid,
-    output logic master0__wready,
-    output logic [3:0] master0__bid,
-    output logic [1:0] master0__bresp,
-    input logic master0__bready,
-    output logic master0__bvalid,
-    output logic [511:0] master0__rdata,
-    output logic [3:0] master0__rid,
-    output logic [1:0] master0__rresp,
-    output logic master0__rlast,
-    input logic master0__rready,
-    output logic master0__rvalid,
-    output logic [3:0] slave0__awid,
-    output logic [31:0] slave0__awaddr,
-    output logic [1:0] slave0__awburst,
-    output logic [7:0] slave0__awlen,
-    output logic [2:0] slave0__awsize,
-    output logic slave0__awvalid,
-    input logic slave0__awready,
-    output logic [3:0] slave0__arid,
-    output logic [31:0] slave0__araddr,
-    output logic [1:0] slave0__arburst,
-    output logic [7:0] slave0__arlen,
-    output logic [2:0] slave0__arsize,
-    output logic slave0__arvalid,
-    input logic slave0__arready,
-    output logic [511:0] slave0__wdata,
-    output logic [63:0] slave0__wstrb,
-    output logic slave0__wlast,
-    output logic slave0__wvalid,
-    input logic slave0__wready,
-    input logic [3:0] slave0__bid,
-    input logic [1:0] slave0__bresp,
-    output logic slave0__bready,
-    input logic slave0__bvalid,
-    input logic [511:0] slave0__rdata,
-    input logic [3:0] slave0__rid,
-    input logic [1:0] slave0__rresp,
-    input logic slave0__rlast,
-    output logic slave0__rready,
-    input logic slave0__rvalid,
+    input logic [3:0] mstr0__awid,
+    input logic [31:0] mstr0__awaddr,
+    input logic [1:0] mstr0__awburst,
+    input logic [7:0] mstr0__awlen,
+    input logic [2:0] mstr0__awsize,
+    input logic mstr0__awvalid,
+    output logic mstr0__awready,
+    input logic [3:0] mstr0__arid,
+    input logic [31:0] mstr0__araddr,
+    input logic [1:0] mstr0__arburst,
+    input logic [7:0] mstr0__arlen,
+    input logic [2:0] mstr0__arsize,
+    input logic mstr0__arvalid,
+    output logic mstr0__arready,
+    input logic [511:0] mstr0__wdata,
+    input logic [63:0] mstr0__wstrb,
+    input logic mstr0__wlast,
+    input logic mstr0__wvalid,
+    output logic mstr0__wready,
+    output logic [3:0] mstr0__bid,
+    output logic [1:0] mstr0__bresp,
+    input logic mstr0__bready,
+    output logic mstr0__bvalid,
+    output logic [511:0] mstr0__rdata,
+    output logic [3:0] mstr0__rid,
+    output logic [1:0] mstr0__rresp,
+    output logic mstr0__rlast,
+    input logic mstr0__rready,
+    output logic mstr0__rvalid,
+    output logic [3:0] slv0__awid,
+    output logic [31:0] slv0__awaddr,
+    output logic [1:0] slv0__awburst,
+    output logic [7:0] slv0__awlen,
+    output logic [2:0] slv0__awsize,
+    output logic slv0__awvalid,
+    input logic slv0__awready,
+    output logic [3:0] slv0__arid,
+    output logic [31:0] slv0__araddr,
+    output logic [1:0] slv0__arburst,
+    output logic [7:0] slv0__arlen,
+    output logic [2:0] slv0__arsize,
+    output logic slv0__arvalid,
+    input logic slv0__arready,
+    output logic [511:0] slv0__wdata,
+    output logic [63:0] slv0__wstrb,
+    output logic slv0__wlast,
+    output logic slv0__wvalid,
+    input logic slv0__wready,
+    input logic [3:0] slv0__bid,
+    input logic [1:0] slv0__bresp,
+    output logic slv0__bready,
+    input logic slv0__bvalid,
+    input logic [511:0] slv0__rdata,
+    input logic [3:0] slv0__rid,
+    input logic [1:0] slv0__rresp,
+    input logic slv0__rlast,
+    output logic slv0__rready,
+    input logic slv0__rvalid,
     input logic [31:0] write_addr,
-    input logic [3:0] master1__awid,
-    input logic [31:0] master1__awaddr,
-    input logic [1:0] master1__awburst,
-    input logic [7:0] master1__awlen,
-    input logic [2:0] master1__awsize,
-    input logic master1__awvalid,
-    output logic master1__awready,
-    input logic [3:0] master1__arid,
-    input logic [31:0] master1__araddr,
-    input logic [1:0] master1__arburst,
-    input logic [7:0] master1__arlen,
-    input logic [2:0] master1__arsize,
-    input logic master1__arvalid,
-    output logic master1__arready,
-    input logic [511:0] master1__wdata,
-    input logic [63:0] master1__wstrb,
-    input logic master1__wlast,
-    input logic master1__wvalid,
-    output logic master1__wready,
-    output logic [3:0] master1__bid,
-    output logic [1:0] master1__bresp,
-    input logic master1__bready,
-    output logic master1__bvalid,
-    output logic [511:0] master1__rdata,
-    output logic [3:0] master1__rid,
-    output logic [1:0] master1__rresp,
-    output logic master1__rlast,
-    input logic master1__rready,
-    output logic master1__rvalid,
-    output logic [3:0] slave1__awid,
-    output logic [31:0] slave1__awaddr,
-    output logic [1:0] slave1__awburst,
-    output logic [7:0] slave1__awlen,
-    output logic [2:0] slave1__awsize,
-    output logic slave1__awvalid,
-    input logic slave1__awready,
-    output logic [3:0] slave1__arid,
-    output logic [31:0] slave1__araddr,
-    output logic [1:0] slave1__arburst,
-    output logic [7:0] slave1__arlen,
-    output logic [2:0] slave1__arsize,
-    output logic slave1__arvalid,
-    input logic slave1__arready,
-    output logic [511:0] slave1__wdata,
-    output logic [63:0] slave1__wstrb,
-    output logic slave1__wlast,
-    output logic slave1__wvalid,
-    input logic slave1__wready,
-    input logic [3:0] slave1__bid,
-    input logic [1:0] slave1__bresp,
-    output logic slave1__bready,
-    input logic slave1__bvalid,
-    input logic [511:0] slave1__rdata,
-    input logic [3:0] slave1__rid,
-    input logic [1:0] slave1__rresp,
-    input logic slave1__rlast,
-    output logic slave1__rready,
-    input logic slave1__rvalid,
+    input logic [3:0] mstr1__awid,
+    input logic [31:0] mstr1__awaddr,
+    input logic [1:0] mstr1__awburst,
+    input logic [7:0] mstr1__awlen,
+    input logic [2:0] mstr1__awsize,
+    input logic mstr1__awvalid,
+    output logic mstr1__awready,
+    input logic [3:0] mstr1__arid,
+    input logic [31:0] mstr1__araddr,
+    input logic [1:0] mstr1__arburst,
+    input logic [7:0] mstr1__arlen,
+    input logic [2:0] mstr1__arsize,
+    input logic mstr1__arvalid,
+    output logic mstr1__arready,
+    input logic [511:0] mstr1__wdata,
+    input logic [63:0] mstr1__wstrb,
+    input logic mstr1__wlast,
+    input logic mstr1__wvalid,
+    output logic mstr1__wready,
+    output logic [3:0] mstr1__bid,
+    output logic [1:0] mstr1__bresp,
+    input logic mstr1__bready,
+    output logic mstr1__bvalid,
+    output logic [511:0] mstr1__rdata,
+    output logic [3:0] mstr1__rid,
+    output logic [1:0] mstr1__rresp,
+    output logic mstr1__rlast,
+    input logic mstr1__rready,
+    output logic mstr1__rvalid,
+    output logic [3:0] slv1__awid,
+    output logic [31:0] slv1__awaddr,
+    output logic [1:0] slv1__awburst,
+    output logic [7:0] slv1__awlen,
+    output logic [2:0] slv1__awsize,
+    output logic slv1__awvalid,
+    input logic slv1__awready,
+    output logic [3:0] slv1__arid,
+    output logic [31:0] slv1__araddr,
+    output logic [1:0] slv1__arburst,
+    output logic [7:0] slv1__arlen,
+    output logic [2:0] slv1__arsize,
+    output logic slv1__arvalid,
+    input logic slv1__arready,
+    output logic [511:0] slv1__wdata,
+    output logic [63:0] slv1__wstrb,
+    output logic slv1__wlast,
+    output logic slv1__wvalid,
+    input logic slv1__wready,
+    input logic [3:0] slv1__bid,
+    input logic [1:0] slv1__bresp,
+    output logic slv1__bready,
+    input logic slv1__bvalid,
+    input logic [511:0] slv1__rdata,
+    input logic [3:0] slv1__rid,
+    input logic [1:0] slv1__rresp,
+    input logic slv1__rlast,
+    output logic slv1__rready,
+    input logic slv1__rvalid,
     input logic [3:0] master2_aw__id,
     input logic [31:0] master2_aw__addr,
     input logic [1:0] master2_aw__burst,
@@ -249,72 +249,72 @@ module structs__addr_bits32_data_bits512 (
     output logic [1:0] cast_o__c
 );
 
-    // module parameters:
-    // clk = p2v_clock.clk_arst() (p2v_clock)
-    // addr_bits = 32 (int)
-    // data_bits = 512 (int)
+    // structs module parameters:
+    //  * clk = clk_arst() (p2v_clock) # None
+    //  * addr_bits = 32 (int) # None
+    //  * data_bits = 512 (int) # None
 
 
-    assign slave0__awid = master0__awid;
-    assign slave0__awaddr = master0__awaddr;
-    assign slave0__awburst = master0__awburst;
-    assign slave0__awlen = master0__awlen;
-    assign slave0__awsize = master0__awsize;
-    assign slave0__awvalid = master0__awvalid;
-    assign master0__awready = slave0__awready;
-    assign slave0__arid = master0__arid;
-    assign slave0__araddr = master0__araddr;
-    assign slave0__arburst = master0__arburst;
-    assign slave0__arlen = master0__arlen;
-    assign slave0__arsize = master0__arsize;
-    assign slave0__arvalid = master0__arvalid;
-    assign master0__arready = slave0__arready;
-    assign slave0__wdata = master0__wdata;
-    assign slave0__wstrb = master0__wstrb;
-    assign slave0__wlast = master0__wlast;
-    assign slave0__wvalid = master0__wvalid;
-    assign master0__wready = slave0__wready;
-    assign master0__bid = slave0__bid;
-    assign master0__bresp = slave0__bresp;
-    assign slave0__bready = master0__bready;
-    assign master0__bvalid = slave0__bvalid;
-    assign master0__rdata = slave0__rdata;
-    assign master0__rid = slave0__rid;
-    assign master0__rresp = slave0__rresp;
-    assign master0__rlast = slave0__rlast;
-    assign slave0__rready = master0__rready;
-    assign master0__rvalid = slave0__rvalid;
+    assign slv0__awid = mstr0__awid;
+    assign slv0__awaddr = mstr0__awaddr;
+    assign slv0__awburst = mstr0__awburst;
+    assign slv0__awlen = mstr0__awlen;
+    assign slv0__awsize = mstr0__awsize;
+    assign slv0__awvalid = mstr0__awvalid;
+    assign mstr0__awready = slv0__awready;
+    assign slv0__arid = mstr0__arid;
+    assign slv0__araddr = mstr0__araddr;
+    assign slv0__arburst = mstr0__arburst;
+    assign slv0__arlen = mstr0__arlen;
+    assign slv0__arsize = mstr0__arsize;
+    assign slv0__arvalid = mstr0__arvalid;
+    assign mstr0__arready = slv0__arready;
+    assign slv0__wdata = mstr0__wdata;
+    assign slv0__wstrb = mstr0__wstrb;
+    assign slv0__wlast = mstr0__wlast;
+    assign slv0__wvalid = mstr0__wvalid;
+    assign mstr0__wready = slv0__wready;
+    assign mstr0__bid = slv0__bid;
+    assign mstr0__bresp = slv0__bresp;
+    assign slv0__bready = mstr0__bready;
+    assign mstr0__bvalid = slv0__bvalid;
+    assign mstr0__rdata = slv0__rdata;
+    assign mstr0__rid = slv0__rid;
+    assign mstr0__rresp = slv0__rresp;
+    assign mstr0__rlast = slv0__rlast;
+    assign slv0__rready = mstr0__rready;
+    assign mstr0__rvalid = slv0__rvalid;
 
-    assign slave1__awaddr = write_addr;
+    assign slv1__awaddr = write_addr;  //  assign awaddr field
 
-    assign slave1__awid = master1__awid;
-    assign slave1__awburst = master1__awburst;
-    assign slave1__awlen = master1__awlen;
-    assign slave1__awsize = master1__awsize;
-    assign slave1__awvalid = master1__awvalid;
-    assign master1__awready = slave1__awready;
-    assign slave1__arid = master1__arid;
-    assign slave1__araddr = master1__araddr;
-    assign slave1__arburst = master1__arburst;
-    assign slave1__arlen = master1__arlen;
-    assign slave1__arsize = master1__arsize;
-    assign slave1__arvalid = master1__arvalid;
-    assign master1__arready = slave1__arready;
-    assign slave1__wdata = master1__wdata;
-    assign slave1__wstrb = master1__wstrb;
-    assign slave1__wlast = master1__wlast;
-    assign slave1__wvalid = master1__wvalid;
-    assign master1__wready = slave1__wready;
-    assign master1__bid = slave1__bid;
-    assign master1__bresp = slave1__bresp;
-    assign slave1__bready = master1__bready;
-    assign master1__bvalid = slave1__bvalid;
-    assign master1__rdata = slave1__rdata;
-    assign master1__rid = slave1__rid;
-    assign master1__rresp = slave1__rresp;
-    assign master1__rlast = slave1__rlast;
-    assign slave1__rready = master1__rready;
-    assign master1__rvalid = slave1__rvalid;
+    assign slv1__awid = mstr1__awid;
+    assign slv1__awburst = mstr1__awburst;
+    assign slv1__awlen = mstr1__awlen;
+    assign slv1__awsize = mstr1__awsize;
+    assign slv1__awvalid = mstr1__awvalid;
+    assign mstr1__awready = slv1__awready;
+    assign slv1__arid = mstr1__arid;
+    assign slv1__araddr = mstr1__araddr;
+    assign slv1__arburst = mstr1__arburst;
+    assign slv1__arlen = mstr1__arlen;
+    assign slv1__arsize = mstr1__arsize;
+    assign slv1__arvalid = mstr1__arvalid;
+    assign mstr1__arready = slv1__arready;
+    assign slv1__wdata = mstr1__wdata;
+    assign slv1__wstrb = mstr1__wstrb;
+    assign slv1__wlast = mstr1__wlast;
+    assign slv1__wvalid = mstr1__wvalid;
+    assign mstr1__wready = slv1__wready;
+    assign mstr1__bid = slv1__bid;
+    assign mstr1__bresp = slv1__bresp;
+    assign slv1__bready = mstr1__bready;
+    assign mstr1__bvalid = slv1__bvalid;
+    assign mstr1__rdata = slv1__rdata;
+    assign mstr1__rid = slv1__rid;
+    assign mstr1__rresp = slv1__rresp;
+    assign mstr1__rlast = slv1__rlast;
+    assign slv1__rready = mstr1__rready;
+    assign mstr1__rvalid = slv1__rvalid;
 
 
     assign slave2_aw__id = master2_aw__id;
@@ -491,4 +491,4 @@ module structs__addr_bits32_data_bits512 (
 
     assign cast_o__c = 2'd2;
 
-endmodule
+endmodule  // structs__clkclk_addr_bits32_data_bits512

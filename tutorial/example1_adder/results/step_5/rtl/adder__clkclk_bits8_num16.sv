@@ -1,4 +1,4 @@
-module adder__bits8_num16 (
+module adder__clkclk_bits8_num16 (
     input logic clk,
     input logic rst_n,
     input logic valid,
@@ -29,7 +29,7 @@ module adder__bits8_num16 (
 
     logic [7:0] o0;
     logic valid_out0;
-    adder__bits8_num8 adder0 (
+    adder__clkclk_bits8_num8 adder0 (
         .clk(clk),  // input
         .rst_n(rst_n),  // input
         .valid(valid),  // input
@@ -47,7 +47,7 @@ module adder__bits8_num16 (
 
     logic [7:0] o1;
     logic valid_out1;
-    adder__bits8_num8 adder1 (
+    adder__clkclk_bits8_num8 adder1 (
         .clk(clk),  // input
         .rst_n(rst_n),  // input
         .valid(valid),  // input
@@ -63,7 +63,7 @@ module adder__bits8_num16 (
         .valid_out(valid_out1)  // output
     );
 
-    adder__bits8_num2 adder_out (
+    adder__clkclk_bits8_num2 adder_out (
         .clk(clk),  // input
         .rst_n(rst_n),  // input
         .valid((valid_out0 & valid_out1)),  // input
@@ -74,4 +74,4 @@ module adder__bits8_num16 (
     );
 
 
-endmodule
+endmodule  // adder__clkclk_bits8_num16

@@ -431,14 +431,25 @@ class p2v():
     def _rm_line(self, line_idx):
         del self._lines[line_idx]
 
+    def _add_strct_attr(self, signal, names):
+        for key, value in names.items():
+            if isinstance(value, dict):
+                nested = p2v_enum()
+                self._add_strct_attr(nested, value)
+                setattr(signal, key, nested)
+            else:
+                setattr(signal, key, p2v_signal(None, value, bits=1))
+
     def _add_signal(self, signal):
         if self._exists(): # is called from p2v_connect
-            return self._signals[signal.name]
+            return self._signals[signal._name]
         self._assert(self._modname is not None, "module name was not set (set_modname() was not called)", fatal=True)
-        if self._assert(signal.name not in self._signals, f"{signal.name} was previously defined"):
-            if isinstance(signal.bits, int):
-                self._assert(abs(signal.bits) <= MAX_BITS, f"{signal.name} uses {abs(signal.bits)} bits which exceeds maximum of {MAX_BITS}", warning=True)
-            self._signals[signal.name] = signal
+        if self._assert(signal._name not in self._signals, f"{signal._name} was previously defined"):
+            if isinstance(signal._bits, int):
+                self._assert(abs(signal._bits) <= MAX_BITS, f"{signal._name} uses {abs(signal._bits)} bits which exceeds maximum of {MAX_BITS}", warning=True)
+            self._signals[signal._name] = signal
+        if signal._strct is not None:
+            self._add_strct_attr(signal, names=signal._strct.names)
         return signal
 
     def _get_signals(self, kinds=None):
@@ -449,7 +460,7 @@ class p2v():
         signals = []
         for name in self._signals:
             signal = self._signals[name]
-            if signal.kind in kinds:
+            if signal._kind in kinds:
                 signals.append(signal)
         return signals
 
@@ -465,7 +476,7 @@ class p2v():
             lines.append(")")
         lines.append("(")
         for port in self._get_signals(["input", "output", "inout"]):
-            if port.bits != 0:
+            if port._bits != 0:
                 lines.append(port.declare(delimiter=","))
         lines[-1] = lines[-1].replace(",", "", 1)
         lines.append(");")
@@ -475,7 +486,7 @@ class p2v():
     def _get_module_footer(self):
         lines = []
         lines.append("")
-        lines.append("endmodule")
+        lines.append(f"endmodule // {self._modname}")
         return lines
 
     def _get_rtldir(self):
@@ -510,6 +521,8 @@ class p2v():
 
     def _get_connects(self, parent, modname, signals, params):
         connects = p2v_connect(parent, modname, signals, params=params)
+        for name, val in connects._signals.items():
+            setattr(connects, name, val)
         self._cache["conn"][modname] = connects
         return connects
 
@@ -524,9 +537,9 @@ class p2v():
         frame_info = inspect.getframeinfo(prev_frame)
         return frame_info.code_context[0].strip()
 
-    def _get_remark(self, line=None):
+    def _get_remark(self, line=None, depth=1):
         if line is None:
-            line = self._get_current_line()
+            line = self._get_current_line(depth=depth)
         if "#" in line:
             return line.split("#")[-1]
         return None
@@ -543,15 +556,15 @@ class p2v():
     def _set_used(self, wire, allow=False, drive=True):
         if isinstance(wire, p2v_signal):
             wire = str(wire)
-            
+
         if isinstance(wire, clock):
             for net in wire.get_nets():
                 self._set_used(net, allow=allow)
         elif isinstance(wire, list):
             for name in wire:
                 self._set_used(name, allow=allow)
-        elif isinstance(wire, str) and wire in self._signals and (self._signals[wire].strct is not None):
-            fields = self._signals[wire].strct.fields
+        elif isinstance(wire, str) and wire in self._signals and (self._signals[wire]._strct is not None):
+            fields = self._signals[wire]._strct.fields
             for field_name in fields:
                 bits = fields[field_name]
                 if bits > 0:
@@ -563,7 +576,7 @@ class p2v():
             wire = str(wire)
             for name in self._get_names(wire):
                 self._check_declared(name)
-                self._signals[name].used = True
+                self._signals[name]._used = True
 
     def _set_driven_str(self, wire, allow=False):
         arrays = []
@@ -586,31 +599,31 @@ class p2v():
             self._assert(len(names) == 1, f"illegal assignment to multiple signals {names}", fatal=True)
             name = names[0]
             self._check_declared(name)
-            if name in arrays or self._get_signal_bits(wire) == self._signals[name].bits:
-                if self._assert(not self._signals[name].driven or allow or name in arrays, \
+            if name in arrays or self._get_signal_bits(wire) == self._signals[name]._bits:
+                if self._assert(not self._signals[name]._driven or allow or name in arrays, \
                                 f"{name} was previously driven"): # multiple dimentional arrays are often multiple driven (2 write port)
-                    self._signals[name].driven = True
+                    self._signals[name]._driven = True
             else:
                 msb, lsb = misc._get_bit_range(wire)
-                if self._assert(msb < self._signals[name].bits, f"trying to drive {wire} when {name} has only {self._signals[name].bits} bits"):
+                if self._assert(msb < self._signals[name]._bits, f"trying to drive {wire} when {name} has only {self._signals[name]._bits} bits"):
                     for i in range(lsb, msb+1):
-                        if self._assert(not self._signals[name].driven_bits[i] or allow, f"{misc.bit(name, i)} was previously driven"):
-                            self._signals[name].driven_bits[i] = True
+                        if self._assert(not self._signals[name]._driven_bits[i] or allow, f"{misc.bit(name, i)} was previously driven"):
+                            self._signals[name]._driven_bits[i] = True
 
     def _set_driven(self, wire, allow=False):
         if self._exists(): # is called from p2v_connect
             return
         if isinstance(wire, p2v_signal):
             wire = str(wire)
-            
+
         if isinstance(wire, clock):
             for net in wire.get_nets():
                 self._set_driven(net, allow=allow)
         elif isinstance(wire, list):
             for name in wire:
                 self._set_driven(name, allow=allow)
-        elif isinstance(wire, str) and wire in self._signals and self._signals[wire].strct is not None:
-            fields = self._signals[wire].strct.fields
+        elif isinstance(wire, str) and wire in self._signals and self._signals[wire]._strct is not None:
+            fields = self._signals[wire]._strct.fields
             for field_name in fields:
                 bits = fields[field_name]
                 if bits > 0:
@@ -624,13 +637,13 @@ class p2v():
     def _check_signals(self):
         for name in self._signals:
             signal = self._signals[name]
-            self._assert(signal.check_used(), f"{signal.kind} {name} is unused", warning=True)
+            self._assert(signal.check_used(), f"{signal._kind} {name} is unused", warning=True)
             if not signal.check_driven():
                 if signal.check_partial_driven():
                     undriven_ranges = signal.get_undriven_ranges()
-                    self._assert(signal.check_driven(), f"{signal.kind} {name} is partially undriven, bits: {undriven_ranges}")
+                    self._assert(signal.check_driven(), f"{signal._kind} {name} is partially undriven, bits: {undriven_ranges}")
                 else:
-                    self._assert(signal.check_driven(), f"{signal.kind} {name} is undriven")
+                    self._assert(signal.check_driven(), f"{signal._kind} {name} is undriven")
 
     def _check_mod_loop(self):
         count = {}
@@ -656,9 +669,9 @@ class p2v():
 
     def _get_signal_bits(self, name):
         array_name = name.split("[")[0] # support arrays
-        is_array = array_name in self._signals and len(self._signals[array_name].dim) > 1
+        is_array = array_name in self._signals and len(self._signals[array_name]._dim) > 1
         if misc._is_legal_name(name) or is_array:
-            return self._signals[array_name].dim[-1]
+            return self._signals[array_name]._dim[-1]
         msb, lsb = misc._get_bit_range(name)
         return msb + 1 - lsb
 
@@ -674,8 +687,7 @@ class p2v():
     def _port(self, kind, name, bits=1, used=False, driven=False):
         if name == "":
             name = self._get_receive_name(kind, depth=2)
-            
-        self._assert(misc._is_legal_name(str(name)), f"{kind} port {name} has an illegal name")
+
         self._assert(type(bits) in SIGNAL_TYPES, f"unknown type {bits} for port", fatal=True)
         if isinstance(name, clock):
             self._assert(bits == 1, f"{kind} clock {name} must be declared with bits = 1")
@@ -688,8 +700,8 @@ class p2v():
             return signals
         elif isinstance(bits, dict):
             self._assert(kind in ["input", "output"], f"struct {name} is of illegal kind {kind}")
-            signal = self._add_signal(p2v_signal(kind, name, bits=0, strct=bits, used=True, driven=True))
-            fields = signal.strct.fields
+            signal = self._add_signal(p2v_signal(kind, name, bits=0, strct=bits, used=True, driven=True, remark=self._get_remark(depth=3)))
+            fields = signal._strct.fields
             for field_name in fields:
                 field_bits = fields[field_name]
                 input_port = misc.cond(field_bits > 0, kind == "input", kind == "output")
@@ -697,12 +709,13 @@ class p2v():
                     self.input(field_name, abs(field_bits))
                 else:
                     self.output(field_name, abs(field_bits))
-            return signal.strct.names
+            return signal
         else:
+            self._assert(misc._is_legal_name(str(name)), f"{kind} port {name} has an illegal name")
             if isinstance(bits, str):
                 for bits_str in self._get_names(bits):
                     self._set_used(bits_str)
-            return self._add_signal(p2v_signal(kind, name, bits, used=used, driven=driven))
+            return self._add_signal(p2v_signal(kind, name, bits, used=used, driven=driven, remark=self._get_remark(depth=3)))
         return None
 
     def _find_file(self, filename, allow_dir=False, allow=False):
@@ -843,17 +856,17 @@ class p2v():
         self._assert_type(tgt, clock)
         self._assert_type(src, clock)
         self.line()
-        if tgt.name in self._signals and self._signals[tgt.name].driven:
+        if tgt.name in self._signals and self._signals[tgt.name]._driven:
             pass
         else:
             self.assign(tgt.name, src.name)
         if tgt.rst_n is not None and src.rst_n is not None:
-            if tgt.rst_n in self._signals and self._signals[tgt.rst_n].driven:
+            if tgt.rst_n in self._signals and self._signals[tgt.rst_n]._driven:
                 pass
             else:
                 self.assign(tgt.rst_n, src.rst_n)
         if tgt.reset is not None and src.reset is not None:
-            if tgt.reset in self._signals and self._signals[tgt.reset].driven:
+            if tgt.reset in self._signals and self._signals[tgt.reset]._driven:
                 pass
             else:
                 self.assign(tgt.reset, src.reset)
@@ -877,14 +890,14 @@ class p2v():
         self._check_declared(tgt)
         if not isinstance(src, int) and src is not None:
             self._check_declared(src)
-            self._assert(self._signals[tgt].strct is not None, f"trying to assign struct {src} to a non struct signal {tgt}", fatal=True)
-            self._assert(self._signals[src].strct is not None, f"trying to assign a non struct signal {src} to struct {tgt}", fatal=True)
+            self._assert(self._signals[tgt]._strct is not None, f"trying to assign struct {src} to a non struct signal {tgt}", fatal=True)
+            self._assert(self._signals[src]._strct is not None, f"trying to assign a non struct signal {src} to struct {tgt}", fatal=True)
 
     def _sample_structs(self, clk, tgt, src, ext_valid=None):
         self._check_structs(tgt, src)
         self.line()
-        tgt_strct = self._signals[tgt].strct
-        src_strct = self._signals[src].strct
+        tgt_strct = self._signals[tgt]._strct
+        src_strct = self._signals[src]._strct
 
         # control
         if tgt_strct.valid is None:
@@ -903,7 +916,7 @@ class p2v():
                 ready = src_strct.ready
 
         if ready is not None:
-            if src_strct.ready in self._signals and self._signals[src_strct.ready].driven:
+            if src_strct.ready in self._signals and self._signals[src_strct.ready]._driven:
                 pass
             else:
                 self.assign(src_strct.ready, tgt_strct.ready)
@@ -913,17 +926,17 @@ class p2v():
 
         # data
         self.line()
-        tgt_fields = self._signals[tgt].strct.fields
+        tgt_fields = self._signals[tgt]._strct.fields
         for tgt_field_name in tgt_fields:
             field_bits = tgt_fields[tgt_field_name]
             if field_bits == 0 or isinstance(field_bits, float):
                 continue
-            src_field_name = self._signals[src].strct.update_field_name(src, tgt_field_name)
+            src_field_name = self._signals[src]._strct.update_field_name(src, tgt_field_name)
             if src_field_name not in src_strct.fields: # support casting (best effort)
                 continue
-            if field_bits > 0 and not self._signals[tgt_field_name].driven:
+            if field_bits > 0 and not self._signals[tgt_field_name]._driven:
                 self.sample(clk, tgt_field_name, src_field_name, valid=valid)
-            if field_bits < 0 and not self._signals[src_field_name].driven:
+            if field_bits < 0 and not self._signals[src_field_name]._driven:
                 self.sample(clk, src_field_name, tgt_field_name, valid=valid)
         self.line()
 
@@ -933,24 +946,24 @@ class p2v():
             self._assert(src == 0, "struct {src} can only be assigned to 0 when assigned to int", fatal=True)
         else:
             self._check_structs(tgt, src)
-            self._assert(self._signals[src].strct is not None, f"trying to assign a non struct signal {src} to struct {tgt}", fatal=True)
+            self._assert(self._signals[src]._strct is not None, f"trying to assign a non struct signal {src} to struct {tgt}", fatal=True)
         self.line()
-        tgt_fields = self._signals[tgt].strct.fields
+        tgt_fields = self._signals[tgt]._strct.fields
         for tgt_field_name in tgt_fields:
             field_bits = tgt_fields[tgt_field_name]
             if field_bits == 0:
                 continue
             if isinstance(src, int):
-                if field_bits > 0 and not self._signals[tgt_field_name].driven:
+                if field_bits > 0 and not self._signals[tgt_field_name]._driven:
                     self.assign(tgt_field_name, 0, keyword=keyword)
             else:
-                src_fields = self._signals[src].strct.fields
-                src_field_name = self._signals[src].strct.update_field_name(src, tgt_field_name)
+                src_fields = self._signals[src]._strct.fields
+                src_field_name = self._signals[src]._strct.update_field_name(src, tgt_field_name)
                 if src_field_name not in src_fields: # support casting (best effort)
                     continue
-                if field_bits > 0 and not self._signals[tgt_field_name].driven:
+                if field_bits > 0 and not self._signals[tgt_field_name]._driven:
                     self.assign(tgt_field_name, src_field_name, keyword=keyword)
-                if field_bits < 0 and not self._signals[src_field_name].driven:
+                if field_bits < 0 and not self._signals[src_field_name]._driven:
                     self.assign(src_field_name, tgt_field_name, keyword=keyword)
         self.line()
 
@@ -971,7 +984,7 @@ class p2v():
         return val_str
 
     def _get_module_params(self, module_locals, suffix=True):
-        simple_types = (int, bool, str)
+        simple_types = (int, bool, str, clock)
 
         comments = [f"{self._get_clsname()} module parameters:"]
         suf = []
@@ -1013,6 +1026,9 @@ class p2v():
         self.line()
         return suf
 
+    def _is_implicit_declare(self, name):
+        return not isinstance(name, (str, list, clock)) or (isinstance(name, list) and len(name)==1 and isinstance(name[0], int))
+
     def _get_receive_name(self, cmd, depth=1):
         current_line = self._get_current_line(depth=depth+1)
         line = current_line.replace(" ", "").split("#")[0]
@@ -1044,7 +1060,7 @@ class p2v():
 
         if self._register and self._parent.__class__.__name__ != self.__class__.__name__: # ignore nested recursions
             self.tb.register_test(module_locals)
-            
+
         suf = self._get_module_params(module_locals, suffix=modname is None and suffix)
         if modname == "": # just a wrapper - no Verilog module
             return False
@@ -1137,9 +1153,9 @@ class p2v():
         signals = self._get_strct_signals(strct, fields=fields)
         for signal in signals:
             if attrib == "name":
-                vals.append(signal.name)
+                vals.append(signal._name)
             elif attrib == "bits":
-                vals.append(signal.bits)
+                vals.append(signal._bits)
             else:
                 self._raise(f"unknown struct attribute {attrib}")
         return vals
@@ -1268,7 +1284,7 @@ class p2v():
             max_val = max(max_val, val)
         max_val_bin = misc.bin(max_val, add_sep=0, prefix=None)
         enum_bits = len(max_val_bin)
-        
+
         enum_vals = {}
         for name, val in enum_names.items():
             self.parameter(name, misc.dec(val, enum_bits), local=True)
@@ -1293,9 +1309,9 @@ class p2v():
                                              dict is used as a struct.
 
         Returns:
-            p2v struct if type is struct otherwise None
+            p2v signal
         """
-        if not isinstance(name, (str, list, clock)):
+        if self._is_implicit_declare(name):
             bits = name
             name = ""
         self._assert_type(name, [str, list ,clock])
@@ -1316,9 +1332,9 @@ class p2v():
                                              dict is used as a struct.
 
         Returns:
-            p2v struct if type is struct otherwise None
+            p2v signal
         """
-        if not isinstance(name, (str, list, clock)):
+        if self._is_implicit_declare(name):
             bits = name
             name = ""
         self._assert_type(name, [str, list, clock])
@@ -1333,7 +1349,7 @@ class p2v():
             name(str): port name
 
         Returns:
-            None
+            p2v signal
         """
         self._assert_type(name, [str])
         if self._exists():
@@ -1356,24 +1372,26 @@ class p2v():
             initial([int, str, dict, None]): assignment value to signal using an initial statement
 
         Returns:
-            p2v struct if type is struct otherwise None
+            p2v signal
         """
-        if not isinstance(name, (str, list, clock)):
+        if self._is_implicit_declare(name):
             bits = name
             name = ""
         if name == "":
             name = self._get_receive_name("logic")
-            
+
         self._assert_type(name, [clock, p2v_signal, str, list])
         self._assert_type(bits, SIGNAL_TYPES)
         self._assert_type(assign, [p2v_signal, int, str, dict, None])
-        self._assert_type(initial, [int, str, dict, None])
+        self._assert_type(initial, [p2v_signal, int, str, dict, None])
 
         if isinstance(name, p2v_signal):
             name = str(name)
-            
+
         if isinstance(bits, p2v_enum):
             bits = bits.BITS
+
+        remark = self._get_remark(depth=2)
 
         rtrn = None
         if isinstance(name, clock):
@@ -1385,26 +1403,28 @@ class p2v():
                 signals.append(self.logic(n, bits=bits, assign=assign, initial=initial))
             rtrn = signals
         elif isinstance(bits, dict):
+            if remark is not None:
+                self.remark(remark)
             signal = self._add_signal(p2v_signal("logic", name, bits=0, strct=bits, used=True, driven=True))
-            fields = signal.strct.fields
+            fields = signal._strct.fields
             for field_name in fields:
                 self.logic(field_name, abs(fields[field_name]))
-            rtrn = signal.strct.names
+            rtrn = signal
         else:
             for bits_str in self._get_names(str(bits)):
                 self._set_used(bits_str)
-            signal = self._add_signal(p2v_signal("logic", name, bits))
+            signal = self._add_signal(p2v_signal("logic", name, bits, remark=remark))
             self.line(signal.declare())
             rtrn = signal
         if assign is not None:
-            self.assign(name, assign, keyword="assign")
+            self.assign(name, assign, keyword="assign", remark=remark)
             self.line()
         elif initial is not None:
-            self.assign(name, initial, keyword="initial")
+            self.assign(name, initial, keyword="initial", remark=remark)
             self.line()
         return rtrn
 
-    def assign(self, tgt, src, keyword="assign"):
+    def assign(self, tgt, src, keyword="assign", remark=None):
         """
         Signal assignment.
 
@@ -1430,7 +1450,7 @@ class p2v():
                 src = str(src)
             self._assert_type(tgt, [str, dict])
             self._assert_type(src, [str, dict, int])
-            if (tgt in self._signals and (self._signals[tgt].strct is not None)) or (src in self._signals and (self._signals[src].strct is not None)):
+            if (tgt in self._signals and (self._signals[tgt]._strct is not None)) or (src in self._signals and (self._signals[src]._strct is not None)):
                 self._assign_structs(tgt, src, keyword=keyword)
             else:
                 self._set_driven(tgt)
@@ -1439,7 +1459,9 @@ class p2v():
                     self._assert(bits > 0, f"illegal assignment to signal {tgt} of 0 bits")
                     src = misc.dec(src, bits)
                 self._set_used(src, drive=False)
-                self.line(f"{keyword} {tgt} = {src};")
+                if remark is None:
+                    remark = self._get_remark(depth=2)
+                self.line(f"{keyword} {tgt} = {src};", remark=remark)
 
     def sample(self, clk, tgt, src, valid=None, reset=None, reset_val=0, bits=None, bypass=False):
         """
@@ -1468,7 +1490,7 @@ class p2v():
         self._assert_type(reset_val, [int, str])
         self._assert_type(bits, [int, None])
         self._assert_type(bypass, bool)
-        
+
         if isinstance(tgt, p2v_signal):
             tgt = str(tgt)
         if isinstance(src, p2v_signal):
@@ -1488,7 +1510,7 @@ class p2v():
             self.assign(tgt, src)
             return
 
-        if (tgt in self._signals and (self._signals[tgt].strct is not None)) or (src in self._signals and (self._signals[src].strct is not None)):
+        if (tgt in self._signals and (self._signals[tgt]._strct is not None)) or (src in self._signals and (self._signals[src]._strct is not None)):
             self._sample_structs(clk, tgt, src, ext_valid=valid)
         else:
             self._set_driven(tgt)
@@ -1504,7 +1526,7 @@ class p2v():
             else:
                 self._set_used(reset_val)
 
-            self.line(f"always_ff @(posedge {clk.name}{misc.cond(clk.rst_n is not None, f' or negedge {clk.rst_n}')})")
+            self.line(f"always_ff @(posedge {clk.name}{misc.cond(clk.rst_n is not None, f' or negedge {clk.rst_n}')})", remark=self._get_remark(depth=2))
             conds = []
             if clk.rst_n is not None:
                 conds.append(f"if (!{clk.rst_n}) {tgt} <= {reset_val};")
@@ -1514,11 +1536,11 @@ class p2v():
             if reset is not None:
                 sync_reset.append(reset)
             if len(sync_reset) > 0:
-                conds.append(f"if ({' | '.join(sync_reset)}) {tgt} <= {reset_val};")
+                conds.append(f"if {misc.add_paren(' | '.join(sync_reset))} {tgt} <= {reset_val};")
             if valid is not None:
                 self._check_declared(valid)
                 self._set_used(valid)
-                conds.append(f"if ({valid}) {tgt} <= {src};")
+                conds.append(f"if {misc.add_paren(valid)} {tgt} <= {src};")
             else:
                 conds.append(f"{tgt} <= {src};")
             for n in range(1, len(conds)):

@@ -13,53 +13,55 @@ class ports(p2v):
     def module(self):
         self.set_modname()
         
-        self.input("a") # default is single bit
-        self.input("b", 1) # same as the above
-        self.input("c", 8) # multi bit bus
-        self.input("dd", bits) # parametric width
-        self.input("e", [bits]) # parametric width but forces [0:0] bus if width is 1
+        a = self.input() # default is single bit
+        b =self.input(1) # same as the above
+        c = self.input(8) # multi bit bus
+        dd = self.input(bits) # parametric width
+        e = self.input([bits]) # parametric width but forces [0:0] bus if width is 1
         
+        f = []
         for n in range(num):
-            self.input(f"f{n}", bits) # port in loop
+            f.append(self.input(f"f{n}", bits)) # port in loop
         
         if var:
-            self.input("g", bits*2) # conditional port
+            g = self.input(bits*2) # conditional port
         
-        self.output("ao") # default is single bit
-        self.output("bo", 1) # same as the above
-        self.output("co", 8) # multi bit bus
-        self.output("ddo", bits) # parametric width
-        self.output("eo", [bits]) # parametric width but forces [0:0] bus if width is 1
+        ao = self.output() # default is single bit
+        bo = self.output(1) # same as the above
+        co = self.output(8) # multi bit bus
+        ddo = self.output(bits) # parametric width
+        eo = self.output([bits]) # parametric width but forces [0:0] bus if width is 1
         
+        fo = []
         for n in range(num):
-            self.output(f"f{n}o", bits) # port in loop
+            fo.append(self.output(f"f{n}o", bits)) # port in loop
         
         if var:
-            self.output("go", bits*2) # conditional port
+            go = self.output(bits*2) # conditional port
         
-        lst =  ["a", "b", "c", "dd", "e"]
+        lst =  [a, b, c, dd, e]
         for n in range(num):
-            lst.append(f"f{n}")
+            lst.append(f[n])
         if var:
-            lst.append("g")
+            lst.append(g)
         for x in lst:
             self.assign(f"{x}o", x)
         
         
-        self.inout("q") #inout ports width is always 1
+        q = self.inout() #inout ports width is always 1
         
-        self.input("s", strct) # data struct as Python dictionary
-        self.output("t", strct) # data struct as Python dictionary
+        s = self.input(strct) # data struct as Python dictionary
+        t = self.output(strct) # data struct as Python dictionary
         
-        self.assign("t", "s")
+        self.assign(t, s)
         
         
         self.parameter("BITS", 32) # Verilog parameter
         
-        self.input("z", "BITS") # Verilog parametric port
-        self.output("zo", "BITS") # Verilog parametric port
+        z = self.input("z", "BITS") # Verilog parametric port - name must be explicit
+        zo = self.output("zo", "BITS") # Verilog parametric port - name must be explicit
         
-        self.assign("zo", "z")
+        self.assign(zo, z)
         
         return self.write()
 
