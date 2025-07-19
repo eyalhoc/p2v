@@ -1013,6 +1013,13 @@ class p2v():
         self.line()
         return suf
 
+    def _get_receive_name(self, cmd, depth=1):
+        current_line = self._get_current_line(depth=depth+1)
+        line = current_line.replace(" ", "").split("#")[0]
+        name = line.split(f"{cmd}(")[0].split("=")[0]
+        self._assert(misc._is_legal_name(name), f"missing receive variable for {cmd}", fatal=True)
+        return name
+
 
     def set_modname(self, modname=None, suffix=True):
         """
@@ -1231,13 +1238,6 @@ class p2v():
         self._add_signal(p2v_signal(misc.cond(local, "localparam", "parameter"), name, val, driven=True))
         if local:
             self.line(f"localparam {name} = {val};")
-
-    def _get_receive_name(self, cmd, depth=1):
-        current_line = self._get_current_line(depth=depth+1)
-        line = current_line.replace(" ", "").split("#")[0]
-        name = line.split(f"{cmd}(")[0].split("=")[0]
-        self._assert(misc._is_legal_name(name), f"missing receive variable for {cmd}", fatal=True)
-        return name
 
     def enum(self, names):
         """
