@@ -21,6 +21,7 @@ import numpy as np
 
 from p2v_clock import p2v_clock as clock, clk_0rst, clk_arst, clk_srst, clk_2rst
 import p2v_misc as misc
+from p2v_signal import p2v_signal
 import p2v_tools
 
 PASS_STATUS = "PASSED"
@@ -44,7 +45,7 @@ class p2v_tb():
             self._set_seed(self.seed)
 
 
-    def _test_finish(self, status, condition=None, message=None, params=None):
+    def _test_finish(self, status, condition=None, message=None, params=None, stop=True):
         if params is None:
             params = []
         param_str = ", $time"
@@ -55,11 +56,13 @@ class p2v_tb():
             if isinstance(params, str):
                 params = [params]
             if len(params) > 0:
+                for n, name in enumerate(params):
+                    params[n] = str(name)
                 param_str += ", " + ", ".join(params)
         return f""" {misc.cond(condition is not None, f"if ({condition})")}
                     begin
                         $display("%0d: test {status}{msg}"{param_str});
-                        #10; $finish;
+                        {misc.cond(stop, "#10; $finish;")}
                     end
                 """
 
@@ -158,6 +161,10 @@ class p2v_tb():
         self._parent._assert_type(has_async, [None, bool])
         self._parent._assert_type(has_sync, [None, bool])
         
+        if must_have_reset and has_async is None and has_sync is None:
+            has_async = self.rand_bool()
+            has_sync = not has_async
+            
         if has_async is None:
             has_async = self.rand_bool()
         if has_sync is None:
@@ -217,7 +224,7 @@ class p2v_tb():
         """
         if params is None:
             params = []
-        self._parent._assert_type(condition, [None, str])
+        self._parent._assert_type(condition, [None, str, p2v_signal])
         self._parent._assert_type(message, [None, str])
         self._parent._assert_type(params, [str, list])
         return self._test_finish(PASS_STATUS, condition=condition, message=message, params=params)
@@ -236,7 +243,7 @@ class p2v_tb():
         """
         if params is None:
             params = []
-        self._parent._assert_type(condition, [None, str])
+        self._parent._assert_type(condition, [None, str, p2v_signal])
         self._parent._assert_type(message, [None, str])
         self._parent._assert_type(params, [str, list])
         return self._test_finish(FAIL_STATUS, condition=condition, message=message, params=params)

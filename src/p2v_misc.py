@@ -295,8 +295,9 @@ def cond(condition, true_var, false_var=""):
     Returns:
         Selected input parameter
     """
-    assert isinstance(condition, bool), condition
-
+    if not isinstance(condition, bool): # verilog condition
+        return f"{condition} ? {true_var} : {false_var}"
+        
     if condition:
         return true_var
     return false_var
@@ -320,6 +321,7 @@ def concat(vals, sep=None, nl_every=None):
     new_vals = []
     for n, val in enumerate(vals):
         if val is not None:
+            val = str(val)
             if nl_every is not None and ((n > 0) and (n%nl_every) == 0):
                 val += "\n"
             new_vals.append(val)
@@ -352,7 +354,7 @@ def pad(left, name, right=0, val=0):
     Returns:
         Verilog code
     """
-    assert isinstance(name, str), f"illegal pad signal {name}"
+    name = str(name)
     assert isinstance(left, int) and left >= 0, f"illegal left padding {left}"
     assert isinstance(right, int) and right >= 0, f"illegal left padding {right}"
     assert isinstance(val, int), f"illegal pad value {val}"
@@ -438,7 +440,8 @@ def bits(name, bits, start=0): # pylint: disable=redefined-outer-name
     Returns:
         Verilog code
     """
-    assert _is_legal_name(name), f"{name} does not a legal name"
+    name = str(name)
+    assert _is_legal_name(name), f"{name} is not a legal name"
     assert isinstance(bits, int) and bits > 0, f"{name} cannot be of {bits} bits"
     assert isinstance(start, int) and start >= 0, f"{name} bit range cannot start a bit {start}"
     end = start + bits - 1
@@ -459,7 +462,8 @@ def bit(name, idx):
     Returns:
         Verilog code
     """
-    assert _is_legal_name(name), f"{name} does not a legal name"
+    name = str(name)
+    assert _is_legal_name(name), f"{name} is not a legal name"
     assert isinstance(idx, (int, str)), f"{name} uses illegal index {idx}"
     return f"{name}[{idx}]"
 

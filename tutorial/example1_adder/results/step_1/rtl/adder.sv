@@ -6,6 +6,6 @@ module adder (
 
     // adder module parameters:
 
-    assign o = a + b;
+    assign o = (a + b);
 
 endmodule

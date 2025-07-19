@@ -15,9 +15,9 @@ module adder__bits8_num8 (
 );
 
     // adder module parameters:
-    //  * clk = clk_arst() (p2v_clock)
-    //  * bits = 8 (int) # data width
-    //  * num = 8 (int) # number of inputs
+    //  * clk = clk_arst() (p2v_clock) # None
+    //  * bits = 8 (int) #  data width
+    //  * num = 8 (int) #  number of inputs
 
     logic [7:0] o0;
     logic valid_out0;
@@ -50,7 +50,7 @@ module adder__bits8_num8 (
     adder__bits8_num2 adder_out (
         .clk(clk),  // input
         .rst_n(rst_n),  // input
-        .valid(valid_out0 & valid_out1),  // input
+        .valid((valid_out0 & valid_out1)),  // input
         .i0(o0),  // input
         .i1(o1),  // input
         .o(o),  // output

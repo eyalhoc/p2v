@@ -7,8 +7,8 @@ import adder
 
 class tb_adder(p2v):
     def module(self, async_reset=True, size=32):
-        self.set_param(async_reset, bool, remark="sync reset or async reset")
-        self.set_param(size, int, size > 0, remark="number of inputs to test")
+        self.set_param(async_reset, bool) # sync reset or async reset
+        self.set_param(size, int, size > 0) # number of inputs to test
         self.set_modname("tb") # explicitly set module name
         
         if async_reset:
@@ -24,13 +24,12 @@ class tb_adder(p2v):
         num = args["num"]
         bits = args["bits"]
         
-        self.logic("valid")
+        valid = self.logic("valid")
         inputs = []
         for n in range(num):
-            inputs.append(f"i{n}")
-        self.logic(inputs, bits, initial=0)
-        self.logic("o", bits)
-        self.logic("valid_out")
+            inputs.append(self.logic(f"i{n}", bits, initial=0))
+        o = self.logic("o", bits)
+        valid_out = self.logic("valid_out")
             
         son = adder.adder(self).module(clk, **args)
         son.connect_in(clk)
@@ -42,13 +41,13 @@ class tb_adder(p2v):
         son.inst()
         
         
-        self.logic("en", initial=0)
-        self.sample(clk, "valid", "en")
+        en = self.logic("en", initial=0)
+        valid = self.sample(clk, valid, en)
         
         self.tb.fifo("data_in_q", bits*num)
         self.tb.fifo("expected_q", bits)
-        self.logic("data_in", bits*num, initial=0)
-        self.logic("expected", bits, initial=0)
+        data_in = self.logic("data_in", bits*num, initial=0)
+        expected = self.logic("expected", bits, initial=0)
         
         self.line(f"""
                     initial
@@ -89,14 +88,14 @@ class tb_adder(p2v):
                             if (valid_out)
                                 begin
                                     expected = expected_q.pop_front();
-                                    {self.tb.test_fail(condition=f"o !== expected", message="mismatch expected: 0x%0h, actual: 0x%0h", params=["expected", "o"])}
+                                    {self.tb.test_fail(condition=o != expected, message="mismatch expected: 0x%0h, actual: 0x%0h", params=[expected, o])}
                                     if (expected_q.size() == 0)
                                         {self.tb.test_pass(message=f"successfully tested {size} additions")}
                                 end
                    """)
         
         
-        self.allow_unused(["valid_out", "o", "data_in", "expected"])
+        self.allow_unused([valid_out, o, data_in, expected])
         
         
         self.tb.set_timeout(clk, size * 100)

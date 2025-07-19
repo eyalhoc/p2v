@@ -9,13 +9,13 @@ module adder__clk_bits16_num2_float16False (
 );
 
     // adder module parameters:
-    //  * clk = "clock('clk', rst_n='resetn')" (p2v_clock)
-    //  * bits = 16 (int) # data width
-    //  * num = 2 (int) # number of inputs
-    //  * float16 = False (bool) # use a float16 adder
+    //  * clk = "clock('clk', rst_n='resetn')" (p2v_clock) # None
+    //  * bits = 16 (int) #  data width
+    //  * num = 2 (int) #  number of inputs
+    //  * float16 = False (bool) #  use a float16 adder
 
     logic [15:0] o_pre;
-    assign o_pre = i0 + i1;
+    assign o_pre = (i0 + i1);
     always_ff @(posedge clk or negedge resetn)
         if (!resetn) o <= 16'd0;
         else if (valid) o <= o_pre;
