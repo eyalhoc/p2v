@@ -1,0 +1,2 @@
+clk                 , bits                , name                , sample              , d                   , depth               
+clk_arst()          , 8                   , "foo"               , False               , {}                  , 128                 

@@ -23,9 +23,9 @@ module instances__num4_bits32 (
     output logic [31:0] cc
 );
 
-    // module parameters:
-    // num = 4 (int)
-    // bits = 32 (int)
+    // instances module parameters:
+    //  * num = 4 (int) # None
+    //  * bits = 32 (int) # None
 
     _or_gate__bits32 _or_gate0 (
         .a(a0),  // input
@@ -78,4 +78,4 @@ module instances__num4_bits32 (
     );
 
 
-endmodule
+endmodule  // instances__num4_bits32

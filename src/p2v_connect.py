@@ -43,31 +43,35 @@ class p2v_connect():
             self._connect(pin.reset, wire.reset, kind)
 
     def _connect(self, pin, wire, kind):
+        if isinstance(pin, p2v_signal):
+            pin = str(pin)
+        if isinstance(wire, p2v_signal):
+            wire = str(wire)
         if isinstance(pin, clock) or isinstance(wire, clock):
             self._connect_clocks(pin, wire, kind)
         else:
             self._parent._assert(isinstance(pin, str), f"pin {pin} is of type {misc._type2str(type(pin))} while expecting type str", fatal=True)
             self._parent._assert(pin in self._signals, f"module {self._modname} does not have a pin named {pin}", fatal=True)
-            self._parent._assert(self._signals[pin].kind == kind, f"trying to connect {self._signals[pin].kind} {pin} to {kind}")
+            self._parent._assert(self._signals[pin]._kind == kind, f"trying to connect {self._signals[pin]._kind} {pin} to {kind}")
             if kind == "parameter":
                 self._parent._assert(pin not in self._params, f"parameter {pin} was previosuly assigned")
                 self._params[pin] = wire
             else:
                 if isinstance(wire, int):
-                    wire = misc.dec(wire, self._signals[pin].bits)
+                    wire = misc.dec(wire, self._signals[pin]._bits)
                 self._parent._assert(isinstance(wire, str), f"wire {wire} is of type {misc._type2str(type(wire))} while expecting type str", fatal=True)
                 self._parent._assert(pin not in self._pins, f"pin {pin} was previosuly assigned")
-                if self._signals[pin].bits != 0:
+                if self._signals[pin]._bits != 0:
                     self._pins[pin] = wire
-            if pin in self._signals and self._signals[pin].strct is not None:
-                strct = self._signals[pin].strct
+            if pin in self._signals and self._signals[pin]._strct is not None:
+                strct = self._signals[pin]._strct
                 for field_name in strct.fields:
-                    self._connect(field_name, strct.update_field_name(wire, field_name), self._signals[field_name].kind)
+                    self._connect(field_name, strct.update_field_name(wire, field_name), self._signals[field_name]._kind)
 
     def _check_connected(self):
         for name in self._signals:
             signal = self._signals[name]
-            if signal.is_port() and signal.bits != 0:
+            if signal.is_port() and signal._bits != 0:
                 self._parent._assert(name in self._pins, f"port {name} is unconnected")
 
 
@@ -90,12 +94,12 @@ class p2v_connect():
     def _get_wire(self, pin, wire):
         if isinstance(wire, p2v_signal):
             return str(wire)
-        elif wire == "":
+        if wire == "":
             return pin
-        elif wire is None:
+        if wire is None:
             return ""
         return wire
-        
+
     def connect_in(self, pin, wire=""):
         """
         Connect input port to instance.
@@ -156,19 +160,19 @@ class p2v_connect():
             signal = self._signals[name]
             if name not in self._pins:
                 wire = name + suffix
-                if signal.kind == "input":
+                if signal._kind == "input":
                     if ports:
-                        if not (wire in self._parent._signals and self._parent._signals[name].kind == "input"):
-                            self._parent.input(wire, signal.bits)
+                        if not (wire in self._parent._signals and self._parent._signals[name]._kind == "input"):
+                            self._parent.input(wire, signal._bits)
                     self.connect_in(name, wire)
-                elif signal.kind == "output":
+                elif signal._kind == "output":
                     if ports:
-                        if not (wire in self._parent._signals and self._parent._signals[name].kind == "output"):
-                            self._parent.output(wire, signal.bits)
+                        if not (wire in self._parent._signals and self._parent._signals[name]._kind == "output"):
+                            self._parent.output(wire, signal._bits)
                     self.connect_out(name, wire)
-                elif signal.kind == "inout":
+                elif signal._kind == "inout":
                     if ports:
-                        if not (wire in self._parent._signals and self._parent._signals[name].kind == "inout"):
+                        if not (wire in self._parent._signals and self._parent._signals[name]._kind == "inout"):
                             self._parent.inout(wire)
                     self.connect_io(name, wire)
 
@@ -196,7 +200,7 @@ class p2v_connect():
             lines.append(")")
         lines.append(f"{instname} (")
         for name, val in self._pins.items():
-            lines.append(f".{name}({val}), // {self._signals[name].kind}{misc.cond(self._signals[name].ctrl, ' ctrl')}")
+            lines.append(f".{name}({val}), // {self._signals[name]._kind}{misc.cond(self._signals[name]._ctrl, ' ctrl')}")
         lines[-1] = lines[-1].replace(", //", " //", 1)
         lines.append(");")
         lines.append("")

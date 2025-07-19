@@ -1,4 +1,4 @@
-module adder__bits8_num32 (
+module adder__clkclk_bits8_num32_float16False (
     input logic clk,
     input logic rst_n,
     input logic valid,
@@ -42,10 +42,11 @@ module adder__bits8_num32 (
     //  * clk = clk_arst() (p2v_clock) # None
     //  * bits = 8 (int) #  data width
     //  * num = 32 (int) #  number of inputs
+    //  * float16 = False (bool) #  use a float16 adder
 
     logic [7:0] o0;
     logic valid_out0;
-    adder__bits8_num16 adder0 (
+    adder__clkclk_bits8_num16_float16False adder0 (
         .clk(clk),  // input
         .rst_n(rst_n),  // input
         .valid(valid),  // input
@@ -71,7 +72,7 @@ module adder__bits8_num32 (
 
     logic [7:0] o1;
     logic valid_out1;
-    adder__bits8_num16 adder1 (
+    adder__clkclk_bits8_num16_float16False adder1 (
         .clk(clk),  // input
         .rst_n(rst_n),  // input
         .valid(valid),  // input
@@ -95,7 +96,7 @@ module adder__bits8_num32 (
         .valid_out(valid_out1)  // output
     );
 
-    adder__bits8_num2 adder_out (
+    adder__clkclk_bits8_num2_float16False adder_out (
         .clk(clk),  // input
         .rst_n(rst_n),  // input
         .valid((valid_out0 & valid_out1)),  // input
@@ -106,4 +107,4 @@ module adder__bits8_num32 (
     );
 
 
-endmodule
+endmodule  // adder__clkclk_bits8_num32_float16False

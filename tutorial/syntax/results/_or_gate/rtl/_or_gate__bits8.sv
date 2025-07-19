@@ -4,9 +4,9 @@ module _or_gate__bits8 (
     output logic [7:0] c
 );
 
-    // module parameters:
-    // bits = 8 (int)
+    // _or_gate module parameters:
+    //  * bits = 8 (int) # None
 
     assign c = a | b;
 
-endmodule
+endmodule  // _or_gate__bits8

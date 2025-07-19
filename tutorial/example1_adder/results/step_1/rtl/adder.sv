@@ -8,4 +8,4 @@ module adder (
 
     assign o = (a + b);
 
-endmodule
+endmodule  // adder

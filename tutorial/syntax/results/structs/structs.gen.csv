@@ -1,0 +1,2 @@
+clk                 , addr_bits           , data_bits           
+clk_arst()          , 32                  , 512                 

@@ -36,9 +36,9 @@ class adder(p2v):
                 self.logic(float16_stat)
                 
                 son = self.verilog_module("float_adder")
-                son.connect_in("num1", data_in[0])
-                son.connect_in("num2", data_in[1])
-                son.connect_out("result", o_pre)
+                son.connect_in(son.num1, data_in[0])
+                son.connect_in(son.num2, data_in[1])
+                son.connect_out(son.result, o_pre)
                 for stat in float16_stat:
                     son.connect_out(stat)
                 son.inst()
@@ -56,30 +56,30 @@ class adder(p2v):
 
         else:
             son_num = num // 2
-            data_out = []
-            valid_out = []
+            datas = []
+            valids = []
             for i in range(2):
-                data_out.append(self.logic(f"o{i}", bits))
-                valid_out.append(self.logic(f"valid_out{i}"))
+                datas.append(self.logic(f"o{i}", bits))
+                valids.append(self.logic(f"valid_out{i}"))
                 
                 son = adder(self).module(clk, bits=bits, num=son_num)
                 son.connect_in(clk)
-                son.connect_in("valid") # assumes port name equals wire name
+                son.connect_in(son.valid) # assumes port name equals wire name
                 for n in range(son_num):
-                    son.connect_in(f"i{n}", data_in[son_num*i+n])
-                son.connect_out("o", data_out[i])
-                son.connect_out("valid_out", valid_out[i])
+                    son.connect_in(data_in[n], data_in[son_num*i+n])
+                son.connect_out(son.o, datas[i])
+                son.connect_out(son.valid_out, valids[i])
                 son.inst(suffix=i)
         
         
             # add the results
             son = adder(self).module(clk, bits=bits, num=2)
             son.connect_in(clk)
-            son.connect_in("valid", valid_out[0] & valid_out[1])
-            son.connect_in("i0", data_out[0])
-            son.connect_in("i1", data_out[1])
-            son.connect_out("o")
-            son.connect_out("valid_out")
+            son.connect_in(son.valid, valids[0] & valids[1])
+            son.connect_in(son.i0, datas[0])
+            son.connect_in(son.i1, datas[1])
+            son.connect_out(o)
+            son.connect_out(valid_out)
             son.inst(suffix="_out")
             
         

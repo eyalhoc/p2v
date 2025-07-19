@@ -27,97 +27,102 @@ class p2v_signal:
         if kind is not None:
             assert isinstance(bits, (str, int, list, tuple, float)), bits
             assert misc._is_legal_name(name), f"{name} does not have a legal name"
-        self.kind = kind
-        self.name = name
+        self._kind = kind
+        self._name = name
         if strct is None:
-            self.strct = None
+            self._strct = None
         else:
-            self.strct = p2v_struct(self, name, strct)
-        self.ctrl = isinstance(bits, float)
-        if self.ctrl:
+            self._strct = p2v_struct(self, name, strct)
+        self._ctrl = isinstance(bits, float)
+        if self._ctrl:
             assert bits in [1.0, -1.0], f"control {kind} {name} is {bits} but it can only be 1.0 (valid) or -1.0 (ready)"
             bits = int(bits)
         if isinstance(bits, list):
             assert len(bits) == 1 and isinstance(bits[0], int), bits
-            self.bits = bits[0]
-            self.bus = True
-            self.dim = [self.bits]
+            self._bits = bits[0]
+            self._bus = True
+            self._dim = [self._bits]
         elif isinstance(bits, tuple):
-            self.bits = bits[0]
-            self.bus = True
-            self.dim = list(bits)
+            self._bits = bits[0]
+            self._bus = True
+            self._dim = list(bits)
         else:
-            self.bits = bits
-            self.bus = not (isinstance(bits, int) and bits == 1)
-            self.dim = [self.bits]
-        self.used = used
-        self.driven = driven
+            self._bits = bits
+            self._bus = not (isinstance(bits, int) and bits == 1)
+            self._dim = [self._bits]
+        self._used = used
+        self._driven = driven
         if isinstance(bits, str):
-            self.driven_bits = None # don't check bit driven bits is a verilog parameter
+            self._driven_bits = None # don't check bit driven bits is a verilog parameter
         else:
-            self.driven_bits = [False] * self.bits
-        self.remark = remark
+            self._driven_bits = [False] * self._bits
+        self._remark = remark
 
     def __str__(self):
-        return self.name
+        return self._name
+
+    def _create(self, other, op):
+        expr = misc._remove_extra_paren(f"({self} {op} {other})")
+        return p2v_signal(None, expr, bits=self._bits)
+
 
     def __add__(self, other):
-        return p2v_signal(None, f"({self} + {other})", bits=self.bits)
+        return self._create(other, "+")
 
     def __sub__(self, other):
-        return p2v_signal(None, f"({self} - {other})", bits=self.bits)
+        return self._create(other, "-")
 
     def __mul__(self, other):
-        return p2v_signal(None, f"({self} * {other})", bits=self.bits)
+        return self._create(other, "*")
 
     def __eq__(self, other):
-        return p2v_signal(None, f"({self} == {other})", bits=self.bits)
+        return self._create(other, "==")
 
     def __ne__(self, other):
-        return p2v_signal(None, f"({self} != {other})", bits=self.bits)
+        return self._create(other, "!=")
 
     def __lt__(self, other):
-        return p2v_signal(None, f"({self} < {other})", bits=self.bits)
+        return self._create(other, "<")
 
     def __le__(self, other):
-        return p2v_signal(None, f"({self} <= {other})", bits=self.bits)
+        return self._create(other, "<=")
 
     def __gt__(self, other):
-        return p2v_signal(None, f"({self} > {other})", bits=self.bits)
+        return self._create(other, ">")
 
     def __ge__(self, other):
-        return p2v_signal(None, f"({self} >= {other})", bits=self.bits)
+        return self._create(other, ">=")
 
     def __and__(self, other):
-        return p2v_signal(None, f"({self} & {other})", bits=self.bits)
+        return self._create(other, "&")
 
     def __or__(self, other):
-        return p2v_signal(None, f"({self} | {other})", bits=self.bits)
+        return self._create(other, "|")
 
     def __xor__(self, other):
-        return p2v_signal(None, f"({self} ^ {other})", bits=self.bits)
+        return self._create(other, "^")
 
     def __invert__(self):
-        return p2v_signal(None, f"~{self}", bits=self.bits)
+        return p2v_signal(None, f"~{self}", bits=self._bits)
 
     def __lshift__(self, other):
-        return p2v_signal(None, f"({self} << {other})", bits=self.bits)
+        return self._create(other, "<<")
 
     def __rshift__(self, other):
-        return p2v_signal(None, f"({self} >> {other})", bits=self.bits)
+        return self._create(other, ">>")
 
 
     def _declare_bits_dim(self, bits):
         if isinstance(bits, str):
             return f"[{bits}-1:0]"
-        assert isinstance(bits, int) and bits >= 1, f"{self.kind} {self.name} has 0 bits"
-        if self.bus:
+        assert isinstance(bits, int) and bits >= 1, f"{self._kind} {self._name} has 0 bits"
+        if self._bus:
             return f"[{bits-1}:0]"
         return ""
 
     def _declare_bits(self):
         s = ""
-        for bits in self.dim:
+        for bits in self._dim:
             s += self._declare_bits_dim(bits)
         return s
 
@@ -140,8 +145,8 @@ class p2v_signal:
 
     def _get_undriven_bits(self):
         undriven = []
-        for i in range(self.bits):
-            if not self.driven_bits[i]:
+        for i in range(self._bits):
+            if not self._driven_bits[i]:
                 undriven = [i] + undriven
         return undriven
 
@@ -156,7 +161,7 @@ class p2v_signal:
         Returns:
             bool
         """
-        return self.kind in ["input", "output"]
+        return self._kind in ["input", "output"]
 
     def is_port(self):
         """
@@ -168,7 +173,7 @@ class p2v_signal:
         Returns:
             bool
         """
-        return self.is_logical_port() or self.kind in ["inout"]
+        return self.is_logical_port() or self._kind in ["inout"]
 
     def is_logic(self):
         """
@@ -180,7 +185,7 @@ class p2v_signal:
         Returns:
             bool
         """
-        return self.is_logical_port() or self.kind in ["logic"]
+        return self.is_logical_port() or self._kind in ["logic"]
 
     def is_parameter(self):
         """
@@ -192,7 +197,7 @@ class p2v_signal:
         Returns:
             bool
         """
-        return self.kind in ["parameter"]
+        return self._kind in ["parameter"]
 
     def declare(self, delimiter=";"):
         """
@@ -204,17 +209,17 @@ class p2v_signal:
         Returns:
             str
         """
-        s = f"{self.kind} "
+        s = f"{self._kind} "
         if self.is_logical_port():
             s += "logic "
         if self.is_logic():
             s += f"{self._declare_bits()} "
-        s += self.name
+        s += self._name
         if self.is_parameter():
-            s += f" = {self.bits}"
+            s += f" = {self._bits}"
         s += delimiter
-        if self.remark is not None:
-            s += f" // {self.remark}"
+        if self._remark is not None:
+            s += f" // {self._remark}"
         return s
 
     def check_used(self):
@@ -227,7 +232,7 @@ class p2v_signal:
         Returns:
             bool
         """
-        return self.used
+        return self._used
 
     def check_driven(self):
         """
@@ -239,9 +244,9 @@ class p2v_signal:
         Returns:
             bool
         """
-        if self.driven:
+        if self._driven:
             return True
-        if isinstance(self.bits, str):
+        if isinstance(self._bits, str):
             return False
         return len(self._get_undriven_bits()) == 0
 
@@ -255,11 +260,11 @@ class p2v_signal:
         Returns:
             bool
         """
-        if self.driven:
+        if self._driven:
             return False
-        if isinstance(self.bits, str):
+        if isinstance(self._bits, str):
             return False
-        return len(self._get_undriven_bits()) < self.bits
+        return len(self._get_undriven_bits()) < self._bits
 
     def get_undriven_ranges(self):
         """

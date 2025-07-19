@@ -110,7 +110,7 @@ def _get_name(prefix=""):
     if not prefix.startswith("clk"):
         return prefix + "clk"
     return prefix.strip("_")
-    
+
 def clk_0rst(prefix=""):
     """
     Create a clock with no resets.

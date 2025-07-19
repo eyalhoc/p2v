@@ -160,11 +160,11 @@ class p2v_tb():
         self._parent._assert_type(prefix, str)
         self._parent._assert_type(has_async, [None, bool])
         self._parent._assert_type(has_sync, [None, bool])
-        
+
         if must_have_reset and has_async is None and has_sync is None:
             has_async = self.rand_bool()
             has_sync = not has_async
-            
+
         if has_async is None:
             has_async = self.rand_bool()
         if has_sync is None:

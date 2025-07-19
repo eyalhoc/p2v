@@ -18,7 +18,6 @@ p2v_preparse module. Responsible for preparsing p2v modules. Enables creation of
 
 import os
 import argparse
-import re
 
 import p2v_misc as misc
 
@@ -63,7 +62,7 @@ def _parse_file(filename, outdir=None, defines=None, header=None):
         s += misc._read_file(header)
     s += misc._read_file(filename)
     orig_lines = s.split("\n")
-    
+
     remove_lines = []
     for line_num, line in enumerate(orig_lines):
         if line_num in remove_lines:
