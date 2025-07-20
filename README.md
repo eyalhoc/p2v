@@ -31,18 +31,6 @@ P2V is a native Python 3 library with no mandatory external dependencies. Howeve
 
 ---
 
-## ⚙️ Using P2V with Partial Tooling
-
-P2V can run without all dependencies. To gracefully skip missing tools, add:
-
-```bash
--allow_missing_tools
-```
-
-This allows partial functionality (e.g. skipping indentation if Verible is not installed).
-
----
-
 ## 📚 Documentation
 
 👉 [p2v_spec.pdf](https://github.com/eyalhoc/p2v/blob/main/doc/p2v_spec.pdf)
