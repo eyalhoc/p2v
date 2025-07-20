@@ -1,4 +1,4 @@
-module adder__clkclk_bits8_num2 (
+module adder__bits8_num2 (
     input logic clk,
     input logic rst_n,
     input logic valid,
@@ -22,4 +22,4 @@ module adder__clkclk_bits8_num2 (
         else valid_out <= valid;
 
 
-endmodule  // adder__clkclk_bits8_num2
+endmodule  // adder__bits8_num2

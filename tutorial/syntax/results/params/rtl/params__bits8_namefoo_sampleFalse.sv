@@ -1,4 +1,4 @@
-module params__clkclk_bits8_namefoo_sampleFalse ();
+module params__bits8_namefoo_sampleFalse ();
 
     // params module parameters:
     //  * clk = clk_arst() (p2v_clock) #  p2v clock
@@ -9,4 +9,4 @@ module params__clkclk_bits8_namefoo_sampleFalse ();
     //  * depth = 128 (int) #  integer parameter - does not affect module name
 
 
-endmodule  // params__clkclk_bits8_namefoo_sampleFalse
+endmodule  // params__bits8_namefoo_sampleFalse

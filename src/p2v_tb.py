@@ -346,7 +346,7 @@ class p2v_tb():
             None
         """
         self._parent._assert_type(clk, clock)
-        self._parent._assert_type(name, str)
+        self._parent._assert_type(name, [str, p2v_signal])
         self._parent._assert_type(max_duration, int)
         self._parent._assert_type(max_delay, int)
         self._parent._assert_type(inverse, bool)
@@ -377,7 +377,7 @@ class p2v_tb():
             None
         """
         self._parent._assert_type(clk, clock)
-        self._parent._assert_type(name, str)
+        self._parent._assert_type(name, [str, p2v_signal])
         self._parent._assert_type(max_duration, int)
         self._parent._assert_type(max_delay, int)
         self.gen_busy(clk, name, max_duration=max_duration, max_delay=max_delay, inverse=True)
