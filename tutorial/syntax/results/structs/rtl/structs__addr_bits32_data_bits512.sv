@@ -1,4 +1,4 @@
-module structs__clkclk_addr_bits32_data_bits512 (
+module structs__addr_bits32_data_bits512 (
     input logic clk,
     input logic rst_n,
     input logic [3:0] mstr0__awid,
@@ -491,4 +491,4 @@ module structs__clkclk_addr_bits32_data_bits512 (
 
     assign cast_o__c = 2'd2;
 
-endmodule  // structs__clkclk_addr_bits32_data_bits512
+endmodule  // structs__addr_bits32_data_bits512

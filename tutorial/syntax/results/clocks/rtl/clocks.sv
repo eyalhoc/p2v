@@ -1,4 +1,4 @@
-module clocks__clkclk (
+module clocks (
     input logic clk,
     input logic rst_n,
     input logic [31:0] i0,
@@ -91,4 +91,4 @@ module clocks__clkclk (
         else o10 <= i10;
 
 
-endmodule  // clocks__clkclk
+endmodule  // clocks

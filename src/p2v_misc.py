@@ -303,7 +303,7 @@ def cond(condition, true_var, false_var=""):
     """
     if not isinstance(condition, bool): # verilog condition
         rtrn = f"{condition} ? {true_var} : {false_var}"
-        return p2v_signal(None, rtrn, bits=bits)
+        return p2v_signal(None, rtrn, bits=1)
 
     if condition:
         return true_var
@@ -347,7 +347,7 @@ def concat(vals, sep=None, nl_every=None):
     if len(sep) == 1:
         sep = f" {sep} "
     rtrn = sep.join(vals)
-    return p2v_signal(None, rtrn, bits=bits)
+    return p2v_signal(None, rtrn, bits=1)
 
 def pad(left, name, right=0, val=0):
     """
@@ -500,7 +500,8 @@ def is_hotone(var, bits, allow_zero=False): # pylint: disable=redefined-outer-na
         if allow_zero:
             return "1'b1"
         return var
-    return f"(({var} & ({var} - {dec(1, bits)})) == {dec(0, bits)})" + cond(allow_zero, f" | ({var} == {dec(0, bits)})")
+    rtrn = f"(({var} & ({var} - {dec(1, bits)})) == {dec(0, bits)})" + cond(allow_zero, f" | ({var} == {dec(0, bits)})")
+    return p2v_signal(None, rtrn, bits=1)
 
 def invert(var, not_op="~"):
     """
@@ -513,11 +514,13 @@ def invert(var, not_op="~"):
     Returns:
         Verilog code
     """
+    var = str(var)
     if var.startswith(not_op):
         var_not = var.replace(not_op, "", 1)
         if _is_in_paren(var_not):
             return _remove_extra_paren(var_not)
-    return f"{not_op}({var})"
+    rtrn = f"{not_op}({var})"
+    return p2v_signal(None, rtrn, bits=1)
 
 def add_paren(expr, open_char="(", close_char=")"):
     """

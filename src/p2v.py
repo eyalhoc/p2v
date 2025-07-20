@@ -431,14 +431,15 @@ class p2v():
     def _rm_line(self, line_idx):
         del self._lines[line_idx]
 
-    def _add_strct_attr(self, signal, names):
+    def _add_strct_attr(self, signal, names, fields):
         for key, value in names.items():
             if isinstance(value, dict):
                 nested = p2v_enum()
-                self._add_strct_attr(nested, value)
+                self._add_strct_attr(nested, value, fields=fields)
                 setattr(signal, key, nested)
             else:
-                setattr(signal, key, p2v_signal(None, value, bits=1))
+                if value in fields: # field must be missing due to having 0 bits
+                    setattr(signal, key, p2v_signal(None, value, bits=fields[value]))
 
     def _add_signal(self, signal):
         if self._exists(): # is called from p2v_connect
@@ -449,7 +450,7 @@ class p2v():
                 self._assert(abs(signal._bits) <= MAX_BITS, f"{signal._name} uses {abs(signal._bits)} bits which exceeds maximum of {MAX_BITS}", warning=True)
             self._signals[signal._name] = signal
         if signal._strct is not None:
-            self._add_strct_attr(signal, names=signal._strct.names)
+            self._add_strct_attr(signal, names=signal._strct.names, fields=signal._strct.fields)
         return signal
 
     def _get_signals(self, kinds=None):
@@ -873,17 +874,15 @@ class p2v():
 
     def _get_strct_signals(self, strct, data_only=True, ctrl_only=False, fields=None):
         signals = []
-        for name in strct:
+        for name, signal in strct.items():
             if fields is not None and name not in fields:
                 continue
-            field_name = strct[name]
-            if field_name in self._signals:
-                signal = self._signals[field_name]
-                if signal.ctrl and data_only:
-                    continue
-                if not signal.ctrl and ctrl_only:
-                    continue
-                signals.append(signal)
+            signal = strct[name]
+            if signal._ctrl and data_only:
+                continue
+            if not signal._ctrl and ctrl_only:
+                continue
+            signals.append(signal)
         return signals
 
     def _check_structs(self, tgt, src):
@@ -1123,6 +1122,8 @@ class p2v():
         elif kind is clock and auto_suffix:
             if var != default_clk:
                 suffix = str(var)
+            else:
+                suffix = None
         if not isinstance(kind, list):
             kind = [kind]
         for n, next_kind in enumerate(kind):
@@ -1147,6 +1148,8 @@ class p2v():
         Returns:
             list of field names (or other attribute)
         """
+        if isinstance(strct, p2v_enum):
+            strct = vars(strct)
         self._assert_type(strct, dict)
         self._assert_type(attrib, str)
         vals = []
@@ -1250,10 +1253,11 @@ class p2v():
         self._assert_type(val, [int, str])
         self._assert_type(local, bool)
         if self._exists():
-            return
-        self._add_signal(p2v_signal(misc.cond(local, "localparam", "parameter"), name, val, driven=True))
+            return None
+        signal = self._add_signal(p2v_signal(misc.cond(local, "localparam", "parameter"), name, val, driven=True))
         if local:
             self.line(f"localparam {name} = {val};")
+        return signal
 
     def enum(self, names):
         """
@@ -1267,7 +1271,7 @@ class p2v():
         """
         self._assert_type(names, [list, dict])
         if self._exists():
-            return []
+            return None
 
         if isinstance(names, list):
             enum_names = {}
@@ -1621,9 +1625,12 @@ class p2v():
         """
         if params is None:
             params = []
+        if isinstance(condition, p2v_signal):
+            condition = str(condition)
+
         self._assert_type(condition, str)
         self._assert_type(message, str)
-        self._assert_type(params, [str, list])
+        self._assert_type(params, [p2v_signal, str, list])
         self._assert_type(name, [None, str])
         self._assert_type(fatal, bool)
         self._assert_type(property_type, str)
@@ -1636,7 +1643,7 @@ class p2v():
             else:
                 self._assert(misc._is_legal_name(name), f"assertion name '{name}' is illegal", fatal=True)
             full_messgae = f'"{message}"'
-            if isinstance(params, str):
+            if isinstance(params, (p2v_signal, str)):
                 params = [params]
             for param in params:
                 full_messgae += f", {param}"
@@ -1689,7 +1696,7 @@ class p2v():
         """
         if params is None:
             params = []
-        self._assert_type(condition, str)
+        self._assert_type(condition, [p2v_signal, str])
         self._assert_type(message, str)
         self._assert_type(params, [str, list])
         self._assert_type(fatal, bool)
