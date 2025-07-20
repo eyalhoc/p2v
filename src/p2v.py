@@ -28,6 +28,7 @@ import inspect
 import argparse
 import csv
 from types import SimpleNamespace as p2v_enum
+import pyslang # pylint: disable=syntax-error
 
 import p2v_misc as misc
 from p2v_clock import clk_0rst, clk_arst, clk_srst, clk_2rst # needed for clock loading from gen csv file # # pylint: disable=unused-import
@@ -36,7 +37,6 @@ from p2v_clock import default_clk
 from p2v_signal import p2v_signal
 from p2v_connect import p2v_connect
 from p2v_tb import p2v_tb, PASS_STATUS
-import p2v_slang as slang
 import p2v_tools
 
 MAX_MODNAME = 150
@@ -840,16 +840,40 @@ class p2v():
             self._bbox[modname] = empty_outfile
             self._logger.debug("created bbox: %s", os.path.basename(empty_outfile))
 
-    def _get_verilog_ports(self, modname, params=None):
+    def _get_ports(self, filename, modname):
+        signals = {}
+        tree = pyslang.SyntaxTree.fromFile(filename)
+        comp = pyslang.Compilation()
+        comp.addSyntaxTree(tree)
+        root = comp.getRoot()
+        for inst in root.topInstances:
+            if inst.name == modname:
+                for port in inst.body.portList:
+                    if hasattr(port.type, "scalarKind"):
+                        bits = 1
+                    else:
+                        left = port.type.range.left
+                        right = port.type.range.right
+                        bits = abs(left - right) + 1
+
+                    if port.direction.name == "In":
+                        kind = "input"
+                    elif port.direction.name == "Out":
+                        kind = "output"
+                    else:
+                        kind = "inout"
+                    signals[port.name] = p2v_signal(kind, port.name, bits=bits)
+                for param in inst.body.parameters:
+                    bits = misc._to_int(str(param.value), allow=True)
+                    signals[param.name] = p2v_signal("parameter", param.name, bits=bits)
+        return signals
+
+    def _get_verilog_ports(self, modname):
         self._assert_type(modname, str)
-        if params is None:
-            params = {}
         if modname in self._cache["ports"]:
             return self._cache["ports"][modname]
         filename = self._find_module(modname)
-        _ast = slang.get_ast(filename, modname, params=params)
-        self._assert(_ast is not None, f"failed to parse verilog file {filename}, manually create wrapper for module", fatal=True)
-        ports =  slang.get_ports(_ast)
+        ports =  self._get_ports(filename, modname)
         self._cache["ports"][modname] = ports
         return ports
 
@@ -1602,7 +1626,7 @@ class p2v():
             self._assert(modname not in self._outfiles, f"module previosuly created with verilog module name {modname}", fatal=True)
             self._cache["conn"][modname]._parent = self
             return self._cache["conn"][modname]
-        ports = self._get_verilog_ports(modname, params=params)
+        ports = self._get_verilog_ports(modname)
         if self._args.lint:
             self._write_empty_module(modname)
         return self._get_connects(parent=self, modname=modname, signals=ports, params=params)
