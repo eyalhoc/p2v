@@ -26,7 +26,6 @@ P2V is a native Python 3 library with no mandatory external dependencies. Howeve
 | Tool      | Purpose                   | Link |
 |-----------|---------------------------|------|
 | Verible   | Verilog indentation        | [Verible GitHub](https://github.com/chipsalliance/verible) |
-| Slang     | Module instantiation       | [Slang GitHub](https://github.com/MikePopoloski/slang) |
 | Verilator | Verilog linting            | [Verilator Install Guide](https://verilator.org/guide/latest/install.html) |
 | Icarus    | Verilog simulation         | [Icarus Install Guide](https://steveicarus.github.io/iverilog/usage/installation.html) |
 
