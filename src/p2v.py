@@ -224,7 +224,7 @@ class p2v():
 
     def _lint(self):
         if self._args.lint:
-            if self._assert(p2v_tools.en[p2v_tools.LINT_BIN], f"cannot perform lint, {p2v_tools.LINT_BIN} is not installed", warning=self._args.allow_missing_tools):
+            if self._assert(p2v_tools.en[p2v_tools.LINT_BIN], f"cannot perform lint, {p2v_tools.LINT_BIN} is not installed", warning=True):
                 if self._modname is None:
                     top_filename = None
                 else:
@@ -237,7 +237,7 @@ class p2v():
 
     def _comp(self):
         if self._args.sim:
-            if self._assert(p2v_tools.en[p2v_tools.COMP_BIN], f"cannot perform verilog compile, {p2v_tools.COMP_BIN} is not installed", warning=self._args.allow_missing_tools):
+            if self._assert(p2v_tools.en[p2v_tools.COMP_BIN], f"cannot perform verilog compile, {p2v_tools.COMP_BIN} is not installed", warning=True):
                 logfile, success = p2v_tools.comp(dirname=self._get_rtldir(), outdir=self._args.outdir, modname=self._modname, search=self._search, libs=self._libs)
                 comp_str = misc._read_file(logfile)
                 if self._assert(success and comp_str=="", f"verilog compilation completed with errors:\n{comp_str}"):
@@ -247,7 +247,7 @@ class p2v():
 
     def _sim(self):
         if self._args.sim:
-            if self._assert(p2v_tools.en[p2v_tools.SIM_BIN], f"cannot perform verilog simulation, {p2v_tools.SIM_BIN} is not installed", warning=self._args.allow_missing_tools):
+            if self._assert(p2v_tools.en[p2v_tools.SIM_BIN], f"cannot perform verilog simulation, {p2v_tools.SIM_BIN} is not installed", warning=True):
                 if self._comp():
                     logfile, success = p2v_tools.sim(dirname=self._args.outdir, outdir=self._args.outdir, pass_str=PASS_STATUS)
                     if self._assert(success, f"verilog simulation failed, logfile: {logfile}"):
@@ -390,7 +390,6 @@ class p2v():
         parser.add_argument("-params", type=self._param_type, default={}, help="top module parameters, dictionary or csv file")
         parser.add_argument("-stop_on", default="CRITICAL", choices=["WARNING", "ERROR", "CRITICAL"], help="stop after non critical errors")
         parser.add_argument("-log", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], help="logging level")
-        parser.add_argument("-allow_missing_tools", action="store_true", default=False, help="do not stop on missing dependencies")
         parser.add_argument("-lint", action="store_true", default=True, help="enable lint")
         parser.add_argument("--lint", action="store_false", default=False, help="supress lint")
         parser.add_argument("-sim", action="store_true", default=False, help="enable verilog simulation")
@@ -514,7 +513,7 @@ class p2v():
     def _write_lines(self, outfile, lines, indent=True):
         misc._write_file(outfile, "\n".join(lines))
         if indent and self._args.indent:
-            if self._assert(p2v_tools.en[p2v_tools.INDENT_BIN], f"cannot perform verilog indentation, {p2v_tools.INDENT_BIN} is not installed", warning=self._args.allow_missing_tools):
+            if self._assert(p2v_tools.en[p2v_tools.INDENT_BIN], f"cannot perform verilog indentation, {p2v_tools.INDENT_BIN} is not installed", warning=True):
                 self._processes.append(p2v_tools.indent(outfile))
 
     def _exists(self):
