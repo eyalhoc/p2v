@@ -321,7 +321,7 @@ def concat(vals, sep=None, nl_every=None):
     Returns:
         Verilog code
     """
-    assert isinstance(vals, list), vals
+    assert isinstance(vals, list), f"variable {vals} expected to be of type list"
     assert isinstance(sep, (type(None), str)), sep
     assert isinstance(nl_every, (type(None), int)), nl_every
     assert len(vals) >= 0, vals

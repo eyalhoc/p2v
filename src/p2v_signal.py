@@ -62,6 +62,8 @@ class p2v_signal:
         return self._name
 
     def _create(self, other, op):
+        if isinstance(other, int):
+            other = misc.dec(other, self._bits)
         expr = misc._remove_extra_paren(f"({self} {op} {other})")
         return p2v_signal(None, expr, bits=self._bits)
 
