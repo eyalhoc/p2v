@@ -47,8 +47,7 @@ python3 p2v/tutorial/example0_hello_world/hello_world.py
 
 Sample output:
 ```
-p2v-INFO: starting with seed 1
-p2v-DEBUG: created: hello_world.sv
+p2v-INFO: created: hello_world.sv
 p2v-INFO: verilog generation completed successfully (1 sec)
 p2v-INFO: verilog lint completed successfully
 p2v-INFO: completed successfully
