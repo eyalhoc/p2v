@@ -398,7 +398,7 @@ def dec(num, bits=1): # pylint: disable=redefined-outer-name
     if num < 0:
         return bin(num + (1<<bits), bits)
     rtrn = f"{bits}'d{num}"
-    return p2v_signal(None, rtrn, bits=bits)
+    return p2v_signal(None, rtrn, bits=1)
 
 def hex(num, bits=None, add_sep=4, prefix="'h"): # pylint: disable=redefined-builtin,redefined-outer-name
     """
@@ -418,7 +418,7 @@ def hex(num, bits=None, add_sep=4, prefix="'h"): # pylint: disable=redefined-bui
     assert isinstance(add_sep, int) and add_sep >= 0, add_sep
     assert isinstance(prefix, (type(None), str)), prefix
     rtrn = _base(16, num, bits, add_sep, prefix)
-    return p2v_signal(None, rtrn, bits=bits)
+    return p2v_signal(None, rtrn, bits=1)
 
 def bin(num, bits=None, add_sep=4, prefix="'b"): # pylint: disable=redefined-builtin,redefined-outer-name
     """
@@ -438,7 +438,7 @@ def bin(num, bits=None, add_sep=4, prefix="'b"): # pylint: disable=redefined-bui
     assert isinstance(add_sep, int) and add_sep >= 0, add_sep
     assert isinstance(prefix, (type(None), str)), prefix
     rtrn = _base(2, num, bits, add_sep, prefix)
-    return p2v_signal(None, rtrn, bits=bits)
+    return p2v_signal(None, rtrn, bits=1)
 
 def bits(name, bits, start=0): # pylint: disable=redefined-outer-name
     """
@@ -462,7 +462,7 @@ def bits(name, bits, start=0): # pylint: disable=redefined-outer-name
     if start > end:
         return None
     rtrn = f"{name}[{end}:{start}]"
-    return p2v_signal(None, rtrn, bits=bits)
+    return p2v_signal(None, rtrn, bits=1)
 
 def bit(name, idx):
     """
@@ -476,8 +476,8 @@ def bit(name, idx):
         Verilog code
     """
     name = str(name)
+    idx = str(idx)
     assert _is_legal_name(name), f"{name} is not a legal name"
-    assert isinstance(idx, (int, str)), f"{name} uses illegal index {idx}"
     rtrn = f"{name}[{idx}]"
     return p2v_signal(None, rtrn, bits=1)
 
@@ -493,9 +493,9 @@ def is_hotone(var, bits, allow_zero=False): # pylint: disable=redefined-outer-na
     Returns:
         Verilog code
     """
-    assert isinstance(var, str), var
-    assert isinstance(bits, int) and bits > 0, bits
-    assert isinstance(allow_zero, bool), allow_zero
+    var = str(var)
+    assert isinstance(bits, int) and bits > 0, f"variable {bits} expected to be a non zero positive integer"
+    assert isinstance(allow_zero, bool), f"variable {allow_zero} expected to be of type bool"
     if bits == 1:
         if allow_zero:
             return "1'b1"

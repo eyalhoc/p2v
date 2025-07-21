@@ -1272,6 +1272,9 @@ class p2v():
         Returns:
             None
         """
+        if isinstance(val, p2v_signal):
+            val = str(val)
+
         self._assert_type(name, str)
         self._assert_type(val, [int, str])
         self._assert_type(local, bool)
@@ -1310,7 +1313,7 @@ class p2v():
             self._assert(isinstance(val, int), f"enumerated type {name} is of type {type(val)} while expecting type int", fatal=True)
             max_val = max(max_val, val)
         max_val_bin = misc.bin(max_val, add_sep=0, prefix=None)
-        enum_bits = len(max_val_bin)
+        enum_bits = len(str(max_val_bin))
 
         enum_vals = {}
         for name, val in enum_names.items():
@@ -1533,7 +1536,8 @@ class p2v():
             self.allow_unused(reset)
 
         if bypass:
-            self.allow_unused(clk)
+            if clk.name in self._signals:
+                self.allow_unused(clk)
             self.assign(tgt, src)
             return
 
@@ -1648,6 +1652,8 @@ class p2v():
         """
         if params is None:
             params = []
+        if isinstance(clk, p2v_signal): # triggering event
+            clk = str(clk)
         if isinstance(condition, p2v_signal):
             condition = str(condition)
 
