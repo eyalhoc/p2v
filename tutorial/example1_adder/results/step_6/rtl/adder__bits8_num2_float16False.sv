@@ -2,8 +2,8 @@ module adder__bits8_num2_float16False (
     input logic clk,
     input logic rst_n,
     input logic valid,
-    input logic [7:0] i0,
-    input logic [7:0] i1,
+    input logic [7:0] data_in0,
+    input logic [7:0] data_in1,
     output logic [7:0] o,
     output logic valid_out
 );
@@ -15,7 +15,7 @@ module adder__bits8_num2_float16False (
     //  * float16 = False (bool) #  use a float16 adder
 
     logic [7:0] o_pre;
-    assign o_pre = (i0 + i1);
+    assign o_pre = (data_in0 + data_in1);
     always_ff @(posedge clk or negedge rst_n)
         if (!rst_n) o <= 8'd0;
         else if (valid) o <= o_pre;
