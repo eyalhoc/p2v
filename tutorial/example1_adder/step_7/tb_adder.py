@@ -27,7 +27,7 @@ class tb_adder(p2v):
         valid = self.logic("valid")
         inputs = []
         for n in range(num):
-            inputs.append(self.logic(f"data_in{n}", bits, initial=0))
+            inputs.append(self.logic(f"i{n}", bits, initial=0))
         o = self.logic("o", bits)
         valid_out = self.logic("valid_out")
             

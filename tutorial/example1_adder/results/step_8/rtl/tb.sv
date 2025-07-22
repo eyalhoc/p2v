@@ -27,17 +27,17 @@ module tb ();
     logic valid;
     initial valid = 1'd0;
 
-    logic [15:0] data_in0;
-    initial data_in0 = 16'd0;
+    logic [15:0] i0;
+    initial i0 = 16'd0;
 
-    logic [15:0] data_in1;
-    initial data_in1 = 16'd0;
+    logic [15:0] i1;
+    initial i1 = 16'd0;
 
-    logic [15:0] data_in2;
-    initial data_in2 = 16'd0;
+    logic [15:0] i2;
+    initial i2 = 16'd0;
 
-    logic [15:0] data_in3;
-    initial data_in3 = 16'd0;
+    logic [15:0] i3;
+    initial i3 = 16'd0;
 
     logic [15:0] o;
     logic valid_out;
@@ -45,10 +45,10 @@ module tb ();
         .clk(clk),  // input
         .resetn(resetn),  // input
         .valid(valid),  // input
-        .data_in0(data_in0),  // input
-        .data_in1(data_in1),  // input
-        .data_in2(data_in2),  // input
-        .data_in3(data_in3),  // input
+        .i0(i0),  // input
+        .i1(i1),  // input
+        .i2(i2),  // input
+        .i3(i3),  // input
         .o(o),  // output
         .valid_out(valid_out)  // output
     );
@@ -89,7 +89,7 @@ module tb ();
     always @(posedge clk)
         if (en && (data_in_q.size() > 0)) begin
             data_in = data_in_q.pop_front();
-            {data_in0, data_in1, data_in2, data_in3} <= data_in;
+            {i0, i1, i2, i3} <= data_in;
             valid <= 1;
         end
 
