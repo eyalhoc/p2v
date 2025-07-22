@@ -520,27 +520,9 @@ class p2v():
         return self._modname in self._cache["conn"]
 
     def _get_connects(self, parent, modname, signals, params):
-        arrays = {}
         connects = p2v_connect(parent, modname, signals, params=params)
         for name, val in connects._signals.items():
             setattr(connects, name, val)
-            idx = -1
-            if name[idx].isdigit():
-                while name[idx].isdigit():
-                    idx -= 1
-                idx += 1
-                name_without_idx = name[:idx]
-                if name_without_idx not in connects._signals:
-                    if name_without_idx not in arrays:
-                        arrays[name_without_idx] = [int(name[idx:])]
-                    else:
-                        arrays[name_without_idx] += [int(name[idx:])]
-        for name, idxs in arrays.items():
-            l = [None] * (max(idxs)+1)
-            for idx in idxs:
-                l[idx] = f"{name}{idx}"
-            setattr(connects, name, l)
-
         self._cache["conn"][modname] = connects
         return connects
 
@@ -702,14 +684,9 @@ class p2v():
         else:
             self._outfiles[modname] = outhash
 
-    def _port(self, kind, name, bits=1, used=False, driven=False, num=None):
+    def _port(self, kind, name, bits=1, used=False, driven=False):
         if name == "":
             name = self._get_receive_name(kind, depth=2)
-        if num is not None:
-            l = []
-            for n in range(num):
-                l.append(self._port(kind, f"{name}{n}", bits=bits, used=used, driven=driven))
-            return l
 
         self._assert(type(bits) in SIGNAL_TYPES, f"unknown type {bits} for port", fatal=True)
         if isinstance(name, clock):
@@ -1348,7 +1325,7 @@ class p2v():
         enum_vals["BITS"] = enum_bits
         return p2v_enum(**enum_vals)
 
-    def input(self, name="", bits=1, num=None):
+    def input(self, name="", bits=1):
         """
         Create an input port.
 
@@ -1369,10 +1346,9 @@ class p2v():
             name = ""
         self._assert_type(name, [str, list ,clock])
         self._assert_type(bits, SIGNAL_TYPES)
-        self._assert_type(num, [None, int])
-        return self._port("input", name, bits, driven=True, num=num)
+        return self._port("input", name, bits, driven=True)
 
-    def output(self, name="", bits=1, num=None):
+    def output(self, name="", bits=1):
         """
         Create an output port.
 
@@ -1393,10 +1369,9 @@ class p2v():
             name = ""
         self._assert_type(name, [str, list, clock])
         self._assert_type(bits, SIGNAL_TYPES)
-        self._assert_type(num, [None, int])
-        return self._port("output", name, bits, used=True, num=num)
+        return self._port("output", name, bits, used=True)
 
-    def inout(self, name="", num=None):
+    def inout(self, name=""):
         """
         Create an inout port.
 
@@ -1407,12 +1382,11 @@ class p2v():
             p2v signal
         """
         self._assert_type(name, [str])
-        self._assert_type(num, [None, int])
         if self._exists():
             return
-        self._port("inout", name, bits=1, used=True, driven=True, num=num)
+        self._port("inout", name, bits=1, used=True, driven=True)
 
-    def logic(self, name="", bits=1, assign=None, initial=None, num=None):
+    def logic(self, name="", bits=1, assign=None, initial=None):
         """
         Declare a Verilog signal.
 
@@ -1440,19 +1414,12 @@ class p2v():
         self._assert_type(bits, SIGNAL_TYPES)
         self._assert_type(assign, [p2v_signal, int, str, dict, None])
         self._assert_type(initial, [p2v_signal, int, str, dict, None])
-        self._assert_type(num, [None, int])
 
         if isinstance(name, p2v_signal):
             name = str(name)
 
         if isinstance(bits, p2v_enum):
             bits = bits.BITS
-
-        if num is not None:
-            l = []
-            for n in range(num):
-                l.append(self.logic(f"{name}{n}", bits=bits, assign=assign, initial=initial))
-            return l
 
         remark = self._get_remark(depth=2)
 
