@@ -520,9 +520,22 @@ class p2v():
         return self._modname in self._cache["conn"]
 
     def _get_connects(self, parent, modname, signals, params):
+        arrays = {}
         connects = p2v_connect(parent, modname, signals, params=params)
         for name, val in connects._signals.items():
             setattr(connects, name, val)
+            # support access with list
+            prefix, index = misc._get_index(name)
+            if index is not None:
+                if prefix not in arrays:
+                    arrays[prefix] = []
+                if (index+1) > len(arrays[prefix]):
+                    arrays[prefix] = arrays[prefix] + [None] * (index+1-len(arrays[prefix]))
+                arrays[prefix][index] = name
+        for name, val in arrays.items():
+            if not hasattr(connects, name): # don't overrride explicit names
+                setattr(connects, name, val)
+
         self._cache["conn"][modname] = connects
         return connects
 

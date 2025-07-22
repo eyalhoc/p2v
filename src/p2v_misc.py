@@ -116,7 +116,17 @@ def _to_int(n, allow=False):
         return n
     raise RuntimeError(f"cannot convert {n} to int")
 
-def  _get_base_str(base):
+def _get_index(name):
+    name = str(name)
+    if len(name) == 0 or not name[-1].isdigit() or name[0].isdigit():
+        return name, None
+    idx = -1
+    while name[idx].isdigit():
+        idx -= 1
+    idx += 1
+    return name[:idx], int(name[idx:])
+
+def _get_base_str(base):
     if base == 16:
         return "x"
     if base == 2:
