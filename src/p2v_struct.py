@@ -89,6 +89,7 @@ class p2v_struct():
         Returns:
             str
         """
+        name = str(name)
         if FIELD_SEP in name:
             sep = ""
         else:
@@ -106,7 +107,8 @@ class p2v_struct():
         Returns:
             updated ffull struct field name (str)
         """
-        field_name = field_name.split(FIELD_SEP)[-1]
+        field_name = str(field_name)
+        field_name = field_name.rsplit(FIELD_SEP, 1)[-1]
         return self.get_field_name(name, field_name)
 
     def prefix_fields(self, name, fields, data_only=False, ctrl_only=False):

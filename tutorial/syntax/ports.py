@@ -39,13 +39,16 @@ class ports(p2v):
         if var:
             go = self.output(bits*2) # conditional port
         
-        lst =  [a, b, c, dd, e]
-        for n in range(num):
-            lst.append(f[n])
+        lst_in =  [a, b, c, dd, e] + f
         if var:
-            lst.append(g)
-        for x in lst:
-            self.assign(f"{x}o", x)
+            lst_in.append(g)
+            
+        lst_out =  [ao, bo, co, ddo, eo] + fo
+        if var:
+            lst_out.append(go)
+            
+        for n, x in enumerate(lst_in):
+            self.assign(lst_out[n], x)
         
         
         q = self.inout() #inout ports width is always 1

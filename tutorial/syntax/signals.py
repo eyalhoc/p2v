@@ -40,32 +40,33 @@ class signals(p2v):
         self.logic(clk) # p2v clock
         self.logic(clk2) # p2v clock
         
-        self.assign(clk.name, "1'b1") # clock assignment
-        self.assign(clk.rst_n, "1'b1") # reset assignment
+        ext_clk = self.input()
+        self.assign(clk.name, ext_clk) # clock assignment
+        self.assign(clk.rst_n, 1) # reset assignment
         
         self.parameter("BITS", 32) # Verilog parameter
         
-        self.logic("z", "BITS", assign="'0") # Verilog parametric port
-        self.allow_unused("z")
+        z = self.logic("z", "BITS", assign=0) # Verilog parametric port
+        self.allow_unused(z)
         
-        self.parameter("IDLE", "2'd0", local=True) # local parameter
-        iii = self.logic(2, assign="IDLE")
-        self.allow_unused("iii")
+        IDLE = self.parameter("IDLE", "2'd0", local=True) # local parameter
+        iii = self.logic(2, assign=IDLE)
+        self.allow_unused(iii)
         
         self.line() # insert empty line to Verilog file
-        self.assign(b, "1'b1") # assign to const
+        self.assign(b, 1) # assign to const
         self.assign(e, misc.dec(3, bits)) # assign to const
         for n in range(num):
             self.assign(f[n], d | e) # assign expression
         self.assign(a, b) # trivial Verilog assign
         self.assign(c, 0) # assign to const
         self.assign(d, e + misc.dec(1, bits)) # assign expression
-        self.assign(g, misc.concat([f[0], f[1]])) # assign conctenation
+        self.assign(g, misc.concat(f[:2])) # assign conctenation
         self.assign(misc.bits(h, bits), f[2]) # partial bits
         self.assign(misc.bits(h, bits, start=bits), f[3]) # partial bits
         
         self.line() # insert empty line to Verilog file
-        self.assign(clk2.rst_n, "1'b1")
+        self.assign(clk2.rst_n, 1)
         self.assign(clk2, clk)
         
         self.allow_unused([clk2, clk.rst_n])

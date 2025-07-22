@@ -1,6 +1,8 @@
 module signals #(
     parameter BITS = 32
-) ();
+) (
+    input logic ext_clk
+);
 
     // signals module parameters:
 
@@ -19,8 +21,8 @@ module signals #(
     logic rst_n;
     logic clk2;
     logic clk2_rstn;
-    assign clk   = 1'b1;  //  clock assignment
-    assign rst_n = 1'b1;  //  reset assignment
+    assign clk   = ext_clk;  //  clock assignment
+    assign rst_n = 1'd1;  //  reset assignment
     logic [BITS-1:0] z;  //  Verilog parametric port
     assign z = '0;  //  Verilog parametric port
 
@@ -29,7 +31,7 @@ module signals #(
     assign iii = IDLE;
 
 
-    assign b = 1'b1;  //  assign to const
+    assign b = 1'd1;  //  assign to const
     assign e = 8'd3;  //  assign to const
     assign f0 = (d | e);  //  assign expression
     assign f1 = (d | e);  //  assign expression
@@ -42,7 +44,7 @@ module signals #(
     assign h[7:0] = f2;  //  partial bits
     assign h[15:8] = f3;  //  partial bits
 
-    assign clk2_rstn = 1'b1;
+    assign clk2_rstn = 1'd1;
 
     assign clk2 = clk;
     logic [7:0] aa;  //  inline assignment
