@@ -396,13 +396,12 @@ class p2v_tb():
         self._parent._assert_type(clk, clock)
         self._parent._assert_type(timeout, int)
 
-        wire = f"_count_{clk}"
-        self._parent.logic(wire, 32, initial=0)
+        count = self._parent.logic(f"_count_{clk}", 32, initial=0)
         self._parent.line(f"""
-                             always @(posedge {clk}) {wire} <= {wire} + 'd1;
+                             always @(posedge {clk}) {count} <= {count + 1};
                           """)
-        self._parent.assert_never(clk, f"{wire} >= 'd{timeout}", f"reached timeout after {timeout} cycles of {clk}")
-        self._parent.allow_unused(wire)
+        self._parent.assert_never(clk, count >= timeout, f"reached timeout after {timeout} cycles of {clk}")
+        self._parent.allow_unused(count)
 
 
     def register_test(self, args=None):
@@ -511,3 +510,14 @@ class p2v_tb():
             self._parent._rm_line(last_idx)
         else:
             self._parent.line(p2v_tools.lint_on())
+
+    def expr(self, line):
+        """
+        Convert a testbench string expression to a p2v signal.
+        Args:
+            line(str): Verilog expression
+
+        Returns:
+            p2v_signal
+        """
+        return p2v_signal(None, line, bits=0)

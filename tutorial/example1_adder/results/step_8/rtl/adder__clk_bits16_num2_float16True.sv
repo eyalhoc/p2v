@@ -18,7 +18,6 @@ module adder__clk_bits16_num2_float16True (
     logic overflow;
     logic zero;
     logic NaN;
-    logic precisionLost;
     float_adder float_adder (
         .num1(i0),  // input
         .num2(i1),  // input
@@ -26,7 +25,7 @@ module adder__clk_bits16_num2_float16True (
         .overflow(overflow),  // output
         .zero(zero),  // output
         .NaN(NaN),  // output
-        .precisionLost(precisionLost)  // output
+        .precisionLost()  // output
     );
 
     received_unexpected_overflow_assert :

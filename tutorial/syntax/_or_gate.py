@@ -6,11 +6,11 @@ class _or_gate(p2v):
         self.set_param(bits, int, bits > 0)
         self.set_modname()
         
-        self.input("a", bits)
-        self.input("b", bits)
-        self.output("c", bits)
+        a = self.input(bits)
+        b = self.input(bits)
+        c = self.output(bits)
         
-        self.assign("c", "a | b")
+        self.assign(c, a | b)
         
         return self.write()
 

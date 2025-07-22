@@ -520,9 +520,22 @@ class p2v():
         return self._modname in self._cache["conn"]
 
     def _get_connects(self, parent, modname, signals, params):
+        arrays = {}
         connects = p2v_connect(parent, modname, signals, params=params)
         for name, val in connects._signals.items():
             setattr(connects, name, val)
+            # support access with list
+            prefix, index = misc._get_index(name)
+            if index is not None:
+                if prefix not in arrays:
+                    arrays[prefix] = []
+                if (index+1) > len(arrays[prefix]):
+                    arrays[prefix] = arrays[prefix] + [None] * (index+1-len(arrays[prefix]))
+                arrays[prefix][index] = p2v_signal(None, name, bits=0)
+        for name, val in arrays.items():
+            if not hasattr(connects, name): # don't overrride explicit names
+                setattr(connects, name, val)
+
         self._cache["conn"][modname] = connects
         return connects
 
@@ -545,6 +558,7 @@ class p2v():
         return None
 
     def _get_names(self, wire):
+        wire = str(wire)
         self._assert_type(wire, str)
         self._check_line_balanced(wire)
         return misc._get_names(wire)
@@ -656,6 +670,7 @@ class p2v():
             self._assert(val < MAX_LOOP, f"{name} was created {val} times in module (performance loss)")
 
     def _check_line_balanced(self, line):
+        line = str(line)
         for (open_char, close_char) in [("(", ")"), ("[", "]"), ("{", "}")]:
             for c in line:
                 if c in [open_char, close_char]:
@@ -668,7 +683,8 @@ class p2v():
                     break
 
     def _get_signal_bits(self, name):
-        array_name = name.split("[")[0] # support arrays
+        name = str(name)
+        array_name = name.split("[", maxsplit=1)[0] # support arrays
         is_array = array_name in self._signals and len(self._signals[array_name]._dim) > 1
         if misc._is_legal_name(name) or is_array:
             return self._signals[array_name]._dim[-1]
@@ -685,14 +701,14 @@ class p2v():
             self._outfiles[modname] = outhash
 
     def _port(self, kind, name, bits=1, used=False, driven=False):
-        if name == "":
+        if isinstance(name, str) and name == "":
             name = self._get_receive_name(kind, depth=2)
 
         self._assert(type(bits) in SIGNAL_TYPES, f"unknown type {bits} for port", fatal=True)
         if isinstance(name, clock):
             self._assert(bits == 1, f"{kind} clock {name} must be declared with bits = 1")
             for net in name.get_nets():
-                self._port(kind, net, used=used, driven=driven)
+                self._port(kind, str(net), used=used, driven=driven)
         elif isinstance(name, list):
             signals = []
             for n in name:
@@ -880,17 +896,17 @@ class p2v():
         self._assert_type(tgt, clock)
         self._assert_type(src, clock)
         self.line()
-        if tgt.name in self._signals and self._signals[tgt.name]._driven:
+        if str(tgt.name) in self._signals and self._signals[str(tgt.name)]._driven:
             pass
         else:
             self.assign(tgt.name, src.name)
         if tgt.rst_n is not None and src.rst_n is not None:
-            if tgt.rst_n in self._signals and self._signals[tgt.rst_n]._driven:
+            if str(tgt.rst_n) in self._signals and self._signals[str(tgt.rst_n)]._driven:
                 pass
             else:
                 self.assign(tgt.rst_n, src.rst_n)
         if tgt.reset is not None and src.reset is not None:
-            if tgt.reset in self._signals and self._signals[tgt.reset]._driven:
+            if str(tgt.reset) in self._signals and self._signals[str(tgt.reset)]._driven:
                 pass
             else:
                 self.assign(tgt.reset, src.reset)
@@ -909,17 +925,21 @@ class p2v():
         return signals
 
     def _check_structs(self, tgt, src):
-        self._check_declared(tgt)
+        self._assert_type(tgt, p2v_signal)
+        self._assert_type(src, [p2v_signal, int, None])
+        self._check_declared(tgt._name)
         if not isinstance(src, int) and src is not None:
-            self._check_declared(src)
-            self._assert(self._signals[tgt]._strct is not None, f"trying to assign struct {src} to a non struct signal {tgt}", fatal=True)
-            self._assert(self._signals[src]._strct is not None, f"trying to assign a non struct signal {src} to struct {tgt}", fatal=True)
+            self._check_declared(src._name)
+            self._assert(tgt._strct is not None, f"trying to assign struct {src} to a non struct signal {tgt}", fatal=True)
+            self._assert(src._strct is not None, f"trying to assign a non struct signal {src} to struct {tgt}", fatal=True)
 
     def _sample_structs(self, clk, tgt, src, ext_valid=None):
+        self._assert_type(tgt, p2v_signal)
+        self._assert_type(src, [p2v_signal, int])
         self._check_structs(tgt, src)
         self.line()
-        tgt_strct = self._signals[tgt]._strct
-        src_strct = self._signals[src]._strct
+        tgt_strct = tgt._strct
+        src_strct = src._strct
 
         # control
         if tgt_strct.valid is None:
@@ -928,65 +948,70 @@ class p2v():
         else:
             self._assert(ext_valid is None, f"external valid {ext_valid} cannot be used with struct {tgt} that has an internal qualifier")
             if tgt_strct.ready is None:
-                self._assert(src_strct.valid is not None, f"struct {tgt} has valid while {src} does not", fatal=True)
-                valid = tgt_strct.valid
+                self._assert(src.valid is not None, f"struct {tgt} has valid while {src} does not", fatal=True)
+                valid = tgt.valid
                 ready = None
             else:
-                self._assert(src_strct.valid is not None, f"struct {tgt} has valid while {src} does not", fatal=True)
-                self._assert(src_strct.ready is not None, f"struct {tgt} has ready while {src} does not", fatal=True)
-                valid = f"{src_strct.valid} & {src_strct.ready}"
-                ready = src_strct.ready
+                self._assert(src.valid is not None, f"struct {tgt} has valid while {src} does not", fatal=True)
+                self._assert(src.ready is not None, f"struct {tgt} has ready while {src} does not", fatal=True)
+                valid = src.valid & src.ready
+                ready = src.ready
 
         if ready is not None:
             if src_strct.ready in self._signals and self._signals[src_strct.ready]._driven:
                 pass
             else:
-                self.assign(src_strct.ready, tgt_strct.ready)
+                self.assign(self._signals[src_strct.ready], self._signals[tgt_strct.ready])
         if valid is not None:
-            self.sample(clk, tgt_strct.valid, src_strct.valid, valid=f"~{tgt_strct.valid}{misc.cond(src_strct.ready is not None, f' | ~{src_strct.ready}')}")
+            qual_valid = ~tgt.valid
+            if src.ready is not None:
+                qual_valid |= ~src.ready
+            self.sample(clk, self._signals[tgt_strct.valid], self._signals[src_strct.valid], valid=qual_valid)
         self.line()
 
         # data
         self.line()
-        tgt_fields = self._signals[tgt]._strct.fields
+        tgt_fields = tgt._strct.fields
         for tgt_field_name in tgt_fields:
             field_bits = tgt_fields[tgt_field_name]
             if field_bits == 0 or isinstance(field_bits, float):
                 continue
-            src_field_name = self._signals[src]._strct.update_field_name(src, tgt_field_name)
+            src_field_name = src._strct.update_field_name(src, tgt_field_name)
             if src_field_name not in src_strct.fields: # support casting (best effort)
                 continue
             if field_bits > 0 and not self._signals[tgt_field_name]._driven:
-                self.sample(clk, tgt_field_name, src_field_name, valid=valid)
+                self.sample(clk, self._signals[tgt_field_name], self._signals[src_field_name], valid=valid)
             if field_bits < 0 and not self._signals[src_field_name]._driven:
-                self.sample(clk, src_field_name, tgt_field_name, valid=valid)
+                self.sample(clk, self._signals[src_field_name], self._signals[tgt_field_name], valid=valid)
         self.line()
 
     def _assign_structs(self, tgt, src, keyword="assign"):
+        self._assert_type(tgt, p2v_signal)
+        self._assert_type(src, [p2v_signal, int])
         if isinstance(src, int):
             self._check_structs(tgt, None)
             self._assert(src == 0, "struct {src} can only be assigned to 0 when assigned to int", fatal=True)
         else:
             self._check_structs(tgt, src)
-            self._assert(self._signals[src]._strct is not None, f"trying to assign a non struct signal {src} to struct {tgt}", fatal=True)
+            self._assert(src._strct is not None, f"trying to assign a non struct signal {src} to struct {tgt}", fatal=True)
         self.line()
-        tgt_fields = self._signals[tgt]._strct.fields
+        tgt_fields = tgt._strct.fields
         for tgt_field_name in tgt_fields:
             field_bits = tgt_fields[tgt_field_name]
             if field_bits == 0:
                 continue
             if isinstance(src, int):
                 if field_bits > 0 and not self._signals[tgt_field_name]._driven:
-                    self.assign(tgt_field_name, 0, keyword=keyword)
+                    self.assign(self._signals[tgt_field_name], 0, keyword=keyword)
             else:
-                src_fields = self._signals[src]._strct.fields
-                src_field_name = self._signals[src]._strct.update_field_name(src, tgt_field_name)
+                src_fields = src._strct.fields
+                src_field_name = src._strct.update_field_name(src._name, tgt_field_name)
                 if src_field_name not in src_fields: # support casting (best effort)
                     continue
                 if field_bits > 0 and not self._signals[tgt_field_name]._driven:
-                    self.assign(tgt_field_name, src_field_name, keyword=keyword)
+                    self.assign(self._signals[tgt_field_name], self._signals[src_field_name], keyword=keyword)
                 if field_bits < 0 and not self._signals[src_field_name]._driven:
-                    self.assign(src_field_name, tgt_field_name, keyword=keyword)
+                    self.assign(self._signals[src_field_name], self._signals[tgt_field_name], keyword=keyword)
         self.line()
 
     def _get_param_str(self, val):
@@ -1344,6 +1369,7 @@ class p2v():
         if self._is_implicit_declare(name):
             bits = name
             name = ""
+
         self._assert_type(name, [str, list ,clock])
         self._assert_type(bits, SIGNAL_TYPES)
         return self._port("input", name, bits, driven=True)
@@ -1391,7 +1417,7 @@ class p2v():
         Declare a Verilog signal.
 
         Args:
-            name([clock, list, str]): signal name
+            name([clock, p2v_signal, list, str]): signal name
             bits([clock, int, float, dict, tuple]): clock is used for p2v clock.\n\
                                              int is used fot number of bits.\n\
                                              float is used to mark struct control signals. \n\
@@ -1407,7 +1433,7 @@ class p2v():
         if self._is_implicit_declare(name):
             bits = name
             name = ""
-        if name == "":
+        if isinstance(name, str) and name == "":
             name = self._get_receive_name("logic")
 
         self._assert_type(name, [clock, p2v_signal, str, list])
@@ -1426,7 +1452,7 @@ class p2v():
         rtrn = None
         if isinstance(name, clock):
             for net in name.get_nets():
-                self.logic(net)
+                self.logic(str(net))
         elif isinstance(name, list):
             signals = []
             for n in name:
@@ -1447,10 +1473,10 @@ class p2v():
             self.line(signal.declare())
             rtrn = signal
         if assign is not None:
-            self.assign(name, assign, keyword="assign", remark=remark)
+            self.assign(signal, assign, keyword="assign", remark=remark)
             self.line()
         elif initial is not None:
-            self.assign(name, initial, keyword="initial", remark=remark)
+            self.assign(signal, initial, keyword="initial", remark=remark)
             self.line()
         return rtrn
 
@@ -1459,35 +1485,33 @@ class p2v():
         Signal assignment.
 
         Args:
-            tgt([clock, str, dict]): target signal
-            src([clock, int, str, dict]): source Verilog expression
+            tgt([clock, p2v_signal]): target signal
+            src([clock, p2v_signal, int]): source Verilog expression
             keyword(str): prefix to assignment
 
         Returns:
             None
         """
-        self._assert_type(tgt, [clock, p2v_signal, str, dict])
-        self._assert_type(src, [clock, p2v_signal, int, str, dict])
+        self._assert_type(tgt, [clock, p2v_signal])
+        self._assert_type(src, [clock, p2v_signal, int])
         self._assert_type(keyword, str)
         if self._exists():
             return
         if isinstance(tgt, clock) or isinstance(src, clock):
             self._assign_clocks(tgt, src)
         else:
-            if isinstance(tgt, p2v_signal):
-                tgt = str(tgt)
-            if isinstance(src, p2v_signal):
-                src = str(src)
-            self._assert_type(tgt, [str, dict])
-            self._assert_type(src, [str, dict, int])
-            if (tgt in self._signals and (self._signals[tgt]._strct is not None)) or (src in self._signals and (self._signals[src]._strct is not None)):
+            tgt_is_strct = tgt._name in self._signals and (self._signals[tgt._name]._strct is not None)
+            if tgt_is_strct:
                 self._assign_structs(tgt, src, keyword=keyword)
             else:
                 self._set_driven(tgt)
                 if isinstance(src, int):
                     bits = self._get_signal_bits(tgt)
-                    self._assert(bits > 0, f"illegal assignment to signal {tgt} of 0 bits")
-                    src = misc.dec(src, bits)
+                    if isinstance(tgt._bits, str): # Verilog parameter width
+                        src = f"'{src}"
+                    else:
+                        self._assert(bits > 0, f"illegal assignment to signal {tgt} of 0 bits")
+                        src = misc.dec(src, bits)
                 self._set_used(src, drive=False)
                 if remark is None:
                     remark = self._get_remark(depth=2)
@@ -1513,22 +1537,14 @@ class p2v():
         if self._exists():
             return
         self._assert_type(clk, clock)
-        self._assert_type(src, [p2v_signal, str])
-        self._assert_type(tgt, [p2v_signal, str])
-        self._assert_type(valid, [p2v_signal, str, None])
-        self._assert_type(reset, [p2v_signal, str, None])
-        self._assert_type(reset_val, [int, str])
+        self._assert_type(src, [p2v_signal])
+        self._assert_type(tgt, [p2v_signal])
+        self._assert_type(valid, [p2v_signal, None])
+        self._assert_type(reset, [p2v_signal, None])
+        self._assert_type(reset_val, [p2v_signal, int, str])
         self._assert_type(bits, [int, None])
         self._assert_type(bypass, bool)
 
-        if isinstance(tgt, p2v_signal):
-            tgt = str(tgt)
-        if isinstance(src, p2v_signal):
-            src = str(src)
-        if isinstance(valid, p2v_signal):
-            valid = str(valid)
-        if isinstance(reset, p2v_signal):
-            reset = str(reset)
         self._set_used(src, drive=False)
         if valid is not None:
             self.allow_unused(valid)
@@ -1536,12 +1552,12 @@ class p2v():
             self.allow_unused(reset)
 
         if bypass:
-            if clk.name in self._signals:
+            if str(clk.name) in self._signals:
                 self.allow_unused(clk)
             self.assign(tgt, src)
             return
 
-        if (tgt in self._signals and (self._signals[tgt]._strct is not None)) or (src in self._signals and (self._signals[src]._strct is not None)):
+        if (tgt._name in self._signals and (self._signals[tgt._name]._strct is not None)) or (src._name in self._signals and (self._signals[src._name]._strct is not None)):
             self._sample_structs(clk, tgt, src, ext_valid=valid)
         else:
             self._set_driven(tgt)
@@ -1563,9 +1579,9 @@ class p2v():
                 conds.append(f"if (!{clk.rst_n}) {tgt} <= {reset_val};")
             sync_reset = []
             if clk.reset is not None:
-                sync_reset.append(clk.reset)
+                sync_reset.append(str(clk.reset))
             if reset is not None:
-                sync_reset.append(reset)
+                sync_reset.append(str(reset))
             if len(sync_reset) > 0:
                 conds.append(f"if {misc.add_paren(' | '.join(sync_reset))} {tgt} <= {reset_val};")
             if valid is not None:
@@ -1590,7 +1606,7 @@ class p2v():
         Returns:
             None
         """
-        self._assert_type(name, [clock, p2v_signal, list, str])
+        self._assert_type(name, [clock, p2v_signal, list])
         if self._exists():
             return
         self._set_used(name, allow=True)
@@ -1640,7 +1656,7 @@ class p2v():
 
         Args:
             clk([clock, str]): triggering clock or trigerring event
-            condition(str): Error occurs when condition is True
+            condition([p2v_signal, str]): Error occurs when condition is True
             message(str): Error message
             params([str, list]): parameters for Verilog % format string
             name([None, str]): Explicit assertion name
@@ -1654,12 +1670,10 @@ class p2v():
             params = []
         if isinstance(clk, p2v_signal): # triggering event
             clk = str(clk)
-        if isinstance(condition, p2v_signal):
-            condition = str(condition)
 
-        self._assert_type(condition, str)
+        self._assert_type(condition, [p2v_signal, str])
         self._assert_type(message, str)
-        self._assert_type(params, [p2v_signal, str, list])
+        self._assert_type(params, [p2v_signal, list])
         self._assert_type(name, [None, str])
         self._assert_type(fatal, bool)
         self._assert_type(property_type, str)
@@ -1699,8 +1713,7 @@ class p2v():
 
                 if self._args.sim and property_type != "cover":
                     self.remark("CODE ADDED TO SUPPORT LEGACY SIMULATION THAT DOES NOT SUPPORT CONCURRENT ASSERTIONS")
-                    wire = f"assert_never__{name}"
-                    self.logic(wire, assign=condition)
+                    wire = self.logic(f"assert_never__{name}", assign=condition)
                     self.allow_unused(wire)
                     self.line(f"""always @(posedge {clk})
                                       if ({misc.cond(clk.rst_n is not None, f'{clk.rst_n} & ')}{wire})
@@ -1713,7 +1726,7 @@ class p2v():
 
         Args:
             clk([clock, str]): triggering clock or trigerring event
-            condition(str): Error occurs when condition is True
+            condition([p2v_signal, str]): Error occurs when condition is True
             message(str): Error message
             params([str, list]): parameters for Verilog % format string
             name([None, str]): Explicit assertion name

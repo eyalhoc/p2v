@@ -438,42 +438,42 @@ module structs__addr_bits32_data_bits512 (
     assign master3_b__valid = slave3_b__valid;
     always_ff @(posedge clk or negedge rst_n)
         if (!rst_n) slave3_b__ready <= 1'd0;
-        else if (~slave3_b__ready | ~master3_b__valid) slave3_b__ready <= master3_b__ready;
+        else if (~slave3_b__valid | ~master3_b__ready) slave3_b__ready <= master3_b__ready;
 
 
 
     always_ff @(posedge clk or negedge rst_n)
         if (!rst_n) master3_b__id <= 4'd0;
-        else if (master3_b__ready & master3_b__valid) master3_b__id <= slave3_b__id;
+        else if (master3_b__valid & master3_b__ready) master3_b__id <= slave3_b__id;
 
     always_ff @(posedge clk or negedge rst_n)
         if (!rst_n) master3_b__resp <= 2'd0;
-        else if (master3_b__ready & master3_b__valid) master3_b__resp <= slave3_b__resp;
+        else if (master3_b__valid & master3_b__ready) master3_b__resp <= slave3_b__resp;
 
 
 
     assign master3_r__valid = slave3_r__valid;
     always_ff @(posedge clk or negedge rst_n)
         if (!rst_n) slave3_r__ready <= 1'd0;
-        else if (~slave3_r__ready | ~master3_r__valid) slave3_r__ready <= master3_r__ready;
+        else if (~slave3_r__valid | ~master3_r__ready) slave3_r__ready <= master3_r__ready;
 
 
 
     always_ff @(posedge clk or negedge rst_n)
         if (!rst_n) master3_r__data <= 512'd0;
-        else if (master3_r__ready & master3_r__valid) master3_r__data <= slave3_r__data;
+        else if (master3_r__valid & master3_r__ready) master3_r__data <= slave3_r__data;
 
     always_ff @(posedge clk or negedge rst_n)
         if (!rst_n) master3_r__id <= 4'd0;
-        else if (master3_r__ready & master3_r__valid) master3_r__id <= slave3_r__id;
+        else if (master3_r__valid & master3_r__ready) master3_r__id <= slave3_r__id;
 
     always_ff @(posedge clk or negedge rst_n)
         if (!rst_n) master3_r__resp <= 2'd0;
-        else if (master3_r__ready & master3_r__valid) master3_r__resp <= slave3_r__resp;
+        else if (master3_r__valid & master3_r__ready) master3_r__resp <= slave3_r__resp;
 
     always_ff @(posedge clk or negedge rst_n)
         if (!rst_n) master3_r__last <= 1'd0;
-        else if (master3_r__ready & master3_r__valid) master3_r__last <= slave3_r__last;
+        else if (master3_r__valid & master3_r__ready) master3_r__last <= slave3_r__last;
 
 
 

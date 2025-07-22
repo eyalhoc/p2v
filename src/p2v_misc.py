@@ -116,7 +116,17 @@ def _to_int(n, allow=False):
         return n
     raise RuntimeError(f"cannot convert {n} to int")
 
-def  _get_base_str(base):
+def _get_index(name):
+    name = str(name)
+    if len(name) == 0 or not name[-1].isdigit() or name[0].isdigit():
+        return name, None
+    idx = -1
+    while name[idx].isdigit():
+        idx -= 1
+    idx += 1
+    return name[:idx], int(name[idx:])
+
+def _get_base_str(base):
     if base == 16:
         return "x"
     if base == 2:
@@ -337,16 +347,19 @@ def concat(vals, sep=None, nl_every=None):
     if sep is None:
         if len(set(vals)) == 1: # all items are the same
             if len(vals) == 1:
-                return vals[0]
-            return "{" + str(len(vals)) + "{" + str(vals[0]) + "}}"
-        return "{" + ", ".join(vals) + "}"
-    for i, val in enumerate(vals):
-        if not val.startswith("(") or not val.endswith(")"):
-            if not _is_legal_name(val): # don't add brackets on single variable
-                vals[i] = f"({val})"
-    if len(sep) == 1:
-        sep = f" {sep} "
-    rtrn = sep.join(vals)
+                rtrn = vals[0]
+            else:
+                rtrn = "{" + str(len(vals)) + "{" + str(vals[0]) + "}}"
+        else:
+            rtrn = "{" + ", ".join(vals) + "}"
+    else:
+        for i, val in enumerate(vals):
+            if not val.startswith("(") or not val.endswith(")"):
+                if not _is_legal_name(val): # don't add brackets on single variable
+                    vals[i] = f"({val})"
+        if len(sep) == 1:
+            sep = f" {sep} "
+        rtrn = sep.join(vals)
     return p2v_signal(None, rtrn, bits=0)
 
 def pad(left, name, right=0, val=0):
@@ -372,7 +385,7 @@ def pad(left, name, right=0, val=0):
     vals.append(str(name))
     if right > 0:
         vals.append(dec(val, right))
-    rtrn = concat(vals)
+    rtrn = str(concat(vals))
     return p2v_signal(None, rtrn, bits=0)
 
 def dec(num, bits=1): # pylint: disable=redefined-outer-name
@@ -534,4 +547,4 @@ def add_paren(expr, open_char="(", close_char=")"):
     Returns:
         Verilog code
     """
-    return _remove_extra_paren(open_char + expr + close_char)
+    return _remove_extra_paren(open_char + str(expr) + close_char)

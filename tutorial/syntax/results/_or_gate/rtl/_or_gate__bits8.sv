@@ -7,6 +7,6 @@ module _or_gate__bits8 (
     // _or_gate module parameters:
     //  * bits = 8 (int) # None
 
-    assign c = a | b;
+    assign c = (a | b);
 
 endmodule  // _or_gate__bits8

@@ -14,43 +14,52 @@
 """
 p2v_clock module
 """
+
+from p2v_signal import p2v_signal
+
 class p2v_clock:
     """
     This class is a p2v clock which is a clock with attahces async and / or sync resets.
     """
     def __init__(self, name, rst_n=None, reset=None, remark=None):
         assert isinstance(name, str), name
-        self.name = name
-        self.rst_n = rst_n
-        self.reset = reset
+        self.name = p2v_signal("clock", name, bits=1)
+        if rst_n is None:
+            self.rst_n = None
+        else:
+            self.rst_n = p2v_signal("async_reset", rst_n, bits=1)
+        if reset is None:
+            self.reset = None
+        else:
+            self.reset = p2v_signal("sync_reset", reset, bits=1)
+
         self._ready = False
         self._remark = remark
 
     def __str__(self):
-        return self.name
+        return str(self.name)
 
     def __eq__(self, other):
         if isinstance(other, p2v_clock):
-            return self.name == other.name and \
-                   self.rst_n == other.rst_n and \
-                   self.reset == other.reset
+            return self._cmp(other)
         return False
 
-    def  _cmp(self, clock):
-        return self.name == clock.name and \
-               self.rst_n == clock.rst_n and \
-               self.reset == clock.reset
+    def  _cmp(self, other):
+        return str(self.name) == str(other.name) and \
+               str(self.rst_n) == str(other.rst_n) and \
+               str(self.reset) == str(other.reset)
 
     def _get_prefix(self):
-        if self.name.endswith("clk"):
-            prefix = self.name[:-3]
-        elif self.name.startswith("clk"):
-            prefix = self.name
+        name = str(self.name)
+        if name.endswith("clk"):
+            prefix = name[:-3]
+        elif name.startswith("clk"):
+            prefix = name
         else:
             return None
-        if self.rst_n is not None and not self.rst_n.startswith(prefix):
+        if self.rst_n is not None and not str(self.rst_n).startswith(prefix):
             return None
-        if self.reset is not None and not self.reset.startswith(prefix):
+        if self.reset is not None and not str(self.reset).startswith(prefix):
             return None
         return prefix
 
