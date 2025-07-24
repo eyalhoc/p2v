@@ -1307,7 +1307,7 @@ class p2v():
             return None
         signal = self._add_signal(p2v_signal(misc.cond(local, "localparam", "parameter"), name, val, driven=True))
         if local:
-            self.line(f"localparam {name} = {val};")
+            self.line(signal.declare())
         return signal
 
     def enum(self, names):

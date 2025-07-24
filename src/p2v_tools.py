@@ -96,14 +96,24 @@ def lint(dirname, outdir, filename):
         full path of logfile and a boolean if lint completed successfully
     """
     logfile = "p2v_lint.log"
-    if filename is None:
-        topmodule = "*.* -Wno-MULTITOP"
+
+    if "verilator" in LINT_BIN:
+        if filename is None:
+            topmodule = "*.* -Wno-MULTITOP"
+        else:
+            topmodule = os.path.basename(filename)
+            if filename == topmodule:
+                filename = os.path.join(dirname, topmodule)
+            assert os.path.isfile(filename), f"{filename} does not exist"
+        cmd = f"{LINT_BIN} --lint-only {topmodule} -y {os.path.join(os.path.abspath(outdir), 'bbox')} --timing"
+    elif "verible" in LINT_BIN:
+        if filename is None or os.path.dirname(filename) == "":
+            cmd = f"{LINT_BIN} *.*"
+        else:
+            cmd = f"{LINT_BIN} {filename}"
+        cmd += " --rules -line-length" # ignore long lines
     else:
-        topmodule = os.path.basename(filename)
-        if filename == topmodule:
-            filename = os.path.join(dirname, topmodule)
-        assert os.path.isfile(filename), f"{filename} does not exist"
-    cmd = f"{LINT_BIN} --lint-only {topmodule} -y {os.path.join(os.path.abspath(outdir), 'bbox')} --timing"
+        raise RuntimeError(f"unknown lint tool {LINT_BIN}")
     full_logfile = system(dirname, outdir, cmd, logfile, log_out=False, log_err=True)
     success = misc._read_file(full_logfile) == ""
     return full_logfile, success
@@ -174,7 +184,9 @@ def lint_off():
     Returns:
         Verilog ifdef statement
     """
-    return f"`ifndef {LINT_BIN.upper()}"
+    if "verilator" in LINT_BIN:
+        return f"`ifndef {LINT_BIN.upper()}"
+    return ""
 
 def lint_on():
     """
@@ -186,12 +198,15 @@ def lint_on():
     Returns:
         Verilog endif statement
     """
-    return f"`endif // {LINT_BIN.upper()}"
+    if "verilator" in LINT_BIN:
+        return f"`endif // {LINT_BIN.upper()}"
+    return ""
 
 
 # External tools being used for each function
 INDENT_BIN = "verible-verilog-format"
 LINT_BIN = "verilator"
+LINT_BIN = "verible-verilog-lint"
 COMP_BIN = "iverilog"
 SIM_BIN = "vvp"
 
