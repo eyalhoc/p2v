@@ -112,6 +112,16 @@ class p2v_signal:
 
     def __rshift__(self, other):
         return self._create(other, ">>")
+        
+    def __getitem__(self, key):
+        if isinstance(key, slice):
+            if key.start is None:
+                start = 0
+            else:
+                start = key.start
+            return misc.bits(self, key.stop-start, start=start)
+        else:
+            return misc.bit(self, key)
 
 
     def _declare_bits_dim(self, bits):
