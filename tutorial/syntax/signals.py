@@ -69,6 +69,10 @@ class signals(p2v):
             for m in range(bits*2):
                 self.assign(i[m], h[m]) # bit by bit
         
+        q = self.logic(8, assign=7)
+        qq = self.output(5)
+        self.assign(qq, q[3:])
+        
         self.line() # insert empty line to Verilog file
         self.assign(clk2.rst_n, 1)
         self.assign(clk2, clk)

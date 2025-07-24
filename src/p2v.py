@@ -1213,7 +1213,7 @@ class p2v():
         signals = self._get_strct_signals(strct, fields=fields)
         for signal in signals:
             if attrib == "name":
-                vals.append(signal._name)
+                vals.append(signal)
             elif attrib == "bits":
                 vals.append(signal._bits)
             else:
