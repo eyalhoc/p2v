@@ -1,4 +1,3 @@
-
 module float_adder (num1, num2, result, overflow, zero, NaN, precisionLost);
 input [15:0] num1, num2;
  output [15:0] result;
@@ -12,5 +11,3 @@ input [15:0] num1, num2;
  reg [3:0] shift_am;
  reg [9:0] small_extension;
 endmodule
-
-

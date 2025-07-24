@@ -26,7 +26,7 @@ module signals #(
     logic [BITS-1:0] z;  //  Verilog parametric port
     assign z = '0;  //  Verilog parametric port
 
-    localparam logic IDLE = 2'd0;
+    localparam logic [1:0] IDLE = 2'd0;
     logic [1:0] iii;
     assign iii = IDLE;
 
