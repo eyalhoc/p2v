@@ -1711,7 +1711,10 @@ class p2v():
             if isinstance(clk, str):
                 self._check_declared(clk)
                 self.line(f"""always @({clk})
+                                  begin
+                                  #0; // ignore glitches
                                   if ({condition}) {err_str};
+                                  end
                             """)
             else:
                 self._assert_type(clk, clock)

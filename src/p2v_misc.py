@@ -513,9 +513,10 @@ def is_hotone(var, bits, allow_zero=False): # pylint: disable=redefined-outer-na
     assert isinstance(allow_zero, bool), f"variable {allow_zero} expected to be of type bool"
     if bits == 1:
         if allow_zero:
-            return "1'b1"
-        return var
-    rtrn = f"(({var} & ({var} - {dec(1, bits)})) == {dec(0, bits)})" + cond(allow_zero, f" | ({var} == {dec(0, bits)})")
+            return 1
+        rtrn = var
+    else:
+        rtrn = f"(({var} & ({var} - {dec(1, bits)})) == {dec(0, bits)})" + cond(allow_zero, f" | ({var} == {dec(0, bits)})")
     return p2v_signal(None, rtrn, bits=0)
 
 def invert(var, not_op="~"):
