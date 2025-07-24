@@ -495,21 +495,21 @@ class p2v_tb():
         Start of non-lintable code.
         """
         last_idx, last_line = self._parent._get_last_line(skip_remark=False)
-        if last_line == p2v_tools.lint_on():
+        if last_line == p2v_tools.lint_on(self._parent._args.lint_bin):
             self._parent._rm_line(last_idx)
         else:
             self._parent.line("")
-            self._parent.line(p2v_tools.lint_off())
+            self._parent.line(p2v_tools.lint_off(self._parent._args.lint_bin))
 
     def lint_on(self):
         """
         End of non-lintable code.
         """
         last_idx, last_line = self._parent._get_last_line(skip_remark=False)
-        if last_line == p2v_tools.lint_off():
+        if last_line == p2v_tools.lint_off(self._parent._args.lint_bin):
             self._parent._rm_line(last_idx)
         else:
-            self._parent.line(p2v_tools.lint_on())
+            self._parent.line(p2v_tools.lint_on(self._parent._args.lint_bin))
 
     def expr(self, line):
         """

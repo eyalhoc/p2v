@@ -224,12 +224,12 @@ class p2v():
 
     def _lint(self):
         if self._args.lint:
-            if self._assert(p2v_tools.en[p2v_tools.LINT_BIN], f"cannot perform lint, {p2v_tools.LINT_BIN} is not installed", warning=True):
+            if self._assert(p2v_tools.check(self._args.lint_bin), f"cannot perform lint, {self._args.lint_bin} is not installed", warning=True):
                 if self._modname is None:
                     top_filename = None
                 else:
                     top_filename = self._get_filename()
-                logfile, success = p2v_tools.lint(dirname=self._get_rtldir(), outdir=self._args.outdir, filename=top_filename)
+                logfile, success = p2v_tools.lint(self._args.lint_bin, dirname=self._get_rtldir(), outdir=self._args.outdir, filename=top_filename)
                 if self._assert(success, f"lint completed with errors:\n{misc._read_file(logfile)}"):
                     self._logger.info("verilog lint completed successfully")
                     return True
@@ -237,8 +237,8 @@ class p2v():
 
     def _comp(self):
         if self._args.sim:
-            if self._assert(p2v_tools.en[p2v_tools.COMP_BIN], f"cannot perform verilog compile, {p2v_tools.COMP_BIN} is not installed", warning=True):
-                logfile, success = p2v_tools.comp(dirname=self._get_rtldir(), outdir=self._args.outdir, modname=self._modname, search=self._search, libs=self._libs)
+            if self._assert(p2v_tools.check(self._args.comp_bin), f"cannot perform verilog compile, {self._args.comp_bin} is not installed", warning=True):
+                logfile, success = p2v_tools.comp(self._args.comp_bin, dirname=self._get_rtldir(), outdir=self._args.outdir, modname=self._modname, search=self._search, libs=self._libs)
                 comp_str = misc._read_file(logfile)
                 if self._assert(success and comp_str=="", f"verilog compilation completed with errors:\n{comp_str}"):
                     self._logger.info("verilog compilation completed successfully")
@@ -247,9 +247,9 @@ class p2v():
 
     def _sim(self):
         if self._args.sim:
-            if self._assert(p2v_tools.en[p2v_tools.SIM_BIN], f"cannot perform verilog simulation, {p2v_tools.SIM_BIN} is not installed", warning=True):
+            if self._assert(p2v_tools.check(self._args.sim_bin), f"cannot perform verilog simulation, {self._args.sim_bin} is not installed", warning=True):
                 if self._comp():
-                    logfile, success = p2v_tools.sim(dirname=self._args.outdir, outdir=self._args.outdir, pass_str=PASS_STATUS)
+                    logfile, success = p2v_tools.sim(self._args.sim_bin, dirname=self._args.outdir, outdir=self._args.outdir, pass_str=PASS_STATUS)
                     if self._assert(success, f"verilog simulation failed, logfile: {logfile}"):
                         self._logger.info("verilog simulation completed successfully")
                         return True
@@ -390,18 +390,27 @@ class p2v():
         parser.add_argument("-params", type=self._param_type, default={}, help="top module parameters, dictionary or csv file")
         parser.add_argument("-stop_on", default="CRITICAL", choices=["WARNING", "ERROR", "CRITICAL"], help="stop after non critical errors")
         parser.add_argument("-log", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], help="logging level")
+        parser.add_argument("-seed", type=int, default=1, help="simulation seed (0 is random)")
+        parser.add_argument("-gen_num", type=int, help="generate random permutations")
+        parser.add_argument("-header", type=str, help="copyright header for generated files")
+        parser.add_argument("-help", action="store_true", default=False, help="print module top parameters")
+        parser.add_argument("-debug", action="store_true", default=False, help=argparse.SUPPRESS)
+
+
+        # external tools
+        parser.add_argument("-indent", action="store_true", default=True, help="enable indent")
+        parser.add_argument("--indent", action="store_false", default=False, help="supress indent")
         parser.add_argument("-lint", action="store_true", default=True, help="enable lint")
         parser.add_argument("--lint", action="store_false", default=False, help="supress lint")
         parser.add_argument("-sim", action="store_true", default=False, help="enable verilog simulation")
         parser.add_argument("--sim", action="store_false", default=True, help="supress verilog simulation")
+
+        parser.add_argument("-indent_bin", default="verible-verilog-format", choices=["verible-verilog-format"], help="Verilog indentation")
+        parser.add_argument("-lint_bin", default="verilator", choices=["verilator", "verible-verilog-lint"], help="Verilog lint")
+        parser.add_argument("-comp_bin", default="iverilog", choices=["iverilog"], help="Verilog compiler")
+        parser.add_argument("-sim_bin", default="vvp", choices=["vvp"], help="Verilog simulator")
         parser.add_argument("-sim_args", type=ast.literal_eval, default={}, help="simulation override arguments")
-        parser.add_argument("-seed", type=int, default=1, help="simulation seed (0 is random)")
-        parser.add_argument("-gen_num", type=int, help="generate random permutations")
-        parser.add_argument("-indent", action="store_true", default=True, help="enable indent")
-        parser.add_argument("--indent", action="store_false", default=False, help="supress indent")
-        parser.add_argument("-header", type=str, help="copyright header for generated files")
-        parser.add_argument("-help", action="store_true", default=False, help="print module top parameters")
-        parser.add_argument("-debug", action="store_true", default=False, help=argparse.SUPPRESS)
+
         return parser.parse_args()
 
     def _get_top_filename(self):
@@ -503,18 +512,18 @@ class p2v():
                 lines += misc._read_file(self._args.header).split("\n")
         lines += self._get_module_header()
         if not lint:
-            lines += [p2v_tools.lint_off()]
+            lines += [p2v_tools.lint_off(self._args.lint_bin)]
         lines += self._lines
         if not lint:
-            lines += [p2v_tools.lint_on()]
+            lines += [p2v_tools.lint_on(self._args.lint_bin)]
         lines += self._get_module_footer()
         return lines
 
     def _write_lines(self, outfile, lines, indent=True):
         misc._write_file(outfile, "\n".join(lines))
         if indent and self._args.indent:
-            if self._assert(p2v_tools.en[p2v_tools.INDENT_BIN], f"cannot perform verilog indentation, {p2v_tools.INDENT_BIN} is not installed", warning=True):
-                self._processes.append(p2v_tools.indent(outfile))
+            if self._assert(p2v_tools.check(self._args.indent_bin), f"cannot perform verilog indentation, {self._args.indent_bin} is not installed", warning=True):
+                self._processes.append(p2v_tools.indent(self._args.indent_bin, outfile))
 
     def _exists(self):
         return self._modname in self._cache["conn"]
@@ -826,8 +835,8 @@ class p2v():
         return begin + declare + functions + end
 
     def _fix_lint(self, filename):
-        if p2v_tools.en[p2v_tools.LINT_BIN]:
-            logfile, success = p2v_tools.lint(dirname=self._get_rtldir(), outdir=self._args.outdir, filename=filename)
+        if p2v_tools.check(self._args.lint_bin):
+            logfile, success = p2v_tools.lint(self._args.lint_bin, dirname=self._get_rtldir(), outdir=self._args.outdir, filename=filename)
             if not success:
                 s = misc._read_file(logfile)
                 lint_errs = re.findall(r"\/\* *verilator *lint_off[\s\S]*?\*\/", s)
@@ -1307,7 +1316,7 @@ class p2v():
             return None
         signal = self._add_signal(p2v_signal(misc.cond(local, "localparam", "parameter"), name, val, driven=True))
         if local:
-            self.line(f"localparam {name} = {val};")
+            self.line(signal.declare())
         return signal
 
     def enum(self, names):
@@ -1646,7 +1655,7 @@ class p2v():
             self._cache["conn"][modname]._parent = self
             return self._cache["conn"][modname]
         ports = self._get_verilog_ports(modname)
-        if self._args.lint:
+        if self._args.lint is not None:
             self._write_empty_module(modname)
         return self._get_connects(parent=self, modname=modname, signals=ports, params=params)
 

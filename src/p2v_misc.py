@@ -239,7 +239,9 @@ def _remove_extra_paren(line, open_char="(", close_char=")"):
 
 def _remark_line(line):
     line = re.sub("\n *","\n ", line)
-    return " // " + line.replace("\n", "\n// ")
+    remark_line = "// " + line.replace("\n", "\n// ")
+    remark_line = re.sub(r"// *\n", "//\n", remark_line)
+    return re.sub(r"\s+$", "", remark_line)
 
 
 def ceil(n):

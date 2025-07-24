@@ -1,5 +1,5 @@
 module ports #(
-    parameter BITS = 32
+    parameter int BITS = 32
 ) (
     input logic a,  //  default is single bit
     input logic b,  //  same as the above

@@ -199,7 +199,7 @@ class p2v_signal:
         Returns:
             bool
         """
-        return self._kind in ["parameter"]
+        return self._kind in ["parameter", "localparam"]
 
     def declare(self, delimiter=";"):
         """
@@ -212,6 +212,16 @@ class p2v_signal:
             str
         """
         s = f"{self._kind} "
+        if self.is_parameter():
+            if misc._is_int(self._bits):
+                s += "int "
+            elif "'" in str(self._bits):
+                width = str(self._bits).split("'", maxsplit=1)[0]
+                if misc._is_int(width):
+                    width = int(width)
+                    s += "logic "
+                    if width > 1:
+                        s += f"[{width-1}:0] "
         if self.is_logical_port():
             s += "logic "
         if self.is_logic():
