@@ -33,6 +33,7 @@ class signals(p2v):
         if var:
             g = self.logic(bits*2) # conditional port
             h = self.logic(bits*2) # conditional port
+            i = self.logic(bits*2) # conditional port
         
         
         clk = default_clk
@@ -61,9 +62,12 @@ class signals(p2v):
         self.assign(a, b) # trivial Verilog assign
         self.assign(c, 0) # assign to const
         self.assign(d, e + misc.dec(1, bits)) # assign expression
-        self.assign(g, misc.concat(f[:2])) # assign conctenation
-        self.assign(misc.bits(h, bits), f[2]) # partial bits
-        self.assign(misc.bits(h, bits, start=bits), f[3]) # partial bits
+        if var:
+            self.assign(g, misc.concat(f[:2])) # assign conctenation
+            self.assign(h[0:bits], f[2]) # partial bits
+            self.assign(h[bits:bits*2], f[3]) # partial bits
+            for m in range(bits*2):
+                self.assign(i[m], h[m]) # bit by bit
         
         self.line() # insert empty line to Verilog file
         self.assign(clk2.rst_n, 1)
@@ -104,7 +108,7 @@ class signals(p2v):
             self.allow_unused(f[n])
         
         if var:
-            self.allow_unused([g, h])
+            self.allow_unused([g, h, i])
             
         return self.write()
 

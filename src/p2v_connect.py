@@ -205,6 +205,8 @@ class p2v_connect():
         lines.append(");")
         lines.append("")
         self._parent.line("\n".join(lines))
-        self._parent._add_signal(p2v_signal("inst", instname, bits=1, used=True, driven=True))
+        signal = p2v_signal("inst", instname, bits=1, used=True, driven=True)
+        self._parent._add_signal(signal)
         self._pins = {}
         self._params = {}
+        return signal
