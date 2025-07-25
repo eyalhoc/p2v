@@ -52,7 +52,7 @@ module samples (
     assign s__ready = t__ready;
     always_ff @(posedge clk1)
         if (clk1_reset) t__valid <= 1'd0;
-        else if (~t__valid | ~s__ready) t__valid <= s__valid;
+        else if (~(t__valid) | ~(s__ready)) t__valid <= s__valid;
 
 
 

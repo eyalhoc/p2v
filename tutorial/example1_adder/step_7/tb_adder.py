@@ -57,7 +57,7 @@ class tb_adder(p2v):
             input_vec = []
             input_sum = 0
             for j in range(num):
-                val = self.tb.rand_int(1<<bits)
+                val = self.tb.rand_int((1<<bits) // size)
                 input_sum += val
                 input_vec.append(misc.hex(val, bits))
             self.line(f"data_in_q.push_back({misc.concat(input_vec)});")

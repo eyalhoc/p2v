@@ -266,8 +266,19 @@ def _assert_signal(name, var):
 
 def _check_bits(num, _bits):
     if num > 0:
-        pass # TBD
-        #assert _bits >= log2(num), f"cannot represent the number {num} with {_bits} bits"
+        assert _bits >= log2(num), f"cannot represent the number {num} with {_bits} bits"
+
+def _invert(var, not_op="~"):
+    var = str(var)
+    if var.startswith(not_op):
+        var_not = var.replace(not_op, "", 1)
+        if _is_in_paren(var_not):
+            return _remove_extra_paren(var_not)
+    rtrn = f"{not_op}({var})"
+    return p2v_signal(None, str(rtrn), bits=1)
+
+def _add_paren(expr, open_char="(", close_char=")"):
+    return _remove_extra_paren(open_char + str(expr) + close_char)
 
 
 def ceil(n):
@@ -498,47 +509,6 @@ def bin(num, bits=None, add_sep=4, prefix="'b"): # pylint: disable=redefined-bui
         bits = log2(num)
     return p2v_signal(None, str(rtrn), bits=bits)
 
-def bits(name, bits, start=0): # pylint: disable=redefined-outer-name
-    """
-    Extract a partial range from a Verilog bus.
-
-    Args:
-        name(str): signal name
-        bits(int): number of bits to extract
-        start(int): lsb
-
-    Returns:
-        Verilog code
-    """
-    _assert_signal("bits", name)
-    assert _is_legal_name(name), f"{name} is not a legal name"
-    assert isinstance(bits, int) and bits > 0, f"{name} cannot be of {bits} bits"
-    assert isinstance(start, int) and start >= 0, f"{name} bit range cannot start a bit {start}"
-    end = start + bits - 1
-    if start == end:
-        rtrn = f"{name}[{start}]"
-    elif start > end:
-        return None
-    else:
-        rtrn = f"{name}[{end}:{start}]"
-    return p2v_signal(None, str(rtrn), bits=bits)
-
-def bit(name, idx):
-    """
-    Extract a single bit from a Verilog bus.
-
-    Args:
-        name(str): signal name
-        idx([int, str]): bit location (can also be a Verilog signal for multi dimention arrays)
-
-    Returns:
-        Verilog code
-    """
-    _assert_signal("bit", name)
-    assert _is_legal_name(name), f"{name} is not a legal name"
-    rtrn = f"{name}[{idx}]"
-    return p2v_signal(None, str(rtrn), bits=1)
-
 def is_hotone(var, bits, allow_zero=False): # pylint: disable=redefined-outer-name
     """
     Check if a Verilog expression is hot one.
@@ -561,36 +531,3 @@ def is_hotone(var, bits, allow_zero=False): # pylint: disable=redefined-outer-na
     else:
         rtrn = f"(({var} & ({var} - {dec(1, bits)})) == {dec(0, bits)})" + cond(allow_zero, f" | ({var} == {dec(0, bits)})")
     return p2v_signal(None, str(rtrn), bits=1)
-
-def invert(var, not_op="~"): # TBD - remove
-    """
-    Verilog not expression, removed previous not if present.
-
-    Args:
-        var(str): Verilog expression
-        not_op(str): not operand
-
-    Returns:
-        Verilog code
-    """
-    var = str(var)
-    if var.startswith(not_op):
-        var_not = var.replace(not_op, "", 1)
-        if _is_in_paren(var_not):
-            return _remove_extra_paren(var_not)
-    rtrn = f"{not_op}({var})"
-    return p2v_signal(None, str(rtrn), bits=1)
-
-def add_paren(expr, open_char="(", close_char=")"):
-    """
-    Verilog not expression, removed previous not if present.
-
-    Args:
-        expr(str): Verilog expression
-        open_char(str): open paren
-        close_char(str): close paren
-
-    Returns:
-        Verilog code
-    """
-    return _remove_extra_paren(open_char + str(expr) + close_char)

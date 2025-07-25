@@ -107,12 +107,19 @@ class p2v_signal:
         return self._create(other, "^")
 
     def __invert__(self):
-        return p2v_signal(None, f"~{self}", bits=self._bits)
+        expr = misc._invert(self)
+        return p2v_signal(None, str(expr), bits=self._bits)
 
     def __lshift__(self, other):
+        if isinstance(other, int):
+            expr = misc.pad(0, self, other)
+            return p2v_signal(None, str(expr), bits=self._bits+other)
         return self._create(other, "<<")
 
     def __rshift__(self, other):
+        if isinstance(other, int):
+            expr = misc.pad(other, self[other:self._bits])
+            return p2v_signal(None, str(expr), bits=self._bits)
         return self._create(other, ">>")
 
     def __getitem__(self, key):
@@ -125,8 +132,8 @@ class p2v_signal:
                 stop = self._bits
             else:
                 stop = key.stop
-            return misc.bits(self, stop-start, start=start)
-        return misc.bit(self, key)
+            return self._bit_range(bits=stop-start, start=start)
+        return self._bit_range(bits=1, start=key)
 
 
     def _declare_bits_dim(self, bits):
@@ -164,6 +171,15 @@ class p2v_signal:
             if not self._driven_bits[i]:
                 undriven = [i] + undriven
         return undriven
+
+    def _bit_range(self, bits, start=0):
+        end = start + bits - 1
+        assert end >= start, f"msb {end} is less than lsb {start}"
+        if start == end:
+            rtrn = f"{self._name}[{start}]"
+        else:
+            rtrn = f"{self._name}[{end}:{start}]"
+        return p2v_signal(None, str(rtrn), bits=bits)
 
 
     def is_logical_port(self):
@@ -305,3 +321,17 @@ class p2v_signal:
             undriven = self._get_undriven_bits()
             return ", ".join(self._get_ranges(undriven, []))
         return None
+
+    def pad(self, left, right=0, val=0):
+        """
+        Verilog zero padding.
+
+        Args:
+            left(int): msb padding bits
+            right(int): lsb padding bits
+            val(int): value for padding
+
+        Returns:
+            p2v_signal
+        """
+        return misc.pad(left, self, right=right, val=val)

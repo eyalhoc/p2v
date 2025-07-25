@@ -359,7 +359,7 @@ module structs__addr_bits32_data_bits512 (
     assign master3_aw__ready = slave3_aw__ready;
     always_ff @(posedge clk or negedge rst_n)
         if (!rst_n) slave3_aw__valid <= 1'd0;
-        else if (~slave3_aw__valid | ~master3_aw__ready) slave3_aw__valid <= master3_aw__valid;
+        else if (~(slave3_aw__valid) | ~(master3_aw__ready)) slave3_aw__valid <= master3_aw__valid;
 
 
 
@@ -388,7 +388,7 @@ module structs__addr_bits32_data_bits512 (
     assign master3_ar__ready = slave3_ar__ready;
     always_ff @(posedge clk or negedge rst_n)
         if (!rst_n) slave3_ar__valid <= 1'd0;
-        else if (~slave3_ar__valid | ~master3_ar__ready) slave3_ar__valid <= master3_ar__valid;
+        else if (~(slave3_ar__valid) | ~(master3_ar__ready)) slave3_ar__valid <= master3_ar__valid;
 
 
 
@@ -417,7 +417,7 @@ module structs__addr_bits32_data_bits512 (
     assign master3_w__ready = slave3_w__ready;
     always_ff @(posedge clk or negedge rst_n)
         if (!rst_n) slave3_w__valid <= 1'd0;
-        else if (~slave3_w__valid | ~master3_w__ready) slave3_w__valid <= master3_w__valid;
+        else if (~(slave3_w__valid) | ~(master3_w__ready)) slave3_w__valid <= master3_w__valid;
 
 
 
@@ -438,7 +438,7 @@ module structs__addr_bits32_data_bits512 (
     assign master3_b__valid = slave3_b__valid;
     always_ff @(posedge clk or negedge rst_n)
         if (!rst_n) slave3_b__ready <= 1'd0;
-        else if (~slave3_b__valid | ~master3_b__ready) slave3_b__ready <= master3_b__ready;
+        else if (~(slave3_b__valid) | ~(master3_b__ready)) slave3_b__ready <= master3_b__ready;
 
 
 
@@ -455,7 +455,7 @@ module structs__addr_bits32_data_bits512 (
     assign master3_r__valid = slave3_r__valid;
     always_ff @(posedge clk or negedge rst_n)
         if (!rst_n) slave3_r__ready <= 1'd0;
-        else if (~slave3_r__valid | ~master3_r__ready) slave3_r__ready <= master3_r__ready;
+        else if (~(slave3_r__valid) | ~(master3_r__ready)) slave3_r__ready <= master3_r__ready;
 
 
 

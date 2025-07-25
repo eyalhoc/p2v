@@ -69,14 +69,14 @@ module tb ();
 
     initial begin
 
-        data_in_q.push_back({16'h8298, 16'h3c5f, 16'hfda9, 16'he623});
-        expected_q.push_back(16'ha2c3);
-        data_in_q.push_back({16'hf1ca, 16'hc25c, 16'h6b7f, 16'h300e});
-        expected_q.push_back(16'h4fb3);
-        data_in_q.push_back({16'hf9c8, 16'h0e83, 16'hc795, 16'hdd93});
-        expected_q.push_back(16'had73);
-        data_in_q.push_back({16'h0114, 16'he409, 16'h885c, 16'h7520});
-        expected_q.push_back(16'he299);
+        data_in_q.push_back({16'h20a6, 16'h0f17, 16'h3f6a, 16'h3988});
+        expected_q.push_back(16'ha8af);
+        data_in_q.push_back({16'h3c72, 16'h3097, 16'h1adf, 16'h0c03});
+        expected_q.push_back(16'h93eb);
+        data_in_q.push_back({16'h3e72, 16'h03a0, 16'h31e5, 16'h3764});
+        expected_q.push_back(16'hab5b);
+        data_in_q.push_back({16'h0045, 16'h3902, 16'h2217, 16'h1d48});
+        expected_q.push_back(16'h78a6);
 
     end
 

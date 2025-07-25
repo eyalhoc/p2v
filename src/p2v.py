@@ -1598,11 +1598,11 @@ class p2v():
             if reset is not None:
                 sync_reset.append(str(reset))
             if len(sync_reset) > 0:
-                conds.append(f"if {misc.add_paren(' | '.join(sync_reset))} {tgt} <= {reset_val};")
+                conds.append(f"if {misc._add_paren(' | '.join(sync_reset))} {tgt} <= {reset_val};")
             if valid is not None:
                 self._check_declared(valid)
                 self._set_used(valid)
-                conds.append(f"if {misc.add_paren(valid)} {tgt} <= {src};")
+                conds.append(f"if {misc._add_paren(valid)} {tgt} <= {src};")
             else:
                 conds.append(f"{tgt} <= {src};")
             for n in range(1, len(conds)):
@@ -1725,7 +1725,7 @@ class p2v():
             else:
                 self._assert_type(clk, clock)
                 disable_str = misc.cond(clk.rst_n is not None, f"disable iff (!{clk.rst_n})")
-                self.line(f"""{name}_{property_type}: {property_type} property (@(posedge {clk}){disable_str} {misc.invert(condition)})
+                self.line(f"""{name}_{property_type}: {property_type} property (@(posedge {clk}){disable_str} {misc._invert(condition)})
                                          {misc.cond(property_type != "cover", "else")} {err_str};
                           """)
 
@@ -1761,7 +1761,7 @@ class p2v():
         self._assert_type(params, [str, list])
         self._assert_type(fatal, bool)
         if not self._exists():
-            self.assert_never(clk, condition=misc.invert(condition), message=message, params=params, name=name, fatal=fatal, property_type=property_type)
+            self.assert_never(clk, condition=misc._invert(condition), message=message, params=params, name=name, fatal=fatal, property_type=property_type)
 
     def check_never(self, condition, message, params=None, fatal=True):
         """
@@ -1812,7 +1812,7 @@ class p2v():
         self._assert_type(fatal, bool)
         if self._exists():
             return ""
-        return self.check_never(condition=misc.invert(condition), params=params, message=message, fatal=fatal)
+        return self.check_never(condition=misc._invert(condition), params=params, message=message, fatal=fatal)
 
     def assert_static(self, condition, message, warning=False, fatal=True):
         """
