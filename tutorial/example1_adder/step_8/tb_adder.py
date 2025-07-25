@@ -29,9 +29,9 @@ class tb_adder(p2v):
         float16 = args["float16"]
         
         self.logic("valid", initial=0)
-        inputs = []
+        inputs = {}
         for n in range(num):
-            inputs.append(self.logic(f"i{n}", bits, initial=0))
+            inputs[n] = self.logic(bits, initial=0)
         o = self.logic("o", bits)
         valid_out = self.logic("valid_out")
             
@@ -39,7 +39,7 @@ class tb_adder(p2v):
         son.connect_in(clk)
         son.connect_in("valid")
         for n in range(num):
-            son.connect_in(inputs[n])
+            son.connect_in(son.data_in[n], inputs[n])
         son.connect_out("o")
         son.connect_out("valid_out")
         son.inst()

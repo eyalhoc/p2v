@@ -2,8 +2,8 @@ module adder__clk_bits16_num2_float16True (
     input logic clk,
     input logic resetn,
     input logic valid,
-    input logic [15:0] i0,
-    input logic [15:0] i1,
+    input logic [15:0] data_in0,
+    input logic [15:0] data_in1,
     output logic [15:0] o,
     output logic valid_out
 );
@@ -19,8 +19,8 @@ module adder__clk_bits16_num2_float16True (
     logic zero;
     logic NaN;
     float_adder float_adder (
-        .num1(i0),  // input
-        .num2(i1),  // input
+        .num1(data_in0),  // input
+        .num2(data_in1),  // input
         .result(o_pre),  // output
         .overflow(overflow),  // output
         .zero(zero),  // output

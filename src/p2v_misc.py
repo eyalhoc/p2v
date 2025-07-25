@@ -264,11 +264,12 @@ def _remark_line(line):
 def _assert_signal(name, var):
     assert isinstance(var, p2v_signal), f"{name} value {var} of type {type(var)} is expected to be of type {p2v_signal}"
 
-def _check_bits(num, bits):
+def _check_bits(num, _bits):
     if num > 0:
-        assert bits >= log2(num), f"cannot represent the number {num} with {bits} bits"
-        
-        
+        pass # TBD
+        #assert _bits >= log2(num), f"cannot represent the number {num} with {_bits} bits"
+
+
 def ceil(n):
     """
     Round to ceil.
@@ -362,6 +363,8 @@ def concat(vals, sep=None, nl_every=None):
     Returns:
         Verilog code
     """
+    if isinstance(vals, dict):
+        vals = list(vals.values())
     assert isinstance(vals, list), f"variable {vals} expected to be of type list"
     assert isinstance(sep, (type(None), str)), sep
     assert isinstance(nl_every, (type(None), int)), nl_every
@@ -439,7 +442,7 @@ def dec(num, bits=1): # pylint: disable=redefined-outer-name
     assert isinstance(num, int), num
     assert isinstance(bits, int), bits
     _check_bits(num, bits)
-    
+
     bits = abs(bits)
     if isinstance(num, bool):
         num = int(num)

@@ -548,16 +548,20 @@ class p2v():
         self._cache["conn"][modname] = connects
         return connects
 
-    def _get_current_line(self, depth=1):
+    def _get_caller(self, depth):
         # Get the previous frame
         prev_frame = inspect.currentframe().f_back.f_back
         while depth > 1:
             prev_frame = prev_frame.f_back
             depth -= 1
+        return prev_frame
 
-        # Get frame info: filename, line number, function name, code context, index
-        frame_info = inspect.getframeinfo(prev_frame)
-        return frame_info.code_context[0].strip()
+    def _get_current_line(self, depth=2, caller=None):
+        if caller is None:
+            caller = self._get_caller(depth)
+        frame_info = inspect.getframeinfo(caller)
+        current_line = frame_info.code_context[0].strip()
+        return current_line
 
     def _get_remark(self, line=None, depth=1):
         if line is None:
@@ -711,8 +715,7 @@ class p2v():
 
     def _port(self, kind, name, bits=1, used=False, driven=False):
         if isinstance(name, str) and name == "":
-            name = self._get_receive_name(kind, depth=2)
-
+            name = self._get_receive_name(kind, depth=3)
         self._assert(type(bits) in SIGNAL_TYPES, f"unknown type {bits} for port", fatal=True)
         if isinstance(name, clock):
             self._assert(bits == 1, f"{kind} clock {name} must be declared with bits = 1")
@@ -1085,10 +1088,17 @@ class p2v():
     def _is_implicit_declare(self, name):
         return not isinstance(name, (str, list, clock)) or (isinstance(name, list) and len(name)==1 and isinstance(name[0], int))
 
-    def _get_receive_name(self, cmd, depth=1):
-        current_line = self._get_current_line(depth=depth+1)
+    def _get_receive_name(self, cmd, depth=2):
+        caller = self._get_caller(depth=depth)
+        current_line = self._get_current_line(caller=caller)
         line = current_line.replace(" ", "").split("#")[0]
         name = line.split(f"{cmd}(")[0].split("=")[0]
+
+        if "[" in name:
+            caller_locals = caller.f_locals
+            for var, val in caller_locals.items():
+                name = name.replace(f"[{var}]", str(val))
+
         self._assert(misc._is_legal_name(name), f"missing receive variable for {cmd}", fatal=True)
         return name
 
@@ -1367,6 +1377,8 @@ class p2v():
         if self._is_implicit_declare(name):
             bits = name
             name = ""
+        if isinstance(bits, p2v_signal):
+            bits = str(bits)
 
         self._assert_type(name, [str, list ,clock])
         self._assert_type(bits, SIGNAL_TYPES)
@@ -1391,6 +1403,9 @@ class p2v():
         if self._is_implicit_declare(name):
             bits = name
             name = ""
+        if isinstance(bits, p2v_signal):
+            bits = str(bits)
+
         self._assert_type(name, [str, list, clock])
         self._assert_type(bits, SIGNAL_TYPES)
         return self._port("output", name, bits, used=True)
@@ -1433,6 +1448,8 @@ class p2v():
             name = ""
         if isinstance(name, str) and name == "":
             name = self._get_receive_name("logic")
+        if isinstance(bits, p2v_signal):
+            bits = str(bits)
 
         self._assert_type(name, [clock, p2v_signal, str, list])
         self._assert_type(bits, SIGNAL_TYPES)

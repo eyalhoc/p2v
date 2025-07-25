@@ -2,10 +2,10 @@ module adder__clk_bits16_num4_float16False (
     input logic clk,
     input logic resetn,
     input logic valid,
-    input logic [15:0] i0,
-    input logic [15:0] i1,
-    input logic [15:0] i2,
-    input logic [15:0] i3,
+    input logic [15:0] data_in0,
+    input logic [15:0] data_in1,
+    input logic [15:0] data_in2,
+    input logic [15:0] data_in3,
     output logic [15:0] o,
     output logic valid_out
 );
@@ -22,8 +22,8 @@ module adder__clk_bits16_num4_float16False (
         .clk(clk),  // input
         .resetn(resetn),  // input
         .valid(valid),  // input
-        .i0(i0),  // input
-        .i1(i1),  // input
+        .data_in0(data_in0),  // input
+        .data_in1(data_in1),  // input
         .o(data_out0),  // output
         .valid_out(valid_out0)  // output
     );
@@ -34,8 +34,8 @@ module adder__clk_bits16_num4_float16False (
         .clk(clk),  // input
         .resetn(resetn),  // input
         .valid(valid),  // input
-        .i0(i2),  // input
-        .i1(i3),  // input
+        .data_in0(data_in2),  // input
+        .data_in1(data_in3),  // input
         .o(data_out1),  // output
         .valid_out(valid_out1)  // output
     );
@@ -44,8 +44,8 @@ module adder__clk_bits16_num4_float16False (
         .clk(clk),  // input
         .resetn(resetn),  // input
         .valid((valid_out0 & valid_out1)),  // input
-        .i0(data_out0),  // input
-        .i1(data_out1),  // input
+        .data_in0(data_out0),  // input
+        .data_in1(data_out1),  // input
         .o(o),  // output
         .valid_out(valid_out)  // output
     );

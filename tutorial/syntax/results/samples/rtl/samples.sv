@@ -23,23 +23,23 @@ module samples (
 
     // samples module parameters:
 
-    always_ff @(posedge clk0 or negedge clk0_rst_n)  //  free running clock - async reset
+    always_ff @(posedge clk0 or negedge clk0_rst_n)
         if (!clk0_rst_n) x0 <= 8'd0;
         else x0 <= i0;
 
-    always_ff @(posedge clk1)  //  free running clock - sync reset
+    always_ff @(posedge clk1)
         if (clk1_reset) x1 <= 8'd0;
         else x1 <= i0;
 
-    always_ff @(posedge clk0 or negedge clk0_rst_n)  //  sample with qualifier
+    always_ff @(posedge clk0 or negedge clk0_rst_n)
         if (!clk0_rst_n) x2 <= 8'd0;
         else if (valid) x2 <= i0;
 
-    always_ff @(posedge clk0 or negedge clk0_rst_n)  //  sample with non zero reset value
+    always_ff @(posedge clk0 or negedge clk0_rst_n)
         if (!clk0_rst_n) x3 <= {8{1'b1}};
         else if (valid) x3 <= i0;
 
-    always_ff @(posedge clk0 or negedge clk0_rst_n)  //  sample with additional sync reset
+    always_ff @(posedge clk0 or negedge clk0_rst_n)
         if (!clk0_rst_n) x4 <= 8'd0;
         else if (ext_reset) x4 <= 8'd0;
         else if (valid) x4 <= i0;

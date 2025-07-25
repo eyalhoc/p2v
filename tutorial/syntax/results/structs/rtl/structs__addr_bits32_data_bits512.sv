@@ -285,7 +285,7 @@ module structs__addr_bits32_data_bits512 (
     assign slv0__rready = mstr0__rready;
     assign mstr0__rvalid = slv0__rvalid;
 
-    assign slv1__awaddr = write_addr;  //  assign awaddr field
+    assign slv1__awaddr = write_addr;
 
     assign slv1__awid = mstr1__awid;
     assign slv1__awburst = mstr1__awburst;
