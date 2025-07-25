@@ -75,6 +75,8 @@ class p2v_signal:
         return self._create(other, "-")
 
     def __mul__(self, other):
+        if isinstance(other, int):
+            return misc.concat(other * [self])
         return self._create(other, "*")
 
     def __eq__(self, other):
@@ -112,25 +114,26 @@ class p2v_signal:
 
     def __rshift__(self, other):
         return self._create(other, ">>")
-        
+
     def __getitem__(self, key):
         if isinstance(key, slice):
             if key.start is None:
                 start = 0
             else:
                 start = key.start
-            return misc.bits(self, key.stop-start, start=start)
-        else:
-            return misc.bit(self, key)
+            if key.stop is None:
+                stop = self._bits
+            else:
+                stop = key.stop
+            return misc.bits(self, stop-start, start=start)
+        return misc.bit(self, key)
 
 
     def _declare_bits_dim(self, bits):
-        if isinstance(bits, str):
-            return f"[{bits}-1:0]"
-        assert isinstance(bits, int) and bits >= 1, f"{self._kind} {self._name} has 0 bits"
-        if self._bus:
-            return f"[{bits-1}:0]"
-        return ""
+        assert isinstance(bits, (str, int)), bits
+        if isinstance(bits, int):
+            assert bits >= 1, f"{self._kind} {self._name} has 0 bits"
+        return misc._declare_bits(misc.cond(self._bus, [bits], bits))
 
     def _declare_bits(self):
         s = ""

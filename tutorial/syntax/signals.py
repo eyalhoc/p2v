@@ -26,6 +26,12 @@ class signals(p2v):
         d = self.logic(bits) # parametric width
         e = self.logic([bits]) # forces signal to be bus and not scalar even if 1 bit wide(range [0:0])
         
+        ccc = self.output(10)
+        self.assign(ccc, misc.concat([a, b, c])) # verilog concatenation
+        ccc2 = self.output(bits)
+        self.assign(ccc2, b * bits) # net duplication {BITS{b}}
+        
+        
         f = []
         for n in range(num):
             f.append(self.logic(f"f{n}", bits)) # port in loop with explicit name
@@ -34,7 +40,6 @@ class signals(p2v):
             g = self.logic(bits*2) # conditional port
             h = self.logic(bits*2) # conditional port
             i = self.logic(bits*2) # conditional port
-        
         
         clk = default_clk
         clk2 = clock("clk2", rst_n="clk2_rstn")
@@ -63,11 +68,15 @@ class signals(p2v):
         self.assign(c, 0) # assign to const
         self.assign(d, e + misc.dec(1, bits)) # assign expression
         if var:
-            self.assign(g, misc.concat(f[:2])) # assign conctenation
+            self.assign(g, misc.concat(f[:2])) # assign concatenation
             self.assign(h[0:bits], f[2]) # partial bits
             self.assign(h[bits:bits*2], f[3]) # partial bits
             for m in range(bits*2):
                 self.assign(i[m], h[m]) # bit by bit
+        
+        q = self.logic(8, assign=7)
+        qq = self.output(5)
+        self.assign(qq, q[3:])
         
         self.line() # insert empty line to Verilog file
         self.assign(clk2.rst_n, 1)
