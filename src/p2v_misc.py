@@ -62,6 +62,21 @@ def _get_names(s):
             names.append(name)
     return names
 
+def _declare_bits(bits, start=0): # pylint: disable=redefined-outer-name
+    bus = isinstance(bits, list)
+    if bus:
+        bits = bits[0]
+    if isinstance(bits, str):
+        if start == 0:
+            return f"[{bits}-1:0]"
+        return f"[{bits}+{start}-1:{start}]"
+    if bits == 1 and not bus:
+        return ""
+    return f"[{start+bits-1}:{start}]"
+
+def _declare(name, bits, start=0): # pylint: disable=redefined-outer-name
+    return  p2v_signal(None, name + _declare_bits(bits, start=start), bits=0)
+
 def _get_paren_depth(line, open_char="(", close_char=")"):
     depth = 0
     for c in line:
@@ -245,6 +260,8 @@ def _remark_line(line):
     remark_line = re.sub(r"// *\n", "//\n", remark_line)
     return re.sub(r"\s+$", "", remark_line)
 
+def _assert_signal(name, var):
+    assert isinstance(var, p2v_signal), f"{name} value {var} of type {type(var)} is expected to be of type {p2v_signal}"
 
 def ceil(n):
     """
@@ -327,7 +344,7 @@ def cond(condition, true_var, false_var=""):
         return true_var
     return false_var
 
-def concat(vals, sep=None, nl_every=None, _allow_str=False):
+def concat(vals, sep=None, nl_every=None):
     """
     Converts a Python list into Verilog concatenation or join list of signals with operator.
 
@@ -347,8 +364,7 @@ def concat(vals, sep=None, nl_every=None, _allow_str=False):
     _bits = 0
     new_vals = []
     for n, val in enumerate(vals):
-        if not _allow_str:
-            assert isinstance(val, p2v_signal), f"concat value {val} of type {type(val)} is expected to be of type {p2v_signal}"
+        _assert_signal("concat", val)
         if isinstance(val, p2v_signal):
             _bits += val._bits
         if val is not None:
@@ -376,7 +392,7 @@ def concat(vals, sep=None, nl_every=None, _allow_str=False):
         rtrn = sep.join(vals)
     return p2v_signal(None, str(rtrn), bits=_bits)
 
-def pad(left, name, right=0, val=0, _allow_str=False):
+def pad(left, name, right=0, val=0):
     """
     Verilog padding for lint and for shift left.
 
@@ -392,18 +408,15 @@ def pad(left, name, right=0, val=0, _allow_str=False):
     assert isinstance(left, int) and left >= 0, f"illegal left padding {left}"
     assert isinstance(right, int) and right >= 0, f"illegal left padding {right}"
     assert isinstance(val, int), f"illegal pad value {val}"
-    if _allow_str:
-        _bits = 0
-    else:
-        assert isinstance(name, p2v_signal), f"pad value {name} of type {type(name)} is expected to be of type {p2v_signal}"
-        _bits = name._bits + left + right
+    _assert_signal("pad", name)
+    _bits = name._bits + left + right
     vals = []
     if left > 0:
         vals.append(dec(val, left))
     vals.append(name)
     if right > 0:
         vals.append(dec(val, right))
-    rtrn = concat(vals, _allow_str=_allow_str)
+    rtrn = concat(vals)
     return p2v_signal(None, str(rtrn), bits=_bits)
 
 def dec(num, bits=1): # pylint: disable=redefined-outer-name
@@ -475,7 +488,7 @@ def bin(num, bits=None, add_sep=4, prefix="'b"): # pylint: disable=redefined-bui
         bits = log2(num)
     return p2v_signal(None, str(rtrn), bits=bits)
 
-def bits(name, bits, start=0, _allow_str=False): # pylint: disable=redefined-outer-name
+def bits(name, bits, start=0): # pylint: disable=redefined-outer-name
     """
     Extract a partial range from a Verilog bus.
 
@@ -487,8 +500,7 @@ def bits(name, bits, start=0, _allow_str=False): # pylint: disable=redefined-out
     Returns:
         Verilog code
     """
-    if _allow_str:
-        name = str(name)
+    _assert_signal("bits", name)
     assert _is_legal_name(name), f"{name} is not a legal name"
     assert isinstance(bits, int) and bits > 0, f"{name} cannot be of {bits} bits"
     assert isinstance(start, int) and start >= 0, f"{name} bit range cannot start a bit {start}"
@@ -512,6 +524,7 @@ def bit(name, idx):
     Returns:
         Verilog code
     """
+    _assert_signal("bit", name)
     assert _is_legal_name(name), f"{name} is not a legal name"
     rtrn = f"{name}[{idx}]"
     return p2v_signal(None, str(rtrn), bits=1)
@@ -528,6 +541,7 @@ def is_hotone(var, bits, allow_zero=False): # pylint: disable=redefined-outer-na
     Returns:
         Verilog code
     """
+    _assert_signal("is_hotone", var)
     assert isinstance(bits, int) and bits > 0, f"variable {bits} expected to be a non zero positive integer"
     assert isinstance(allow_zero, bool), f"variable {allow_zero} expected to be of type bool"
     if bits == 1:
@@ -538,7 +552,7 @@ def is_hotone(var, bits, allow_zero=False): # pylint: disable=redefined-outer-na
         rtrn = f"(({var} & ({var} - {dec(1, bits)})) == {dec(0, bits)})" + cond(allow_zero, f" | ({var} == {dec(0, bits)})")
     return p2v_signal(None, str(rtrn), bits=1)
 
-def invert(var, not_op="~"):
+def invert(var, not_op="~"): # TBD - remove
     """
     Verilog not expression, removed previous not if present.
 

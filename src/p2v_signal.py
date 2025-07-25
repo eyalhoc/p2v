@@ -130,12 +130,10 @@ class p2v_signal:
 
 
     def _declare_bits_dim(self, bits):
-        if isinstance(bits, str):
-            return f"[{bits}-1:0]"
-        assert isinstance(bits, int) and bits >= 1, f"{self._kind} {self._name} has 0 bits"
-        if self._bus:
-            return f"[{bits-1}:0]"
-        return ""
+        assert isinstance(bits, (str, int)), bits
+        if isinstance(bits, int):
+            assert bits >= 1, f"{self._kind} {self._name} has 0 bits"
+        return misc._declare_bits(misc.cond(self._bus, [bits], bits))
 
     def _declare_bits(self):
         s = ""

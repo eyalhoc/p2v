@@ -630,7 +630,7 @@ class p2v():
                 msb, lsb = misc._get_bit_range(wire)
                 if self._assert(msb < self._signals[name]._bits, f"trying to drive {wire} when {name} has only {self._signals[name]._bits} bits"):
                     for i in range(lsb, msb+1):
-                        if self._assert(not self._signals[name]._driven_bits[i] or allow, f"{misc.bit(name, i)} was previously driven"):
+                        if self._assert(not self._signals[name]._driven_bits[i] or allow, f"{name}[{i}] was previously driven"):
                             self._signals[name]._driven_bits[i] = True
 
     def _set_driven(self, wire, allow=False):
