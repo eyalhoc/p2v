@@ -159,6 +159,7 @@ def _base(base, n, bits=None, add_sep=4, prefix=None): # pylint: disable=redefin
         assert n >= 0, "negative hex representation must specify number of bits"
         n_bits = 128
     else:
+        _check_bits(n, bits)
         n_bits = bits
 
     s = f"{n & ((1 << n_bits) - 1):0{int((n_bits + log2(base) - 1) / log2(base))}{base_s}}"
@@ -263,6 +264,11 @@ def _remark_line(line):
 def _assert_signal(name, var):
     assert isinstance(var, p2v_signal), f"{name} value {var} of type {type(var)} is expected to be of type {p2v_signal}"
 
+def _check_bits(num, bits):
+    if num > 0:
+        assert bits >= log2(num), f"cannot represent the number {num} with {bits} bits"
+        
+        
 def ceil(n):
     """
     Round to ceil.
@@ -432,7 +438,8 @@ def dec(num, bits=1): # pylint: disable=redefined-outer-name
     """
     assert isinstance(num, int), num
     assert isinstance(bits, int), bits
-
+    _check_bits(num, bits)
+    
     bits = abs(bits)
     if isinstance(num, bool):
         num = int(num)

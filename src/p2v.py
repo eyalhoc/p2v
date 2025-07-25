@@ -1193,13 +1193,12 @@ class p2v():
             self._assert(condition, f"{name} = {var_str} failed to pass its assertions", fatal=True)
         self._params[name] = (var, remark, loose, suffix)
 
-    def get_fields(self, strct, attrib="name", fields=None):
+    def get_fields(self, strct, fields=None):
         """
         Get struct fields.
 
         Args:
             strct(dict): p2v struct
-            attrib(str): field attribute to extract
             fields(list): list of specific fields to extract
 
         Returns:
@@ -1208,17 +1207,7 @@ class p2v():
         if isinstance(strct, p2v_enum):
             strct = vars(strct)
         self._assert_type(strct, dict)
-        self._assert_type(attrib, str)
-        vals = []
-        signals = self._get_strct_signals(strct, fields=fields)
-        for signal in signals:
-            if attrib == "name":
-                vals.append(signal)
-            elif attrib == "bits":
-                vals.append(signal._bits)
-            else:
-                self._raise(f"unknown struct attribute {attrib}")
-        return vals
+        return self._get_strct_signals(strct, fields=fields)
 
     def gen_rand_args(self, override=None):
         """
