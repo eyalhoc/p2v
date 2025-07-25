@@ -12,6 +12,11 @@ class exprs(p2v):
         lshift = self.output(11)
         rshift = self.output(8)
         
+        o0 = self.output(8)
+        o1 = self.output(8)
+        o2 = self.output(8)
+        
+        
         self.assign(bitwise, \
                             (a + b) | \
                             (a - b) & \
@@ -31,6 +36,10 @@ class exprs(p2v):
 
         self.assign(lshift, a << 3)
         self.assign(rshift, b >> 3)
+        
+        self.assign(o0, a & 0)
+        self.assign(o1, a | 0)
+        self.assign(o2, a ^ 0)
         
         return self.write()
 

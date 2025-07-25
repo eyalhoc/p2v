@@ -2,10 +2,10 @@ module adder__bits8_num4 (
     input logic clk,
     input logic rst_n,
     input logic valid,
-    input logic [7:0] data_in0,
-    input logic [7:0] data_in1,
-    input logic [7:0] data_in2,
-    input logic [7:0] data_in3,
+    input logic [7:0] data_in__0,
+    input logic [7:0] data_in__1,
+    input logic [7:0] data_in__2,
+    input logic [7:0] data_in__3,
     output logic [7:0] o,
     output logic valid_out
 );
@@ -21,8 +21,8 @@ module adder__bits8_num4 (
         .clk(clk),  // input
         .rst_n(rst_n),  // input
         .valid(valid),  // input
-        .data_in0(data_in0),  // input
-        .data_in1(data_in1),  // input
+        .data_in__0(data_in__0),  // input
+        .data_in__1(data_in__1),  // input
         .o(data_out0),  // output
         .valid_out(valid_out0)  // output
     );
@@ -33,8 +33,8 @@ module adder__bits8_num4 (
         .clk(clk),  // input
         .rst_n(rst_n),  // input
         .valid(valid),  // input
-        .data_in0(data_in2),  // input
-        .data_in1(data_in3),  // input
+        .data_in__0(data_in__2),  // input
+        .data_in__1(data_in__3),  // input
         .o(data_out1),  // output
         .valid_out(valid_out1)  // output
     );
@@ -43,8 +43,8 @@ module adder__bits8_num4 (
         .clk(clk),  // input
         .rst_n(rst_n),  // input
         .valid((valid_out0 & valid_out1)),  // input
-        .data_in0(data_out0),  // input
-        .data_in1(data_out1),  // input
+        .data_in__0(data_out0),  // input
+        .data_in__1(data_out1),  // input
         .o(o),  // output
         .valid_out(valid_out)  // output
     );

@@ -133,15 +133,18 @@ def _to_int(n, allow=False):
         return n
     raise RuntimeError(f"cannot convert {n} to int")
 
-def _get_index(name):
-    name = str(name)
-    if len(name) == 0 or not name[-1].isdigit() or name[0].isdigit():
-        return name, None
-    idx = -1
-    while name[idx].isdigit():
-        idx -= 1
-    idx += 1
-    return name[:idx], int(name[idx:])
+def _path_to_dict(path, value=None, sep="__"):
+    d = {}
+    keys = path.split(sep)
+    for key in keys[:-1]:
+        if _is_int(key):
+            key = int(key)
+        d = d.setdefault(key, {})
+    last_key = keys[-1]
+    if _is_int(last_key):
+        last_key = int(last_key)
+    d[last_key] = value
+    return d
 
 def _get_base_str(base):
     if base == 16:

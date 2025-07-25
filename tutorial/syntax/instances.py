@@ -2,6 +2,7 @@
 from p2v import p2v, misc
 
 import _or_gate
+import _or_gate_list
 
 class instances(p2v):
     def module(self, num=4, bits=32):
@@ -9,28 +10,39 @@ class instances(p2v):
         self.set_param(bits, int, bits > 0)
         self.set_modname()
         
-        a = []
-        b = []
-        c = []
+        a0 = {}
+        b0 = {}
+        c0 = {}
         for n in range(num):
-            a.append(self.input(f"a{n}", bits+n))
-            b.append(self.input(f"b{n}", bits+n))
-            c.append(self.output(f"c{n}", bits+n))
+            a0[n] = self.input(bits+n)
+            b0[n] = self.input(bits+n)
+            c0[n] = self.output(bits+n)
         
             son = _or_gate._or_gate(self).module(bits=bits+n) # creates son module
-            son.connect_in(son.a, a[n])
-            son.connect_in(son.b, b[n])
-            son.connect_out(son.c, c[n])
+            son.connect_in(son.a, a0[n])
+            son.connect_in(son.b, b0[n])
+            son.connect_out(son.c, c0[n])
             son.inst(suffix=n) # make instance name unique
 
+
+        al = {}
+        for n in range(num):
+            al[n] = self.input(bits)
+        cl = self.output(bits)
+        son = _or_gate_list._or_gate_list(self).module(num=num, bits=bits)
+        for n in range(num):
+            son.connect_in(son.i[n], al[n])
+        son.connect_out(son.c, cl)
+        son.inst()
+        
         
         a = self.input(16)
         b = self.input(16)
         c = self.output(16)
         son = _or_gate._or_gate(self).module(bits=16)
-        son.connect_in(a) # assumes wire name equals port name
-        son.connect_in(b) # assumes wire name equals port name
-        son.connect_out(c) # assumes wire name equals port name
+        son.connect_in(son.a, a) # assumes wire name equals port name
+        son.connect_in(son.b, b) # assumes wire name equals port name
+        son.connect_out(son.c, c) # assumes wire name equals port name
         son.inst("my_or_gate") # specific instance name
     
         

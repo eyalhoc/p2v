@@ -529,21 +529,20 @@ class p2v():
         return self._modname in self._cache["conn"]
 
     def _get_connects(self, parent, modname, signals, params):
-        arrays = {}
         connects = p2v_connect(parent, modname, signals, params=params)
         for name, val in connects._signals.items():
             setattr(connects, name, val)
-            # support access with list
-            prefix, index = misc._get_index(name)
-            if index is not None:
-                if prefix not in arrays:
-                    arrays[prefix] = []
-                if (index+1) > len(arrays[prefix]):
-                    arrays[prefix] = arrays[prefix] + [None] * (index+1-len(arrays[prefix]))
-                arrays[prefix][index] = p2v_signal(None, name, bits=0)
-        for name, val in arrays.items():
-            if not hasattr(connects, name): # don't overrride explicit names
-                setattr(connects, name, val)
+            # support access with dict
+            if "__" in name:
+                field = name.split("__")[0]
+                d = misc._path_to_dict(name, value=val)
+                if hasattr(connects, field):
+                    prev = getattr(connects, field)
+                    if isinstance(prev, dict):
+                        d |= getattr(connects, field)
+                    else:
+                        continue
+                setattr(connects, field, d)
 
         self._cache["conn"][modname] = connects
         return connects
@@ -1097,7 +1096,7 @@ class p2v():
         if "[" in name:
             caller_locals = caller.f_locals
             for var, val in caller_locals.items():
-                name = name.replace(f"[{var}]", str(val))
+                name = name.replace(f"[{var}]", f"__{val}")
 
         self._assert(misc._is_legal_name(name), f"missing receive variable for {cmd}", fatal=True)
         return name

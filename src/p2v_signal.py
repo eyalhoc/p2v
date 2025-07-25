@@ -98,12 +98,18 @@ class p2v_signal:
         return self._create(other, ">=")
 
     def __and__(self, other):
+        if isinstance(other, int) and other == 0:
+            return 0
         return self._create(other, "&")
 
     def __or__(self, other):
+        if isinstance(other, int) and other == 0:
+            return self
         return self._create(other, "|")
 
     def __xor__(self, other):
+        if isinstance(other, int) and other == 0:
+            return self
         return self._create(other, "^")
 
     def __invert__(self):
