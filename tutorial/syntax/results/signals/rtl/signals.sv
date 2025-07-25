@@ -1,6 +1,8 @@
 module signals #(
     parameter int BITS = 32
 ) (
+    output logic [9:0] ccc,
+    output logic [7:0] ccc2,
     input logic ext_clk,
     output logic [4:0] qq
 );
@@ -12,6 +14,8 @@ module signals #(
     logic [7:0] c;  //  multi bit bus
     logic [7:0] d;  //  parametric width
     logic [7:0] e;  //  forces signal to be bus and not scalar even if 1 bit wide(range [0:0])
+    assign ccc  = {a, b, c};  //  verilog concatenation
+    assign ccc2 = {8{b}};  //  net duplication {BITS{b}}
     logic [7:0] f0;  //  port in loop with explicit name
     logic [7:0] f1;  //  port in loop with explicit name
     logic [7:0] f2;  //  port in loop with explicit name
@@ -42,7 +46,7 @@ module signals #(
     assign a = b;  //  trivial Verilog assign
     assign c = 8'd0;  //  assign to const
     assign d = (e + 8'd1);  //  assign expression
-    assign g = {f0, f1};  //  assign conctenation
+    assign g = {f0, f1};  //  assign concatenation
     assign h[7:0] = f2;  //  partial bits
     assign h[15:8] = f3;  //  partial bits
     assign i[0] = h[0];  //  bit by bit

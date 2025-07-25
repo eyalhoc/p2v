@@ -75,6 +75,8 @@ class p2v_signal:
         return self._create(other, "-")
 
     def __mul__(self, other):
+        if isinstance(other, int):
+            return misc.concat(other * [self])
         return self._create(other, "*")
 
     def __eq__(self, other):
