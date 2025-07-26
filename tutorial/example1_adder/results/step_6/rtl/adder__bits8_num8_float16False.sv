@@ -20,8 +20,8 @@ module adder__bits8_num8_float16False (
     //  * num = 8 (int) #  number of inputs
     //  * float16 = False (bool) #  use a float16 adder
 
-    logic [7:0] data_out0;
-    logic valid_out0;
+    logic [7:0] datas__0;
+    logic valids__0;
     adder__bits8_num4_float16False adder0 (
         .clk(clk),  // input
         .rst_n(rst_n),  // input
@@ -30,12 +30,12 @@ module adder__bits8_num8_float16False (
         .data_in__1(data_in__1),  // input
         .data_in__2(data_in__2),  // input
         .data_in__3(data_in__3),  // input
-        .o(data_out0),  // output
-        .valid_out(valid_out0)  // output
+        .o(datas__0),  // output
+        .valid_out(valids__0)  // output
     );
 
-    logic [7:0] data_out1;
-    logic valid_out1;
+    logic [7:0] datas__1;
+    logic valids__1;
     adder__bits8_num4_float16False adder1 (
         .clk(clk),  // input
         .rst_n(rst_n),  // input
@@ -44,16 +44,16 @@ module adder__bits8_num8_float16False (
         .data_in__1(data_in__5),  // input
         .data_in__2(data_in__6),  // input
         .data_in__3(data_in__7),  // input
-        .o(data_out1),  // output
-        .valid_out(valid_out1)  // output
+        .o(datas__1),  // output
+        .valid_out(valids__1)  // output
     );
 
     adder__bits8_num2_float16False adder_out (
         .clk(clk),  // input
         .rst_n(rst_n),  // input
-        .valid((valid_out0 & valid_out1)),  // input
-        .data_in__0(data_out0),  // input
-        .data_in__1(data_out1),  // input
+        .valid((valids__0 & valids__1)),  // input
+        .data_in__0(datas__0),  // input
+        .data_in__1(datas__1),  // input
         .o(o),  // output
         .valid_out(valid_out)  // output
     );

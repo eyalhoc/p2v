@@ -24,10 +24,10 @@ module signals #(
     logic [7:0] e;
     assign ccc  = {a, b, c};
     assign ccc2 = {8{b}};
-    logic [7:0] f0;
-    logic [7:0] f1;
-    logic [7:0] f2;
-    logic [7:0] f3;
+    logic [7:0] f__0;
+    logic [7:0] f__1;
+    logic [7:0] f__2;
+    logic [7:0] f__3;
     logic [15:0] g;
     logic [15:0] h;
     logic [15:0] i;
@@ -47,16 +47,16 @@ module signals #(
 
     assign b = 1'd1;
     assign e = 8'd3;
-    assign f0 = (d | e);
-    assign f1 = (d | e);
-    assign f2 = (d | e);
-    assign f3 = (d | e);
+    assign f__0 = (d | e);
+    assign f__1 = (d | e);
+    assign f__2 = (d | e);
+    assign f__3 = (d | e);
     assign a = b;
     assign c = 8'd0;
     assign d = (e + 8'd1);
-    assign g = {f0, f1};
-    assign h[7:0] = f2;
-    assign h[15:8] = f3;
+    assign g = {f__1, f__0};
+    assign h[7:0] = f__2;
+    assign h[15:8] = f__3;
     assign i[0] = h[0];
     assign i[1] = h[1];
     assign i[2] = h[2];
@@ -82,10 +82,10 @@ module signals #(
 
     assign clk2 = clk;
     logic [7:0] aa;
-    assign aa = 8'hff;
+    assign aa = {8{1'b1}};
 
     logic [7:0] bb;
-    initial bb = 8'hff;
+    initial bb = {8{1'b1}};
 
 
     logic [ 7:0] s__ctrl;

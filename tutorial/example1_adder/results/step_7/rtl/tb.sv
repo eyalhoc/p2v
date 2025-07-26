@@ -113,19 +113,19 @@ module tb ();
 
         end
 
-    logic [31:0] _count_clk;
-    initial _count_clk = 32'd0;
+    logic [31:0] _count_timeout__clk;
+    initial _count_timeout__clk = 32'd0;
 
 
-    always @(posedge clk) _count_clk <= (_count_clk + 32'd1);
+    always @(posedge clk) _count_timeout__clk <= (_count_timeout__clk + 32'd1);
 
     reached_timeout_after_400_cycles_of_clk_assert :
-    assert property (@(posedge clk) disable iff (!resetn) ~((_count_clk >= 32'd400)))
+    assert property (@(posedge clk) disable iff (!resetn) ~((_count_timeout__clk >= 32'd400)))
     else $fatal(1, "reached timeout after 400 cycles of clk");
 
     // CODE ADDED TO SUPPORT LEGACY SIMULATION THAT DOES NOT SUPPORT CONCURRENT ASSERTIONS
     logic assert_never__reached_timeout_after_400_cycles_of_clk;
-    assign assert_never__reached_timeout_after_400_cycles_of_clk = (_count_clk >= 32'd400);
+    assign assert_never__reached_timeout_after_400_cycles_of_clk = (_count_timeout__clk >= 32'd400);
 
     always @(posedge clk)
         if (resetn & assert_never__reached_timeout_after_400_cycles_of_clk)

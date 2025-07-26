@@ -182,21 +182,21 @@ class p2v_connect():
             if name not in self._pins:
                 wire = name + suffix
                 if not ports and wire not in self._parent._signals:
-                    self._parent.logic(wire, signal._bits)
+                    self._parent.logic(wire, signal._bits, _allow_str=True)
                 if signal._kind == "input":
                     if ports:
                         if not (wire in self._parent._signals and self._parent._signals[name]._kind == "input"):
-                            self._parent.input(wire, signal._bits)
+                            self._parent.input(wire, signal._bits, _allow_str=True)
                     self.connect_in(name, wire, _use_wire=True)
                 elif signal._kind == "output":
                     if ports:
                         if not (wire in self._parent._signals and self._parent._signals[name]._kind == "output"):
-                            self._parent.output(wire, signal._bits)
+                            self._parent.output(wire, signal._bits, _allow_str=True)
                     self.connect_out(name, wire, _use_wire=True)
                 elif signal._kind == "inout":
                     if ports:
                         if not (wire in self._parent._signals and self._parent._signals[name]._kind == "inout"):
-                            self._parent.inout(wire)
+                            self._parent.inout(wire, _allow_str=True)
                     self.connect_io(name, wire, _use_wire=True)
 
     def inst(self, instname=None, suffix=""):

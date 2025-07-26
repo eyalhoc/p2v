@@ -396,12 +396,14 @@ class p2v_tb():
         self._parent._assert_type(clk, clock)
         self._parent._assert_type(timeout, int)
 
-        count = self._parent.logic(f"_count_{clk}", 32, initial=0)
+        name = str(clk)
+        _count_timeout = {}
+        _count_timeout[name] = self._parent.logic(32, initial=0)
         self._parent.line(f"""
-                             always @(posedge {clk}) {count} <= {count + 1};
+                             always @(posedge {clk}) { _count_timeout[name]} <= { _count_timeout[name] + 1};
                           """)
-        self._parent.assert_never(clk, count >= timeout, f"reached timeout after {timeout} cycles of {clk}")
-        self._parent.allow_unused(count)
+        self._parent.assert_never(clk, _count_timeout[name] >= timeout, f"reached timeout after {timeout} cycles of {clk}")
+        self._parent.allow_unused( _count_timeout[name])
 
 
     def register_test(self, args=None):

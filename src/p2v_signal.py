@@ -18,6 +18,8 @@ p2v_signal module. Responsible for p2v siganls.
 import p2v_misc as misc
 from p2v_struct import p2v_struct
 
+# TBD - make enum of kind
+
 class p2v_signal:
     """
     This class is a p2v signal.
@@ -235,6 +237,30 @@ class p2v_signal:
             bool
         """
         return self._kind in ["parameter", "localparam"]
+
+    def is_clock(self):
+        """
+        Checks if signal is a clock.
+
+        Args:
+            NA
+
+        Returns:
+            bool
+        """
+        return self._kind in ["clock", "sync_reset", "async_reset"]
+
+    def is_enum(self):
+        """
+        Checks if signal is an enumerated type.
+
+        Args:
+            NA
+
+        Returns:
+            bool
+        """
+        return self._kind in ["enum"]
 
     def declare(self, delimiter=";"):
         """

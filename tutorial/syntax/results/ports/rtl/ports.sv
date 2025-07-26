@@ -6,20 +6,20 @@ module ports #(
     input logic [7:0] c,
     input logic [7:0] dd,
     input logic [7:0] e,
-    input logic [7:0] f0,
-    input logic [7:0] f1,
-    input logic [7:0] f2,
-    input logic [7:0] f3,
+    input logic [7:0] f__0,
+    input logic [7:0] f__1,
+    input logic [7:0] f__2,
+    input logic [7:0] f__3,
     input logic [15:0] g,
     output logic ao,
     output logic bo,
     output logic [7:0] co,
     output logic [7:0] ddo,
     output logic [7:0] eo,
-    output logic [7:0] f0o,
-    output logic [7:0] f1o,
-    output logic [7:0] f2o,
-    output logic [7:0] f3o,
+    output logic [7:0] fo__0,
+    output logic [7:0] fo__1,
+    output logic [7:0] fo__2,
+    output logic [7:0] fo__3,
     output logic [15:0] go,
     inout q,
     input logic [7:0] s__ctrl,
@@ -37,10 +37,10 @@ module ports #(
     assign co = c;
     assign ddo = dd;
     assign eo = e;
-    assign f0o = f0;
-    assign f1o = f1;
-    assign f2o = f2;
-    assign f3o = f3;
+    assign fo__0 = f__0;
+    assign fo__1 = f__1;
+    assign fo__2 = f__2;
+    assign fo__3 = f__3;
     assign go = g;
 
     assign t__ctrl = s__ctrl;

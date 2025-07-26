@@ -47,8 +47,8 @@ class structs(p2v):
         master2 = {}
         slave2 = {}
         for x in ["aw", "w", "b", "ar", "r"]:
-            master2[x] = self.input(f"master2_{x}", axi_strct[x]) # partial axi input port
-            slave2[x] = self.output(f"slave2_{x}", axi_strct[x]) # partial axi output port
+            master2[x] = self.input(axi_strct[x]) # partial axi input port
+            slave2[x] = self.output(axi_strct[x]) # partial axi output port
             
             self.assign(slave2[x], master2[x])
         
@@ -57,8 +57,8 @@ class structs(p2v):
         master3 = {}
         slave3 = {}
         for x in axi_strct: # same as ["aw", "w", "b", "ar", "r"]:
-            master3[x] = self.input(f"master3_{x}", axi_strct[x]) # partial axi input port
-            slave3[x] = self.output(f"slave3_{x}", axi_strct[x]) # partial axi output port
+            master3[x] = self.input(axi_strct[x]) # partial axi input port
+            slave3[x] = self.output(axi_strct[x]) # partial axi output port
             
             self.sample(clk, slave3[x], master3[x])
                 

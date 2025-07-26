@@ -24,12 +24,12 @@ class tb_adder(p2v):
         num = args["num"]
         bits = args["bits"]
         
-        valid = self.logic("valid")
+        valid = self.logic()
         inputs = {}
         for n in range(num):
             inputs[n] = self.logic(bits, initial=0)
-        o = self.logic("o", bits)
-        valid_out = self.logic("valid_out")
+        o = self.logic(bits)
+        valid_out = self.logic()
             
         son = adder.adder(self).module(clk, **args)
         son.connect_in(clk)
@@ -41,7 +41,7 @@ class tb_adder(p2v):
         son.inst()
         
         
-        en = self.logic("en", initial=0)
+        en = self.logic(initial=0)
         valid = self.sample(clk, valid, en)
         
         self.tb.fifo("data_in_q", bits*num)

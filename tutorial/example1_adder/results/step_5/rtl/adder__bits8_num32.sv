@@ -43,8 +43,8 @@ module adder__bits8_num32 (
     //  * bits = 8 (int) #  data width
     //  * num = 32 (int) #  number of inputs
 
-    logic [7:0] data_out0;
-    logic valid_out0;
+    logic [7:0] datas__0;
+    logic valids__0;
     adder__bits8_num16 adder0 (
         .clk(clk),  // input
         .rst_n(rst_n),  // input
@@ -65,12 +65,12 @@ module adder__bits8_num32 (
         .data_in__13(data_in__13),  // input
         .data_in__14(data_in__14),  // input
         .data_in__15(data_in__15),  // input
-        .o(data_out0),  // output
-        .valid_out(valid_out0)  // output
+        .o(datas__0),  // output
+        .valid_out(valids__0)  // output
     );
 
-    logic [7:0] data_out1;
-    logic valid_out1;
+    logic [7:0] datas__1;
+    logic valids__1;
     adder__bits8_num16 adder1 (
         .clk(clk),  // input
         .rst_n(rst_n),  // input
@@ -91,16 +91,16 @@ module adder__bits8_num32 (
         .data_in__13(data_in__29),  // input
         .data_in__14(data_in__30),  // input
         .data_in__15(data_in__31),  // input
-        .o(data_out1),  // output
-        .valid_out(valid_out1)  // output
+        .o(datas__1),  // output
+        .valid_out(valids__1)  // output
     );
 
     adder__bits8_num2 adder_out (
         .clk(clk),  // input
         .rst_n(rst_n),  // input
-        .valid((valid_out0 & valid_out1)),  // input
-        .data_in__0(data_out0),  // input
-        .data_in__1(data_out1),  // input
+        .valid((valids__0 & valids__1)),  // input
+        .data_in__0(datas__0),  // input
+        .data_in__1(datas__1),  // input
         .o(o),  // output
         .valid_out(valid_out)  // output
     );
