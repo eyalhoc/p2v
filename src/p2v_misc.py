@@ -136,15 +136,24 @@ def _to_int(n, allow=False):
 def _path_to_dict(path, value=None, sep="__"):
     d = {}
     keys = path.split(sep)
+    current = d
     for key in keys[:-1]:
         if _is_int(key):
             key = int(key)
-        d = d.setdefault(key, {})
+        current = current.setdefault(key, {})
     last_key = keys[-1]
     if _is_int(last_key):
         last_key = int(last_key)
-    d[last_key] = value
+    current[last_key] = value
     return d
+
+def _merge_dict(a, b):
+    for k, v in b.items():
+        if k in a and isinstance(a[k], dict) and isinstance(v, dict):
+            _merge_dict(a[k], v)
+        else:
+            a[k] = v
+    return a
 
 def _get_base_str(base):
     if base == 16:

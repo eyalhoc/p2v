@@ -4,7 +4,15 @@ module signals #(
     output logic [9:0] ccc,
     output logic [7:0] ccc2,
     input logic ext_clk,
-    output logic [4:0] qq
+    output logic [4:0] qq,
+    output logic [7:0] master__0__w,
+    output logic [7:0] master__0__r,
+    output logic [7:0] master__1__w,
+    output logic [7:0] master__1__r,
+    output logic [7:0] master__2__w,
+    output logic [7:0] master__2__r,
+    output logic [7:0] master__3__w,
+    output logic [7:0] master__3__r
 );
 
     // signals module parameters:
@@ -111,5 +119,29 @@ module signals #(
     assign t2__valid = s2__valid;
     assign s2__ready = t2__ready;
 
+    logic [7:0] master_pre__0__w;
+    assign master_pre__0__w = {2'd0, c[7:2]};
+    assign master__0__w = (master_pre__0__w + 8'd1);
+    logic [7:0] master_pre__0__r;
+    assign master_pre__0__r = {2'd0, c[7:2]};
+    assign master__0__r = (master_pre__0__r + 8'd1);
+    logic [7:0] master_pre__1__w;
+    assign master_pre__1__w = {2'd0, c[7:2]};
+    assign master__1__w = (master_pre__1__w + 8'd1);
+    logic [7:0] master_pre__1__r;
+    assign master_pre__1__r = {2'd0, c[7:2]};
+    assign master__1__r = (master_pre__1__r + 8'd1);
+    logic [7:0] master_pre__2__w;
+    assign master_pre__2__w = {2'd0, c[7:2]};
+    assign master__2__w = (master_pre__2__w + 8'd1);
+    logic [7:0] master_pre__2__r;
+    assign master_pre__2__r = {2'd0, c[7:2]};
+    assign master__2__r = (master_pre__2__r + 8'd1);
+    logic [7:0] master_pre__3__w;
+    assign master_pre__3__w = {2'd0, c[7:2]};
+    assign master__3__w = (master_pre__3__w + 8'd1);
+    logic [7:0] master_pre__3__r;
+    assign master_pre__3__r = {2'd0, c[7:2]};
+    assign master__3__r = (master_pre__3__r + 8'd1);
 
 endmodule  // signals

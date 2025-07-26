@@ -16,6 +16,18 @@ module instances__num4_bits32 (
     input  logic [31:0] al__2,
     input  logic [31:0] al__3,
     output logic [31:0] cl,
+    input  logic [31:0] a2__0__w,
+    input  logic [31:0] a2__0__r,
+    output logic [31:0] c2__0,
+    input  logic [31:0] a2__1__w,
+    input  logic [31:0] a2__1__r,
+    output logic [31:0] c2__1,
+    input  logic [31:0] a2__2__w,
+    input  logic [31:0] a2__2__r,
+    output logic [31:0] c2__2,
+    input  logic [31:0] a2__3__w,
+    input  logic [31:0] a2__3__r,
+    output logic [31:0] c2__3,
     input  logic [15:0] a,
     input  logic [15:0] b,
     output logic [15:0] c,
@@ -62,6 +74,21 @@ module instances__num4_bits32 (
         .i__2(al__2),  // input
         .i__3(al__3),  // input
         .c(cl)  // output
+    );
+
+    _or_gate_dict__num4_bits32 _or_gate_dict (
+        .i__0__w(a2__0__w),  // input
+        .i__0__r(a2__0__r),  // input
+        .c__0(c2__0),  // output
+        .i__1__w(a2__1__w),  // input
+        .i__1__r(a2__1__r),  // input
+        .c__1(c2__1),  // output
+        .i__2__w(a2__2__w),  // input
+        .i__2__r(a2__2__r),  // input
+        .c__2(c2__2),  // output
+        .i__3__w(a2__3__w),  // input
+        .i__3__r(a2__3__r),  // input
+        .c__3(c2__3)  // output
     );
 
     _or_gate__bits16 my_or_gate (

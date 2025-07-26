@@ -37,6 +37,7 @@ from p2v_clock import default_clk
 from p2v_signal import p2v_signal
 from p2v_connect import p2v_connect
 from p2v_tb import p2v_tb, PASS_STATUS
+from p2v_struct import FIELD_SEP
 import p2v_tools
 
 MAX_MODNAME = 150
@@ -528,21 +529,20 @@ class p2v():
     def _exists(self):
         return self._modname in self._cache["conn"]
 
-    def _get_connects(self, parent, modname, signals, params):
-        connects = p2v_connect(parent, modname, signals, params=params)
+    def _get_connects(self, parent, modname, signals, params, verilog=False):
+        connects = p2v_connect(parent, modname, signals, params=params, verilog=verilog)
         for name, val in connects._signals.items():
             setattr(connects, name, val)
             # support access with dict
-            if "__" in name:
-                field = name.split("__")[0]
+            if FIELD_SEP in name:
                 d = misc._path_to_dict(name, value=val)
-                if hasattr(connects, field):
-                    prev = getattr(connects, field)
+                key = list(d.keys())[0]
+                if hasattr(connects, key):
+                    prev = getattr(connects, key)
                     if isinstance(prev, dict):
-                        d |= getattr(connects, field)
-                    else:
-                        continue
-                setattr(connects, field, d)
+                        d[key] = misc._merge_dict(d[key], prev)
+                d[key]["_NAME"] = key
+                setattr(connects, key, d[key])
 
         self._cache["conn"][modname] = connects
         return connects
@@ -1095,8 +1095,9 @@ class p2v():
 
         if "[" in name:
             caller_locals = caller.f_locals
-            for var, val in caller_locals.items():
+            for var, val in caller_locals.items(): # variable keys
                 name = name.replace(f"[{var}]", f"__{val}")
+            name = name.replace('["', FIELD_SEP).replace('"]', "") # string keys
 
         self._assert(misc._is_legal_name(name), f"missing receive variable for {cmd}", fatal=True)
         return name
@@ -1136,7 +1137,7 @@ class p2v():
             else:
                 self._modname += self._get_clsname()
                 if suffix and len(suf) > 0:
-                    self._modname += "__" + "_".join(suf)
+                    self._modname += FIELD_SEP + "_".join(suf)
                     self._assert(len(self._modname) <= MAX_MODNAME, \
                     f"module name should be explicitly set generated name {self._modname} of {len(self._modname)} characters exceeds max od {MAX_MODNAME}", fatal=True)
         exists = self._exists()
@@ -1662,7 +1663,7 @@ class p2v():
         ports = self._get_verilog_ports(modname)
         if self._args.lint is not None:
             self._write_empty_module(modname)
-        return self._get_connects(parent=self, modname=modname, signals=ports, params=params)
+        return self._get_connects(parent=self, modname=modname, signals=ports, params=params, verilog=True)
 
     def assert_never(self, clk, condition, message, params=None, name=None, fatal=True, property_type="assert"):
         """

@@ -3,12 +3,14 @@ from p2v import p2v, misc
 
 import _or_gate
 import _or_gate_list
+import _or_gate_dict
 
 class instances(p2v):
     def module(self, num=4, bits=32):
         self.set_param(num, int, 0 < num < 8)
         self.set_param(bits, int, bits > 0)
         self.set_modname()
+        
         
         a0 = {}
         b0 = {}
@@ -35,6 +37,19 @@ class instances(p2v):
         son.connect_out(son.c, cl)
         son.inst()
         
+        a2 = {}
+        c2 = {}
+        for n in range(num):
+            a2[n] = {}
+            for x in ["w", "r"]:
+                a2[n][x] = self.input(bits)
+            c2[n] = self.output(bits)
+        son = _or_gate_dict._or_gate_dict(self).module(num=num, bits=bits)
+        for n in range(num):
+            for x in ["w", "r"]:
+                son.connect_in(son.i[n][x], a2[n][x])
+            son.connect_out(son.c[n], c2[n])
+        son.inst()
         
         a = self.input(16)
         b = self.input(16)

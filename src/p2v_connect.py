@@ -24,7 +24,7 @@ class p2v_connect():
     Class is the return value of a p2v module. It is used to connect the son instance to the parent module.
     """
 
-    def __init__(self, parent, modname, signals, params=None):
+    def __init__(self, parent, modname, signals, params=None, verilog=False):
         if params is None:
             params = {}
         self._parent = parent
@@ -32,6 +32,7 @@ class p2v_connect():
         self._signals = signals
         self._pins = {}
         self._params = params
+        self._verilog = verilog
 
     def _connect_clocks(self, pin, wire, kind):
         self._parent._assert(isinstance(pin, clock), f"trying to connect clock {wire} to a non clock signal {pin}", fatal=True)
@@ -46,7 +47,9 @@ class p2v_connect():
         if isinstance(pin, clock) or isinstance(wire, clock):
             self._connect_clocks(pin, wire, kind)
         else:
-            if isinstance(pin, p2v_signal):
+            if isinstance(pin, dict):
+                pin = pin["_NAME"]
+            elif isinstance(pin, p2v_signal):
                 pin = str(pin)
             if isinstance(wire, p2v_signal):
                 wire = str(wire)
@@ -97,14 +100,17 @@ class p2v_connect():
             return pin
         if isinstance(pin, clock) or isinstance(wire, (clock, int)):
             return wire
-        #self._parent._assert(isinstance(pin, p2v_signal), f"pin {pin} is of type {misc._type2str(type(pin))} while expecting type {p2v_signal}", fatal=True)
-        # TBD
-        pin = str(pin)
+        if self._verilog and isinstance(pin, str):
+            pass
+        else:
+            self._parent._assert(isinstance(pin, (p2v_signal, dict)), f"pin is of type {misc._type2str(type(pin))} while expecting type {p2v_signal}", fatal=True)
         if isinstance(wire, str) and wire == "" or wire is None:
             pass
         else:
-            #self._parent._assert(isinstance(wire, p2v_signal), f"wire {wire} is of type {misc._type2str(type(wire))} while expecting type {p2v_signal}", fatal=True)
-            # TBD
+            if self._verilog and isinstance(wire, str):
+                pass
+            else:
+                self._parent._assert(isinstance(wire, p2v_signal), f"wire is of type {misc._type2str(type(wire))} while expecting type {p2v_signal}", fatal=True)
             wire = str(wire)
         if isinstance(wire, p2v_signal):
             return str(wire)

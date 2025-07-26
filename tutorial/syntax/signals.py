@@ -118,6 +118,20 @@ class signals(p2v):
         
         if var:
             self.allow_unused([g, h, i])
-            
+        
+        # multi dimentional dict signals
+        master_num = 4
+        master = {}
+        master_pre = {}
+        for m in range(master_num):
+            master[m] = {}
+            master_pre[m] = {}
+            for x in ["w", "r"]:
+                master[m][x] = self.output(bits)
+                master_pre[m][x] = self.logic(bits)
+                
+                self.assign(master_pre[m][x], c >> 2)
+                self.assign(master[m][x], master_pre[m][x] + 1)
+        
         return self.write()
 
