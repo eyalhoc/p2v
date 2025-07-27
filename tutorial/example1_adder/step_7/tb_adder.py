@@ -24,28 +24,28 @@ class tb_adder(p2v):
         num = args["num"]
         bits = args["bits"]
         
-        valid = self.logic("valid")
-        inputs = []
+        valid = self.logic()
+        inputs = {}
         for n in range(num):
-            inputs.append(self.logic(f"i{n}", bits, initial=0))
-        o = self.logic("o", bits)
-        valid_out = self.logic("valid_out")
+            inputs[n] = self.logic(bits, initial=0)
+        o = self.logic(bits)
+        valid_out = self.logic()
             
         son = adder.adder(self).module(clk, **args)
         son.connect_in(clk)
         son.connect_in(valid)
         for n in range(num):
-            son.connect_in(inputs[n])
+            son.connect_in(son.data_in[n], inputs[n])
         son.connect_out(o)
         son.connect_out(valid_out)
         son.inst()
         
         
-        en = self.logic("en", initial=0)
+        en = self.logic(initial=0)
         valid = self.sample(clk, valid, en)
         
-        self.tb.fifo("data_in_q", bits*num)
-        self.tb.fifo("expected_q", bits)
+        data_in_q = self.tb.fifo(bits*num)
+        expected_q = self.tb.fifo(bits)
         data_in = self.logic(bits*num, initial=0)
         expected = self.logic(bits, initial=0)
         
@@ -57,7 +57,7 @@ class tb_adder(p2v):
             input_vec = []
             input_sum = 0
             for j in range(num):
-                val = self.tb.rand_int(1<<bits)
+                val = self.tb.rand_int((1<<bits) // size)
                 input_sum += val
                 input_vec.append(misc.hex(val, bits))
             self.line(f"data_in_q.push_back({misc.concat(input_vec)});")

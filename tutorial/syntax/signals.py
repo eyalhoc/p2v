@@ -32,9 +32,9 @@ class signals(p2v):
         self.assign(ccc2, b * bits) # net duplication {BITS{b}}
         
         
-        f = []
+        f = {}
         for n in range(num):
-            f.append(self.logic(f"f{n}", bits)) # port in loop with explicit name
+            f[n] = self.logic(bits) # port in loop with explicit name
         
         if var:
             g = self.logic(bits*2) # conditional port
@@ -50,9 +50,9 @@ class signals(p2v):
         self.assign(clk.name, ext_clk) # clock assignment
         self.assign(clk.rst_n, 1) # reset assignment
         
-        self.parameter("BITS", 32) # Verilog parameter
+        BITS = self.parameter("BITS", 32) # Verilog parameter
         
-        z = self.logic("z", "BITS", assign=0) # Verilog parametric port
+        z = self.logic(BITS, assign=0) # Verilog parametric port
         self.allow_unused(z)
         
         IDLE = self.parameter("IDLE", "2'd0", local=True) # local parameter
@@ -68,7 +68,7 @@ class signals(p2v):
         self.assign(c, 0) # assign to const
         self.assign(d, e + misc.dec(1, bits)) # assign expression
         if var:
-            self.assign(g, misc.concat(f[:2])) # assign concatenation
+            self.assign(g, misc.concat([f[1], f[0]])) # assign concatenation
             self.assign(h[0:bits], f[2]) # partial bits
             self.assign(h[bits:bits*2], f[3]) # partial bits
             for m in range(bits*2):
@@ -84,8 +84,8 @@ class signals(p2v):
         
         self.allow_unused([clk2, clk.rst_n])
         
-        aa = self.logic(8, assign=misc.hex(-1, 8)) # inline assignment
-        bb = self.logic(8, initial=misc.hex(-1, 8)) # inline initial assignment
+        aa = self.logic(8, assign=-1) # inline assignment
+        bb = self.logic(8, initial=-1) # inline initial assignment
         self.allow_unused([aa, bb])
         
         # struct assignment
@@ -118,6 +118,20 @@ class signals(p2v):
         
         if var:
             self.allow_unused([g, h, i])
-            
+        
+        # multi dimentional dict signals
+        master_num = 4
+        master = {}
+        master_pre = {}
+        for m in range(master_num):
+            master[m] = {}
+            master_pre[m] = {}
+            for x in ["w", "r"]:
+                master[m][x] = self.output(bits)
+                master_pre[m][x] = self.logic(bits)
+                
+                self.assign(master_pre[m][x], c >> 2)
+                self.assign(master[m][x], master_pre[m][x] + 1)
+        
         return self.write()
 

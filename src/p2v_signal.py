@@ -14,15 +14,38 @@
 """
 p2v_signal module. Responsible for p2v siganls.
 """
+from enum import Enum, auto
 
 import p2v_misc as misc
 from p2v_struct import p2v_struct
+
+
+class p2v_kind(Enum):
+    """
+    This class is an enumeration of all p2v singal types.
+    """
+    INPUT = auto()
+    OUTPUT = auto()
+    INOUT = auto()
+    LOGIC = auto()
+    PARAMETER = auto()
+    LOCALPARAM = auto()
+    CLOCK = auto()
+    SYNC_RESET = auto()
+    ASYNC_RESET = auto()
+    ENUM = auto()
+    INST = auto()
+
+    def __str__(self):
+        return self.name.lower()
+
 
 class p2v_signal:
     """
     This class is a p2v signal.
     """
     def __init__(self, kind, name, bits=None, strct=None, used=False, driven=False, remark=None):
+        assert isinstance(kind, (p2v_kind, type(None))), f"unknown signal kind {kind}"
         assert isinstance(name, str), f"{kind} {name} is of type {type(name)} while expecting str"
         if kind is not None:
             assert isinstance(bits, (str, int, list, tuple, float)), bits
@@ -61,11 +84,14 @@ class p2v_signal:
     def __str__(self):
         return self._name
 
+    def _signal(self, expr, bits):
+        return p2v_signal(None, str(expr), bits=bits)
+
     def _create(self, other, op):
         if isinstance(other, int):
             other = misc.dec(other, self._bits)
         expr = misc._remove_extra_paren(f"({self} {op} {other})")
-        return p2v_signal(None, expr, bits=self._bits)
+        return self._signal(expr, bits=self._bits)
 
 
     def __add__(self, other):
@@ -98,21 +124,34 @@ class p2v_signal:
         return self._create(other, ">=")
 
     def __and__(self, other):
+        if isinstance(other, int) and other == 0:
+            return 0
         return self._create(other, "&")
 
     def __or__(self, other):
+        if isinstance(other, int) and other == 0:
+            return self
         return self._create(other, "|")
 
     def __xor__(self, other):
+        if isinstance(other, int) and other == 0:
+            return self
         return self._create(other, "^")
 
     def __invert__(self):
-        return p2v_signal(None, f"~{self}", bits=self._bits)
+        expr = misc._invert(self)
+        return self._signal(expr, bits=self._bits)
 
     def __lshift__(self, other):
+        if isinstance(other, int):
+            expr = misc.pad(0, self, other)
+            return self._signal(expr, bits=self._bits+other)
         return self._create(other, "<<")
 
     def __rshift__(self, other):
+        if isinstance(other, int):
+            expr = misc.pad(other, self[other:self._bits])
+            return self._signal(expr, bits=self._bits)
         return self._create(other, ">>")
 
     def __getitem__(self, key):
@@ -125,8 +164,8 @@ class p2v_signal:
                 stop = self._bits
             else:
                 stop = key.stop
-            return misc.bits(self, stop-start, start=start)
-        return misc.bit(self, key)
+            return self._bit_range(bits=stop-start, start=start)
+        return self._bit_range(bits=1, start=key)
 
 
     def _declare_bits_dim(self, bits):
@@ -165,6 +204,15 @@ class p2v_signal:
                 undriven = [i] + undriven
         return undriven
 
+    def _bit_range(self, bits, start=0):
+        end = start + bits - 1
+        assert end >= start, f"msb {end} is less than lsb {start}"
+        if start == end:
+            rtrn = f"{self._name}[{start}]"
+        else:
+            rtrn = f"{self._name}[{end}:{start}]"
+        return self._signal(rtrn, bits=bits)
+
 
     def is_logical_port(self):
         """
@@ -176,7 +224,7 @@ class p2v_signal:
         Returns:
             bool
         """
-        return self._kind in ["input", "output"]
+        return self._kind in [p2v_kind.INPUT, p2v_kind.OUTPUT]
 
     def is_port(self):
         """
@@ -188,7 +236,7 @@ class p2v_signal:
         Returns:
             bool
         """
-        return self.is_logical_port() or self._kind in ["inout"]
+        return self.is_logical_port() or self._kind in [p2v_kind.INOUT]
 
     def is_logic(self):
         """
@@ -200,7 +248,7 @@ class p2v_signal:
         Returns:
             bool
         """
-        return self.is_logical_port() or self._kind in ["logic"]
+        return self.is_logical_port() or self._kind in [p2v_kind.LOGIC]
 
     def is_parameter(self):
         """
@@ -212,7 +260,31 @@ class p2v_signal:
         Returns:
             bool
         """
-        return self._kind in ["parameter", "localparam"]
+        return self._kind in [p2v_kind.PARAMETER, p2v_kind.LOCALPARAM]
+
+    def is_clock(self):
+        """
+        Checks if signal is a clock.
+
+        Args:
+            NA
+
+        Returns:
+            bool
+        """
+        return self._kind in [p2v_kind.CLOCK, p2v_kind.SYNC_RESET, p2v_kind.ASYNC_RESET]
+
+    def is_enum(self):
+        """
+        Checks if signal is an enumerated type.
+
+        Args:
+            NA
+
+        Returns:
+            bool
+        """
+        return self._kind in [p2v_kind.ENUM]
 
     def declare(self, delimiter=";"):
         """
@@ -305,3 +377,17 @@ class p2v_signal:
             undriven = self._get_undriven_bits()
             return ", ".join(self._get_ranges(undriven, []))
         return None
+
+    def pad(self, left, right=0, val=0):
+        """
+        Verilog zero padding.
+
+        Args:
+            left(int): msb padding bits
+            right(int): lsb padding bits
+            val(int): value for padding
+
+        Returns:
+            p2v_signal
+        """
+        return misc.pad(left, self, right=right, val=val)

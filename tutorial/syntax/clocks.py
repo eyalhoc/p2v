@@ -18,13 +18,15 @@ class clocks(p2v):
         clks.append(self.tb.rand_clock(prefix="clk8")) # clk with random resets
         clks.append(self.tb.rand_clock(prefix="clk9", must_have_reset=True)) # clk with random resets
         
+        i = {}
+        o = {}
         num = len(clks)
         for n in range(num):
             self.input(clks[n])
-            i = self.input(f"i{n}", 32)
-            o = self.output(f"o{n}", 32)
+            i[n] = self.input(32)
+            o[n] = self.output(32)
            
-            self.sample(clks[n], o, i)
+            self.sample(clks[n], o[n], i[n])
         
         return self.write()
 

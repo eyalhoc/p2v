@@ -25,17 +25,17 @@ module tb ();
     end
 
     logic valid;
-    logic [15:0] i0;
-    initial i0 = 16'd0;
+    logic [15:0] inputs__0;
+    initial inputs__0 = 16'd0;
 
-    logic [15:0] i1;
-    initial i1 = 16'd0;
+    logic [15:0] inputs__1;
+    initial inputs__1 = 16'd0;
 
-    logic [15:0] i2;
-    initial i2 = 16'd0;
+    logic [15:0] inputs__2;
+    initial inputs__2 = 16'd0;
 
-    logic [15:0] i3;
-    initial i3 = 16'd0;
+    logic [15:0] inputs__3;
+    initial inputs__3 = 16'd0;
 
     logic [15:0] o;
     logic valid_out;
@@ -43,10 +43,10 @@ module tb ();
         .clk(clk),  // input
         .resetn(resetn),  // input
         .valid(valid),  // input
-        .i0(i0),  // input
-        .i1(i1),  // input
-        .i2(i2),  // input
-        .i3(i3),  // input
+        .data_in__0(inputs__0),  // input
+        .data_in__1(inputs__1),  // input
+        .data_in__2(inputs__2),  // input
+        .data_in__3(inputs__3),  // input
         .o(o),  // output
         .valid_out(valid_out)  // output
     );
@@ -69,14 +69,14 @@ module tb ();
 
     initial begin
 
-        data_in_q.push_back({16'h8298, 16'h3c5f, 16'hfda9, 16'he623});
-        expected_q.push_back(16'ha2c3);
-        data_in_q.push_back({16'hf1ca, 16'hc25c, 16'h6b7f, 16'h300e});
-        expected_q.push_back(16'h4fb3);
-        data_in_q.push_back({16'hf9c8, 16'h0e83, 16'hc795, 16'hdd93});
-        expected_q.push_back(16'had73);
-        data_in_q.push_back({16'h0114, 16'he409, 16'h885c, 16'h7520});
-        expected_q.push_back(16'he299);
+        data_in_q.push_back({16'h20a6, 16'h0f17, 16'h3f6a, 16'h3988});
+        expected_q.push_back(16'ha8af);
+        data_in_q.push_back({16'h3c72, 16'h3097, 16'h1adf, 16'h0c03});
+        expected_q.push_back(16'h93eb);
+        data_in_q.push_back({16'h3e72, 16'h03a0, 16'h31e5, 16'h3764});
+        expected_q.push_back(16'hab5b);
+        data_in_q.push_back({16'h0045, 16'h3902, 16'h2217, 16'h1d48});
+        expected_q.push_back(16'h78a6);
 
     end
 
@@ -91,7 +91,7 @@ module tb ();
     always @(posedge clk)
         if (valid && (data_in_q.size() > 0)) begin
             data_in = data_in_q.pop_front();
-            {i0, i1, i2, i3} = data_in;
+            {inputs__0, inputs__1, inputs__2, inputs__3} = data_in;
         end
 
     // check output
@@ -113,19 +113,19 @@ module tb ();
 
         end
 
-    logic [31:0] _count_clk;
-    initial _count_clk = 32'd0;
+    logic [31:0] _count_timeout__clk;
+    initial _count_timeout__clk = 32'd0;
 
 
-    always @(posedge clk) _count_clk <= (_count_clk + 32'd1);
+    always @(posedge clk) _count_timeout__clk <= (_count_timeout__clk + 32'd1);
 
     reached_timeout_after_400_cycles_of_clk_assert :
-    assert property (@(posedge clk) disable iff (!resetn) ~((_count_clk >= 32'd400)))
+    assert property (@(posedge clk) disable iff (!resetn) ~((_count_timeout__clk >= 32'd400)))
     else $fatal(1, "reached timeout after 400 cycles of clk");
 
     // CODE ADDED TO SUPPORT LEGACY SIMULATION THAT DOES NOT SUPPORT CONCURRENT ASSERTIONS
     logic assert_never__reached_timeout_after_400_cycles_of_clk;
-    assign assert_never__reached_timeout_after_400_cycles_of_clk = (_count_clk >= 32'd400);
+    assign assert_never__reached_timeout_after_400_cycles_of_clk = (_count_timeout__clk >= 32'd400);
 
     always @(posedge clk)
         if (resetn & assert_never__reached_timeout_after_400_cycles_of_clk)

@@ -108,6 +108,9 @@ class p2v_struct():
             updated ffull struct field name (str)
         """
         field_name = str(field_name)
+        name = str(name)
+        if field_name.startswith(name):
+            field_name = field_name.replace(name, "", 1)
         field_name = field_name.rsplit(FIELD_SEP, 1)[-1]
         return self.get_field_name(name, field_name)
 

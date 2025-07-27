@@ -28,26 +28,26 @@ class tb_adder(p2v):
         bits = args["bits"]
         float16 = args["float16"]
         
-        self.logic("valid", initial=0)
-        inputs = []
+        valid = self.logic(initial=0)
+        inputs = {}
         for n in range(num):
-            inputs.append(self.logic(f"i{n}", bits, initial=0))
-        o = self.logic("o", bits)
-        valid_out = self.logic("valid_out")
+            inputs[n] = self.logic(bits, initial=0)
+        o = self.logic(bits)
+        valid_out = self.logic()
             
         son = adder.adder(self).module(clk, **args)
         son.connect_in(clk)
-        son.connect_in("valid")
+        son.connect_in(valid)
         for n in range(num):
-            son.connect_in(inputs[n])
-        son.connect_out("o")
-        son.connect_out("valid_out")
+            son.connect_in(son.data_in[n], inputs[n])
+        son.connect_out(o)
+        son.connect_out(valid_out)
         son.inst()
         
         
-        en = self.logic("en", initial=0)
-        self.tb.fifo("data_in_q", bits*num)
-        self.tb.fifo("expected_q", bits)
+        en = self.logic(initial=0)
+        data_in_q = self.tb.fifo(bits*num)
+        expected_q = self.tb.fifo(bits)
         
         self.line(f"""
                     initial
@@ -75,11 +75,11 @@ class tb_adder(p2v):
                    """)
         
         
-        data_in = self.logic("data_in", bits*num, initial=0)
-        expected = self.logic("expected", bits, initial=0)
+        data_in = self.logic(bits*num, initial=0)
+        expected = self.logic(bits, initial=0)
         if float16:
             err_margin = 16
-            fail_condition = f"o > expected ? (o - expected) > {err_margin} : (expected - o) > {err_margin}" # allow margin since rtl module is not bit exact to numpy float16
+            fail_condition = misc.cond(o > expected, (o - expected) > err_margin, (expected - o) > err_margin) # allow margin since rtl module is not bit exact to numpy float16
         else:
             fail_condition = o != expected
         self.line(f"""

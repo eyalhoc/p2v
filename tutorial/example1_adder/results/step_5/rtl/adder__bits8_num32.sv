@@ -2,38 +2,38 @@ module adder__bits8_num32 (
     input logic clk,
     input logic rst_n,
     input logic valid,
-    input logic [7:0] i0,
-    input logic [7:0] i1,
-    input logic [7:0] i2,
-    input logic [7:0] i3,
-    input logic [7:0] i4,
-    input logic [7:0] i5,
-    input logic [7:0] i6,
-    input logic [7:0] i7,
-    input logic [7:0] i8,
-    input logic [7:0] i9,
-    input logic [7:0] i10,
-    input logic [7:0] i11,
-    input logic [7:0] i12,
-    input logic [7:0] i13,
-    input logic [7:0] i14,
-    input logic [7:0] i15,
-    input logic [7:0] i16,
-    input logic [7:0] i17,
-    input logic [7:0] i18,
-    input logic [7:0] i19,
-    input logic [7:0] i20,
-    input logic [7:0] i21,
-    input logic [7:0] i22,
-    input logic [7:0] i23,
-    input logic [7:0] i24,
-    input logic [7:0] i25,
-    input logic [7:0] i26,
-    input logic [7:0] i27,
-    input logic [7:0] i28,
-    input logic [7:0] i29,
-    input logic [7:0] i30,
-    input logic [7:0] i31,
+    input logic [7:0] data_in__0,
+    input logic [7:0] data_in__1,
+    input logic [7:0] data_in__2,
+    input logic [7:0] data_in__3,
+    input logic [7:0] data_in__4,
+    input logic [7:0] data_in__5,
+    input logic [7:0] data_in__6,
+    input logic [7:0] data_in__7,
+    input logic [7:0] data_in__8,
+    input logic [7:0] data_in__9,
+    input logic [7:0] data_in__10,
+    input logic [7:0] data_in__11,
+    input logic [7:0] data_in__12,
+    input logic [7:0] data_in__13,
+    input logic [7:0] data_in__14,
+    input logic [7:0] data_in__15,
+    input logic [7:0] data_in__16,
+    input logic [7:0] data_in__17,
+    input logic [7:0] data_in__18,
+    input logic [7:0] data_in__19,
+    input logic [7:0] data_in__20,
+    input logic [7:0] data_in__21,
+    input logic [7:0] data_in__22,
+    input logic [7:0] data_in__23,
+    input logic [7:0] data_in__24,
+    input logic [7:0] data_in__25,
+    input logic [7:0] data_in__26,
+    input logic [7:0] data_in__27,
+    input logic [7:0] data_in__28,
+    input logic [7:0] data_in__29,
+    input logic [7:0] data_in__30,
+    input logic [7:0] data_in__31,
     output logic [7:0] o,
     output logic valid_out
 );
@@ -43,64 +43,64 @@ module adder__bits8_num32 (
     //  * bits = 8 (int) #  data width
     //  * num = 32 (int) #  number of inputs
 
-    logic [7:0] data_out0;
-    logic valid_out0;
+    logic [7:0] datas__0;
+    logic valids__0;
     adder__bits8_num16 adder0 (
         .clk(clk),  // input
         .rst_n(rst_n),  // input
         .valid(valid),  // input
-        .i0(i0),  // input
-        .i1(i1),  // input
-        .i2(i2),  // input
-        .i3(i3),  // input
-        .i4(i4),  // input
-        .i5(i5),  // input
-        .i6(i6),  // input
-        .i7(i7),  // input
-        .i8(i8),  // input
-        .i9(i9),  // input
-        .i10(i10),  // input
-        .i11(i11),  // input
-        .i12(i12),  // input
-        .i13(i13),  // input
-        .i14(i14),  // input
-        .i15(i15),  // input
-        .o(data_out0),  // output
-        .valid_out(valid_out0)  // output
+        .data_in__0(data_in__0),  // input
+        .data_in__1(data_in__1),  // input
+        .data_in__2(data_in__2),  // input
+        .data_in__3(data_in__3),  // input
+        .data_in__4(data_in__4),  // input
+        .data_in__5(data_in__5),  // input
+        .data_in__6(data_in__6),  // input
+        .data_in__7(data_in__7),  // input
+        .data_in__8(data_in__8),  // input
+        .data_in__9(data_in__9),  // input
+        .data_in__10(data_in__10),  // input
+        .data_in__11(data_in__11),  // input
+        .data_in__12(data_in__12),  // input
+        .data_in__13(data_in__13),  // input
+        .data_in__14(data_in__14),  // input
+        .data_in__15(data_in__15),  // input
+        .o(datas__0),  // output
+        .valid_out(valids__0)  // output
     );
 
-    logic [7:0] data_out1;
-    logic valid_out1;
+    logic [7:0] datas__1;
+    logic valids__1;
     adder__bits8_num16 adder1 (
         .clk(clk),  // input
         .rst_n(rst_n),  // input
         .valid(valid),  // input
-        .i0(i16),  // input
-        .i1(i17),  // input
-        .i2(i18),  // input
-        .i3(i19),  // input
-        .i4(i20),  // input
-        .i5(i21),  // input
-        .i6(i22),  // input
-        .i7(i23),  // input
-        .i8(i24),  // input
-        .i9(i25),  // input
-        .i10(i26),  // input
-        .i11(i27),  // input
-        .i12(i28),  // input
-        .i13(i29),  // input
-        .i14(i30),  // input
-        .i15(i31),  // input
-        .o(data_out1),  // output
-        .valid_out(valid_out1)  // output
+        .data_in__0(data_in__16),  // input
+        .data_in__1(data_in__17),  // input
+        .data_in__2(data_in__18),  // input
+        .data_in__3(data_in__19),  // input
+        .data_in__4(data_in__20),  // input
+        .data_in__5(data_in__21),  // input
+        .data_in__6(data_in__22),  // input
+        .data_in__7(data_in__23),  // input
+        .data_in__8(data_in__24),  // input
+        .data_in__9(data_in__25),  // input
+        .data_in__10(data_in__26),  // input
+        .data_in__11(data_in__27),  // input
+        .data_in__12(data_in__28),  // input
+        .data_in__13(data_in__29),  // input
+        .data_in__14(data_in__30),  // input
+        .data_in__15(data_in__31),  // input
+        .o(datas__1),  // output
+        .valid_out(valids__1)  // output
     );
 
     adder__bits8_num2 adder_out (
         .clk(clk),  // input
         .rst_n(rst_n),  // input
-        .valid((valid_out0 & valid_out1)),  // input
-        .i0(data_out0),  // input
-        .i1(data_out1),  // input
+        .valid((valids__0 & valids__1)),  // input
+        .data_in__0(datas__0),  // input
+        .data_in__1(datas__1),  // input
         .o(o),  // output
         .valid_out(valid_out)  // output
     );

@@ -118,122 +118,122 @@ module structs__addr_bits32_data_bits512 (
     input logic slv1__rlast,
     output logic slv1__rready,
     input logic slv1__rvalid,
-    input logic [3:0] master2_aw__id,
-    input logic [31:0] master2_aw__addr,
-    input logic [1:0] master2_aw__burst,
-    input logic [7:0] master2_aw__len,
-    input logic [2:0] master2_aw__size,
-    input logic master2_aw__valid,
-    output logic master2_aw__ready,
-    output logic [3:0] slave2_aw__id,
-    output logic [31:0] slave2_aw__addr,
-    output logic [1:0] slave2_aw__burst,
-    output logic [7:0] slave2_aw__len,
-    output logic [2:0] slave2_aw__size,
-    output logic slave2_aw__valid,
-    input logic slave2_aw__ready,
-    input logic [511:0] master2_w__data,
-    input logic [63:0] master2_w__strb,
-    input logic master2_w__last,
-    input logic master2_w__valid,
-    output logic master2_w__ready,
-    output logic [511:0] slave2_w__data,
-    output logic [63:0] slave2_w__strb,
-    output logic slave2_w__last,
-    output logic slave2_w__valid,
-    input logic slave2_w__ready,
-    output logic [3:0] master2_b__id,
-    output logic [1:0] master2_b__resp,
-    input logic master2_b__ready,
-    output logic master2_b__valid,
-    input logic [3:0] slave2_b__id,
-    input logic [1:0] slave2_b__resp,
-    output logic slave2_b__ready,
-    input logic slave2_b__valid,
-    input logic [3:0] master2_ar__id,
-    input logic [31:0] master2_ar__addr,
-    input logic [1:0] master2_ar__burst,
-    input logic [7:0] master2_ar__len,
-    input logic [2:0] master2_ar__size,
-    input logic master2_ar__valid,
-    output logic master2_ar__ready,
-    output logic [3:0] slave2_ar__id,
-    output logic [31:0] slave2_ar__addr,
-    output logic [1:0] slave2_ar__burst,
-    output logic [7:0] slave2_ar__len,
-    output logic [2:0] slave2_ar__size,
-    output logic slave2_ar__valid,
-    input logic slave2_ar__ready,
-    output logic [511:0] master2_r__data,
-    output logic [3:0] master2_r__id,
-    output logic [1:0] master2_r__resp,
-    output logic master2_r__last,
-    input logic master2_r__ready,
-    output logic master2_r__valid,
-    input logic [511:0] slave2_r__data,
-    input logic [3:0] slave2_r__id,
-    input logic [1:0] slave2_r__resp,
-    input logic slave2_r__last,
-    output logic slave2_r__ready,
-    input logic slave2_r__valid,
-    input logic [3:0] master3_aw__id,
-    input logic [31:0] master3_aw__addr,
-    input logic [1:0] master3_aw__burst,
-    input logic [7:0] master3_aw__len,
-    input logic [2:0] master3_aw__size,
-    input logic master3_aw__valid,
-    output logic master3_aw__ready,
-    output logic [3:0] slave3_aw__id,
-    output logic [31:0] slave3_aw__addr,
-    output logic [1:0] slave3_aw__burst,
-    output logic [7:0] slave3_aw__len,
-    output logic [2:0] slave3_aw__size,
-    output logic slave3_aw__valid,
-    input logic slave3_aw__ready,
-    input logic [3:0] master3_ar__id,
-    input logic [31:0] master3_ar__addr,
-    input logic [1:0] master3_ar__burst,
-    input logic [7:0] master3_ar__len,
-    input logic [2:0] master3_ar__size,
-    input logic master3_ar__valid,
-    output logic master3_ar__ready,
-    output logic [3:0] slave3_ar__id,
-    output logic [31:0] slave3_ar__addr,
-    output logic [1:0] slave3_ar__burst,
-    output logic [7:0] slave3_ar__len,
-    output logic [2:0] slave3_ar__size,
-    output logic slave3_ar__valid,
-    input logic slave3_ar__ready,
-    input logic [511:0] master3_w__data,
-    input logic [63:0] master3_w__strb,
-    input logic master3_w__last,
-    input logic master3_w__valid,
-    output logic master3_w__ready,
-    output logic [511:0] slave3_w__data,
-    output logic [63:0] slave3_w__strb,
-    output logic slave3_w__last,
-    output logic slave3_w__valid,
-    input logic slave3_w__ready,
-    output logic [3:0] master3_b__id,
-    output logic [1:0] master3_b__resp,
-    input logic master3_b__ready,
-    output logic master3_b__valid,
-    input logic [3:0] slave3_b__id,
-    input logic [1:0] slave3_b__resp,
-    output logic slave3_b__ready,
-    input logic slave3_b__valid,
-    output logic [511:0] master3_r__data,
-    output logic [3:0] master3_r__id,
-    output logic [1:0] master3_r__resp,
-    output logic master3_r__last,
-    input logic master3_r__ready,
-    output logic master3_r__valid,
-    input logic [511:0] slave3_r__data,
-    input logic [3:0] slave3_r__id,
-    input logic [1:0] slave3_r__resp,
-    input logic slave3_r__last,
-    output logic slave3_r__ready,
-    input logic slave3_r__valid,
+    input logic [3:0] master2__awid,
+    input logic [31:0] master2__awaddr,
+    input logic [1:0] master2__awburst,
+    input logic [7:0] master2__awlen,
+    input logic [2:0] master2__awsize,
+    input logic master2__awvalid,
+    output logic master2__awready,
+    output logic [3:0] slave2__awid,
+    output logic [31:0] slave2__awaddr,
+    output logic [1:0] slave2__awburst,
+    output logic [7:0] slave2__awlen,
+    output logic [2:0] slave2__awsize,
+    output logic slave2__awvalid,
+    input logic slave2__awready,
+    input logic [511:0] master2__wdata,
+    input logic [63:0] master2__wstrb,
+    input logic master2__wlast,
+    input logic master2__wvalid,
+    output logic master2__wready,
+    output logic [511:0] slave2__wdata,
+    output logic [63:0] slave2__wstrb,
+    output logic slave2__wlast,
+    output logic slave2__wvalid,
+    input logic slave2__wready,
+    output logic [3:0] master2__bid,
+    output logic [1:0] master2__bresp,
+    input logic master2__bready,
+    output logic master2__bvalid,
+    input logic [3:0] slave2__bid,
+    input logic [1:0] slave2__bresp,
+    output logic slave2__bready,
+    input logic slave2__bvalid,
+    input logic [3:0] master2__arid,
+    input logic [31:0] master2__araddr,
+    input logic [1:0] master2__arburst,
+    input logic [7:0] master2__arlen,
+    input logic [2:0] master2__arsize,
+    input logic master2__arvalid,
+    output logic master2__arready,
+    output logic [3:0] slave2__arid,
+    output logic [31:0] slave2__araddr,
+    output logic [1:0] slave2__arburst,
+    output logic [7:0] slave2__arlen,
+    output logic [2:0] slave2__arsize,
+    output logic slave2__arvalid,
+    input logic slave2__arready,
+    output logic [511:0] master2__rdata,
+    output logic [3:0] master2__rid,
+    output logic [1:0] master2__rresp,
+    output logic master2__rlast,
+    input logic master2__rready,
+    output logic master2__rvalid,
+    input logic [511:0] slave2__rdata,
+    input logic [3:0] slave2__rid,
+    input logic [1:0] slave2__rresp,
+    input logic slave2__rlast,
+    output logic slave2__rready,
+    input logic slave2__rvalid,
+    input logic [3:0] master3__awid,
+    input logic [31:0] master3__awaddr,
+    input logic [1:0] master3__awburst,
+    input logic [7:0] master3__awlen,
+    input logic [2:0] master3__awsize,
+    input logic master3__awvalid,
+    output logic master3__awready,
+    output logic [3:0] slave3__awid,
+    output logic [31:0] slave3__awaddr,
+    output logic [1:0] slave3__awburst,
+    output logic [7:0] slave3__awlen,
+    output logic [2:0] slave3__awsize,
+    output logic slave3__awvalid,
+    input logic slave3__awready,
+    input logic [3:0] master3__arid,
+    input logic [31:0] master3__araddr,
+    input logic [1:0] master3__arburst,
+    input logic [7:0] master3__arlen,
+    input logic [2:0] master3__arsize,
+    input logic master3__arvalid,
+    output logic master3__arready,
+    output logic [3:0] slave3__arid,
+    output logic [31:0] slave3__araddr,
+    output logic [1:0] slave3__arburst,
+    output logic [7:0] slave3__arlen,
+    output logic [2:0] slave3__arsize,
+    output logic slave3__arvalid,
+    input logic slave3__arready,
+    input logic [511:0] master3__wdata,
+    input logic [63:0] master3__wstrb,
+    input logic master3__wlast,
+    input logic master3__wvalid,
+    output logic master3__wready,
+    output logic [511:0] slave3__wdata,
+    output logic [63:0] slave3__wstrb,
+    output logic slave3__wlast,
+    output logic slave3__wvalid,
+    input logic slave3__wready,
+    output logic [3:0] master3__bid,
+    output logic [1:0] master3__bresp,
+    input logic master3__bready,
+    output logic master3__bvalid,
+    input logic [3:0] slave3__bid,
+    input logic [1:0] slave3__bresp,
+    output logic slave3__bready,
+    input logic slave3__bvalid,
+    output logic [511:0] master3__rdata,
+    output logic [3:0] master3__rid,
+    output logic [1:0] master3__rresp,
+    output logic master3__rlast,
+    input logic master3__rready,
+    output logic master3__rvalid,
+    input logic [511:0] slave3__rdata,
+    input logic [3:0] slave3__rid,
+    input logic [1:0] slave3__rresp,
+    input logic slave3__rlast,
+    output logic slave3__rready,
+    input logic slave3__rvalid,
     input logic [7:0] bi__a,
     input logic [3:0] bi__b,
     output logic [7:0] bo__a,
@@ -285,7 +285,7 @@ module structs__addr_bits32_data_bits512 (
     assign slv0__rready = mstr0__rready;
     assign mstr0__rvalid = slv0__rvalid;
 
-    assign slv1__awaddr = write_addr;  //  assign awaddr field
+    assign slv1__awaddr = write_addr;
 
     assign slv1__awid = mstr1__awid;
     assign slv1__awburst = mstr1__awburst;
@@ -317,163 +317,163 @@ module structs__addr_bits32_data_bits512 (
     assign mstr1__rvalid = slv1__rvalid;
 
 
-    assign slave2_aw__id = master2_aw__id;
-    assign slave2_aw__addr = master2_aw__addr;
-    assign slave2_aw__burst = master2_aw__burst;
-    assign slave2_aw__len = master2_aw__len;
-    assign slave2_aw__size = master2_aw__size;
-    assign slave2_aw__valid = master2_aw__valid;
-    assign master2_aw__ready = slave2_aw__ready;
+    assign slave2__awid = master2__awid;
+    assign slave2__awaddr = master2__awaddr;
+    assign slave2__awburst = master2__awburst;
+    assign slave2__awlen = master2__awlen;
+    assign slave2__awsize = master2__awsize;
+    assign slave2__awvalid = master2__awvalid;
+    assign master2__awready = slave2__awready;
 
 
-    assign slave2_w__data = master2_w__data;
-    assign slave2_w__strb = master2_w__strb;
-    assign slave2_w__last = master2_w__last;
-    assign slave2_w__valid = master2_w__valid;
-    assign master2_w__ready = slave2_w__ready;
+    assign slave2__wdata = master2__wdata;
+    assign slave2__wstrb = master2__wstrb;
+    assign slave2__wlast = master2__wlast;
+    assign slave2__wvalid = master2__wvalid;
+    assign master2__wready = slave2__wready;
 
 
-    assign master2_b__id = slave2_b__id;
-    assign master2_b__resp = slave2_b__resp;
-    assign slave2_b__ready = master2_b__ready;
-    assign master2_b__valid = slave2_b__valid;
+    assign master2__bid = slave2__bid;
+    assign master2__bresp = slave2__bresp;
+    assign slave2__bready = master2__bready;
+    assign master2__bvalid = slave2__bvalid;
 
 
-    assign slave2_ar__id = master2_ar__id;
-    assign slave2_ar__addr = master2_ar__addr;
-    assign slave2_ar__burst = master2_ar__burst;
-    assign slave2_ar__len = master2_ar__len;
-    assign slave2_ar__size = master2_ar__size;
-    assign slave2_ar__valid = master2_ar__valid;
-    assign master2_ar__ready = slave2_ar__ready;
+    assign slave2__arid = master2__arid;
+    assign slave2__araddr = master2__araddr;
+    assign slave2__arburst = master2__arburst;
+    assign slave2__arlen = master2__arlen;
+    assign slave2__arsize = master2__arsize;
+    assign slave2__arvalid = master2__arvalid;
+    assign master2__arready = slave2__arready;
 
 
-    assign master2_r__data = slave2_r__data;
-    assign master2_r__id = slave2_r__id;
-    assign master2_r__resp = slave2_r__resp;
-    assign master2_r__last = slave2_r__last;
-    assign slave2_r__ready = master2_r__ready;
-    assign master2_r__valid = slave2_r__valid;
+    assign master2__rdata = slave2__rdata;
+    assign master2__rid = slave2__rid;
+    assign master2__rresp = slave2__rresp;
+    assign master2__rlast = slave2__rlast;
+    assign slave2__rready = master2__rready;
+    assign master2__rvalid = slave2__rvalid;
 
 
-    assign master3_aw__ready = slave3_aw__ready;
+    assign master3__awready = slave3__awready;
     always_ff @(posedge clk or negedge rst_n)
-        if (!rst_n) slave3_aw__valid <= 1'd0;
-        else if (~slave3_aw__valid | ~master3_aw__ready) slave3_aw__valid <= master3_aw__valid;
-
-
-
-    always_ff @(posedge clk or negedge rst_n)
-        if (!rst_n) slave3_aw__id <= 4'd0;
-        else if (master3_aw__valid & master3_aw__ready) slave3_aw__id <= master3_aw__id;
-
-    always_ff @(posedge clk or negedge rst_n)
-        if (!rst_n) slave3_aw__addr <= 32'd0;
-        else if (master3_aw__valid & master3_aw__ready) slave3_aw__addr <= master3_aw__addr;
-
-    always_ff @(posedge clk or negedge rst_n)
-        if (!rst_n) slave3_aw__burst <= 2'd0;
-        else if (master3_aw__valid & master3_aw__ready) slave3_aw__burst <= master3_aw__burst;
-
-    always_ff @(posedge clk or negedge rst_n)
-        if (!rst_n) slave3_aw__len <= 8'd0;
-        else if (master3_aw__valid & master3_aw__ready) slave3_aw__len <= master3_aw__len;
-
-    always_ff @(posedge clk or negedge rst_n)
-        if (!rst_n) slave3_aw__size <= 3'd0;
-        else if (master3_aw__valid & master3_aw__ready) slave3_aw__size <= master3_aw__size;
-
-
-
-    assign master3_ar__ready = slave3_ar__ready;
-    always_ff @(posedge clk or negedge rst_n)
-        if (!rst_n) slave3_ar__valid <= 1'd0;
-        else if (~slave3_ar__valid | ~master3_ar__ready) slave3_ar__valid <= master3_ar__valid;
+        if (!rst_n) slave3__awvalid <= 1'd0;
+        else if (~(slave3__awvalid) | ~(master3__awready)) slave3__awvalid <= master3__awvalid;
 
 
 
     always_ff @(posedge clk or negedge rst_n)
-        if (!rst_n) slave3_ar__id <= 4'd0;
-        else if (master3_ar__valid & master3_ar__ready) slave3_ar__id <= master3_ar__id;
+        if (!rst_n) slave3__awid <= 4'd0;
+        else if (master3__awvalid & master3__awready) slave3__awid <= master3__awid;
 
     always_ff @(posedge clk or negedge rst_n)
-        if (!rst_n) slave3_ar__addr <= 32'd0;
-        else if (master3_ar__valid & master3_ar__ready) slave3_ar__addr <= master3_ar__addr;
+        if (!rst_n) slave3__awaddr <= 32'd0;
+        else if (master3__awvalid & master3__awready) slave3__awaddr <= master3__awaddr;
 
     always_ff @(posedge clk or negedge rst_n)
-        if (!rst_n) slave3_ar__burst <= 2'd0;
-        else if (master3_ar__valid & master3_ar__ready) slave3_ar__burst <= master3_ar__burst;
+        if (!rst_n) slave3__awburst <= 2'd0;
+        else if (master3__awvalid & master3__awready) slave3__awburst <= master3__awburst;
 
     always_ff @(posedge clk or negedge rst_n)
-        if (!rst_n) slave3_ar__len <= 8'd0;
-        else if (master3_ar__valid & master3_ar__ready) slave3_ar__len <= master3_ar__len;
+        if (!rst_n) slave3__awlen <= 8'd0;
+        else if (master3__awvalid & master3__awready) slave3__awlen <= master3__awlen;
 
     always_ff @(posedge clk or negedge rst_n)
-        if (!rst_n) slave3_ar__size <= 3'd0;
-        else if (master3_ar__valid & master3_ar__ready) slave3_ar__size <= master3_ar__size;
+        if (!rst_n) slave3__awsize <= 3'd0;
+        else if (master3__awvalid & master3__awready) slave3__awsize <= master3__awsize;
 
 
 
-    assign master3_w__ready = slave3_w__ready;
+    assign master3__arready = slave3__arready;
     always_ff @(posedge clk or negedge rst_n)
-        if (!rst_n) slave3_w__valid <= 1'd0;
-        else if (~slave3_w__valid | ~master3_w__ready) slave3_w__valid <= master3_w__valid;
-
-
-
-    always_ff @(posedge clk or negedge rst_n)
-        if (!rst_n) slave3_w__data <= 512'd0;
-        else if (master3_w__valid & master3_w__ready) slave3_w__data <= master3_w__data;
-
-    always_ff @(posedge clk or negedge rst_n)
-        if (!rst_n) slave3_w__strb <= 64'd0;
-        else if (master3_w__valid & master3_w__ready) slave3_w__strb <= master3_w__strb;
-
-    always_ff @(posedge clk or negedge rst_n)
-        if (!rst_n) slave3_w__last <= 1'd0;
-        else if (master3_w__valid & master3_w__ready) slave3_w__last <= master3_w__last;
-
-
-
-    assign master3_b__valid = slave3_b__valid;
-    always_ff @(posedge clk or negedge rst_n)
-        if (!rst_n) slave3_b__ready <= 1'd0;
-        else if (~slave3_b__valid | ~master3_b__ready) slave3_b__ready <= master3_b__ready;
+        if (!rst_n) slave3__arvalid <= 1'd0;
+        else if (~(slave3__arvalid) | ~(master3__arready)) slave3__arvalid <= master3__arvalid;
 
 
 
     always_ff @(posedge clk or negedge rst_n)
-        if (!rst_n) master3_b__id <= 4'd0;
-        else if (master3_b__valid & master3_b__ready) master3_b__id <= slave3_b__id;
+        if (!rst_n) slave3__arid <= 4'd0;
+        else if (master3__arvalid & master3__arready) slave3__arid <= master3__arid;
 
     always_ff @(posedge clk or negedge rst_n)
-        if (!rst_n) master3_b__resp <= 2'd0;
-        else if (master3_b__valid & master3_b__ready) master3_b__resp <= slave3_b__resp;
-
-
-
-    assign master3_r__valid = slave3_r__valid;
-    always_ff @(posedge clk or negedge rst_n)
-        if (!rst_n) slave3_r__ready <= 1'd0;
-        else if (~slave3_r__valid | ~master3_r__ready) slave3_r__ready <= master3_r__ready;
-
-
+        if (!rst_n) slave3__araddr <= 32'd0;
+        else if (master3__arvalid & master3__arready) slave3__araddr <= master3__araddr;
 
     always_ff @(posedge clk or negedge rst_n)
-        if (!rst_n) master3_r__data <= 512'd0;
-        else if (master3_r__valid & master3_r__ready) master3_r__data <= slave3_r__data;
+        if (!rst_n) slave3__arburst <= 2'd0;
+        else if (master3__arvalid & master3__arready) slave3__arburst <= master3__arburst;
 
     always_ff @(posedge clk or negedge rst_n)
-        if (!rst_n) master3_r__id <= 4'd0;
-        else if (master3_r__valid & master3_r__ready) master3_r__id <= slave3_r__id;
+        if (!rst_n) slave3__arlen <= 8'd0;
+        else if (master3__arvalid & master3__arready) slave3__arlen <= master3__arlen;
 
     always_ff @(posedge clk or negedge rst_n)
-        if (!rst_n) master3_r__resp <= 2'd0;
-        else if (master3_r__valid & master3_r__ready) master3_r__resp <= slave3_r__resp;
+        if (!rst_n) slave3__arsize <= 3'd0;
+        else if (master3__arvalid & master3__arready) slave3__arsize <= master3__arsize;
+
+
+
+    assign master3__wready = slave3__wready;
+    always_ff @(posedge clk or negedge rst_n)
+        if (!rst_n) slave3__wvalid <= 1'd0;
+        else if (~(slave3__wvalid) | ~(master3__wready)) slave3__wvalid <= master3__wvalid;
+
+
 
     always_ff @(posedge clk or negedge rst_n)
-        if (!rst_n) master3_r__last <= 1'd0;
-        else if (master3_r__valid & master3_r__ready) master3_r__last <= slave3_r__last;
+        if (!rst_n) slave3__wdata <= 512'd0;
+        else if (master3__wvalid & master3__wready) slave3__wdata <= master3__wdata;
+
+    always_ff @(posedge clk or negedge rst_n)
+        if (!rst_n) slave3__wstrb <= 64'd0;
+        else if (master3__wvalid & master3__wready) slave3__wstrb <= master3__wstrb;
+
+    always_ff @(posedge clk or negedge rst_n)
+        if (!rst_n) slave3__wlast <= 1'd0;
+        else if (master3__wvalid & master3__wready) slave3__wlast <= master3__wlast;
+
+
+
+    assign master3__bvalid = slave3__bvalid;
+    always_ff @(posedge clk or negedge rst_n)
+        if (!rst_n) slave3__bready <= 1'd0;
+        else if (~(slave3__bvalid) | ~(master3__bready)) slave3__bready <= master3__bready;
+
+
+
+    always_ff @(posedge clk or negedge rst_n)
+        if (!rst_n) master3__bid <= 4'd0;
+        else if (master3__bvalid & master3__bready) master3__bid <= slave3__bid;
+
+    always_ff @(posedge clk or negedge rst_n)
+        if (!rst_n) master3__bresp <= 2'd0;
+        else if (master3__bvalid & master3__bready) master3__bresp <= slave3__bresp;
+
+
+
+    assign master3__rvalid = slave3__rvalid;
+    always_ff @(posedge clk or negedge rst_n)
+        if (!rst_n) slave3__rready <= 1'd0;
+        else if (~(slave3__rvalid) | ~(master3__rready)) slave3__rready <= master3__rready;
+
+
+
+    always_ff @(posedge clk or negedge rst_n)
+        if (!rst_n) master3__rdata <= 512'd0;
+        else if (master3__rvalid & master3__rready) master3__rdata <= slave3__rdata;
+
+    always_ff @(posedge clk or negedge rst_n)
+        if (!rst_n) master3__rid <= 4'd0;
+        else if (master3__rvalid & master3__rready) master3__rid <= slave3__rid;
+
+    always_ff @(posedge clk or negedge rst_n)
+        if (!rst_n) master3__rresp <= 2'd0;
+        else if (master3__rvalid & master3__rready) master3__rresp <= slave3__rresp;
+
+    always_ff @(posedge clk or negedge rst_n)
+        if (!rst_n) master3__rlast <= 1'd0;
+        else if (master3__rvalid & master3__rready) master3__rlast <= slave3__rlast;
 
 
 

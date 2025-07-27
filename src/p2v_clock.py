@@ -15,7 +15,7 @@
 p2v_clock module
 """
 
-from p2v_signal import p2v_signal
+from p2v_signal import p2v_signal, p2v_kind
 
 class p2v_clock:
     """
@@ -23,15 +23,15 @@ class p2v_clock:
     """
     def __init__(self, name, rst_n=None, reset=None, remark=None):
         assert isinstance(name, str), name
-        self.name = p2v_signal("clock", name, bits=1)
+        self.name = p2v_signal(p2v_kind.CLOCK, name, bits=1)
         if rst_n is None:
             self.rst_n = None
         else:
-            self.rst_n = p2v_signal("async_reset", rst_n, bits=1)
+            self.rst_n = p2v_signal(p2v_kind.ASYNC_RESET, rst_n, bits=1)
         if reset is None:
             self.reset = None
         else:
-            self.reset = p2v_signal("sync_reset", reset, bits=1)
+            self.reset = p2v_signal(p2v_kind.SYNC_RESET, reset, bits=1)
 
         self._ready = False
         self._remark = remark

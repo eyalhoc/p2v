@@ -25,9 +25,9 @@ class adder(p2v):
         self.input(clk)
         
         valid = self.input()
-        data_in = [None] * num
+        data_in = {}
         for n in range(num):
-            data_in[n] = self.input(f"i{n}", bits)
+            data_in[n] = self.input(bits)
         o = self.output(bits)
         valid_out = self.output()
         
@@ -61,13 +61,13 @@ class adder(p2v):
             datas = [None] * 2
             valids = [None] * 2
             for i in range(2):
-                datas[i] = self.logic(f"data_out{i}", bits)
-                valids[i] = self.logic(f"valid_out{i}")
+                datas[i] = self.logic(bits)
+                valids[i] = self.logic()
                 son = adder(self).module(clk, bits=bits, num=son_num, float16=float16)
                 son.connect_in(clk)
                 son.connect_in(son.valid) # assumes port name equals wire name
                 for n in range(son_num):
-                    son.connect_in(son.i[n], data_in[son_num*i+n])
+                    son.connect_in(son.data_in[n], data_in[son_num*i+n])
                 son.connect_out(son.o, datas[i])
                 son.connect_out(son.valid_out, valids[i])
                 son.inst(suffix=i)
@@ -77,8 +77,8 @@ class adder(p2v):
             son = adder(self).module(clk, bits=bits, num=2, float16=float16)
             son.connect_in(clk)
             son.connect_in(son.valid, valids[0] & valids[1])
-            son.connect_in(son.i[0], datas[0])
-            son.connect_in(son.i[1], datas[1])
+            son.connect_in(son.data_in[0], datas[0])
+            son.connect_in(son.data_in[1], datas[1])
             son.connect_out(o)
             son.connect_out(valid_out)
             son.inst(suffix="_out")

@@ -396,12 +396,14 @@ class p2v_tb():
         self._parent._assert_type(clk, clock)
         self._parent._assert_type(timeout, int)
 
-        count = self._parent.logic(f"_count_{clk}", 32, initial=0)
+        name = str(clk)
+        _count_timeout = {}
+        _count_timeout[name] = self._parent.logic(32, initial=0)
         self._parent.line(f"""
-                             always @(posedge {clk}) {count} <= {count + 1};
+                             always @(posedge {clk}) { _count_timeout[name]} <= { _count_timeout[name] + 1};
                           """)
-        self._parent.assert_never(clk, count >= timeout, f"reached timeout after {timeout} cycles of {clk}")
-        self._parent.allow_unused(count)
+        self._parent.assert_never(clk, _count_timeout[name] >= timeout, f"reached timeout after {timeout} cycles of {clk}")
+        self._parent.allow_unused( _count_timeout[name])
 
 
     def register_test(self, args=None):
@@ -448,25 +450,26 @@ class p2v_tb():
             vals.append(val_str.ljust(col_width))
         misc._write_file(filename, ", ".join(vals), append=True)
 
-    def fifo(self, name, bits=1):
+    def fifo(self, bits=1):
         """
         Create SystemVerilog behavioral fifo (queue).
 
         Args:
-            name(str): name of signal
             bits(int): width of fifo
 
         Returns:
             None
         """
-        self._parent._assert_type(name, str)
         self._parent._assert_type(bits, int)
+
+        name = self._parent._get_receive_name("fifo")
 
         if misc._is_int(bits):
             msb = bits - 1
         else:
             msb = f"{bits}-1"
         self._parent.line(f"reg [{msb}:0] {name}[$];")
+        return self.expr(name, bits=bits)
 
     def syn_off(self):
         """
@@ -511,7 +514,7 @@ class p2v_tb():
         else:
             self._parent.line(p2v_tools.lint_on(self._parent._args.lint_bin))
 
-    def expr(self, line):
+    def expr(self, line, bits=0):
         """
         Convert a testbench string expression to a p2v signal.
         Args:
@@ -520,4 +523,4 @@ class p2v_tb():
         Returns:
             p2v_signal
         """
-        return p2v_signal(None, line, bits=0)
+        return p2v_signal(None, line, bits=bits)

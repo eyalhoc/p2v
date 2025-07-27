@@ -1,33 +1,33 @@
 module ports #(
     parameter int BITS = 32
 ) (
-    input logic a,  //  default is single bit
-    input logic b,  //  same as the above
-    input logic [7:0] c,  //  multi bit bus
-    input logic [7:0] dd,  //  parametric width
-    input logic [7:0] e,  //  parametric width but forces [0:0] bus if width is 1
-    input logic [7:0] f0,  //  port in loop
-    input logic [7:0] f1,  //  port in loop
-    input logic [7:0] f2,  //  port in loop
-    input logic [7:0] f3,  //  port in loop
-    input logic [15:0] g,  //  conditional port
-    output logic ao,  //  default is single bit
-    output logic bo,  //  same as the above
-    output logic [7:0] co,  //  multi bit bus
-    output logic [7:0] ddo,  //  parametric width
-    output logic [7:0] eo,  //  parametric width but forces [0:0] bus if width is 1
-    output logic [7:0] f0o,  //  port in loop
-    output logic [7:0] f1o,  //  port in loop
-    output logic [7:0] f2o,  //  port in loop
-    output logic [7:0] f3o,  //  port in loop
-    output logic [15:0] go,  //  conditional port
-    inout q,  // inout ports width is always 1
+    input logic a,
+    input logic b,
+    input logic [7:0] c,
+    input logic [7:0] dd,
+    input logic [7:0] e,
+    input logic [7:0] f__0,
+    input logic [7:0] f__1,
+    input logic [7:0] f__2,
+    input logic [7:0] f__3,
+    input logic [15:0] g,
+    output logic ao,
+    output logic bo,
+    output logic [7:0] co,
+    output logic [7:0] ddo,
+    output logic [7:0] eo,
+    output logic [7:0] fo__0,
+    output logic [7:0] fo__1,
+    output logic [7:0] fo__2,
+    output logic [7:0] fo__3,
+    output logic [15:0] go,
+    inout q,
     input logic [7:0] s__ctrl,
     input logic [31:0] s__data,
     output logic [7:0] t__ctrl,
     output logic [31:0] t__data,
-    input logic [BITS-1:0] z,  //  Verilog parametric port - name must be explicit
-    output logic [BITS-1:0] zo  //  Verilog parametric port - name must be explicit
+    input logic [BITS-1:0] z,
+    output logic [BITS-1:0] zo
 );
 
     // ports module parameters:
@@ -37,10 +37,10 @@ module ports #(
     assign co = c;
     assign ddo = dd;
     assign eo = e;
-    assign f0o = f0;
-    assign f1o = f1;
-    assign f2o = f2;
-    assign f3o = f3;
+    assign fo__0 = f__0;
+    assign fo__1 = f__1;
+    assign fo__2 = f__2;
+    assign fo__3 = f__3;
     assign go = g;
 
     assign t__ctrl = s__ctrl;

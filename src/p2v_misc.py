@@ -133,15 +133,27 @@ def _to_int(n, allow=False):
         return n
     raise RuntimeError(f"cannot convert {n} to int")
 
-def _get_index(name):
-    name = str(name)
-    if len(name) == 0 or not name[-1].isdigit() or name[0].isdigit():
-        return name, None
-    idx = -1
-    while name[idx].isdigit():
-        idx -= 1
-    idx += 1
-    return name[:idx], int(name[idx:])
+def _path_to_dict(path, value=None, sep="__"):
+    d = {}
+    keys = path.split(sep)
+    current = d
+    for key in keys[:-1]:
+        if _is_int(key):
+            key = int(key)
+        current = current.setdefault(key, {})
+    last_key = keys[-1]
+    if _is_int(last_key):
+        last_key = int(last_key)
+    current[last_key] = value
+    return d
+
+def _merge_dict(a, b):
+    for k, v in b.items():
+        if k in a and isinstance(a[k], dict) and isinstance(v, dict):
+            _merge_dict(a[k], v)
+        else:
+            a[k] = v
+    return a
 
 def _get_base_str(base):
     if base == 16:
@@ -159,6 +171,7 @@ def _base(base, n, bits=None, add_sep=4, prefix=None): # pylint: disable=redefin
         assert n >= 0, "negative hex representation must specify number of bits"
         n_bits = 128
     else:
+        _check_bits(n, bits)
         n_bits = bits
 
     s = f"{n & ((1 << n_bits) - 1):0{int((n_bits + log2(base) - 1) / log2(base))}{base_s}}"
@@ -263,6 +276,23 @@ def _remark_line(line):
 def _assert_signal(name, var):
     assert isinstance(var, p2v_signal), f"{name} value {var} of type {type(var)} is expected to be of type {p2v_signal}"
 
+def _check_bits(num, _bits):
+    if num > 0:
+        assert _bits >= log2(num), f"cannot represent the number {num} with {_bits} bits"
+
+def _invert(var, not_op="~"):
+    var = str(var)
+    if var.startswith(not_op):
+        var_not = var.replace(not_op, "", 1)
+        if _is_in_paren(var_not):
+            return _remove_extra_paren(var_not)
+    rtrn = f"{not_op}({var})"
+    return p2v_signal(None, str(rtrn), bits=1)
+
+def _add_paren(expr, open_char="(", close_char=")"):
+    return _remove_extra_paren(open_char + str(expr) + close_char)
+
+
 def ceil(n):
     """
     Round to ceil.
@@ -356,6 +386,8 @@ def concat(vals, sep=None, nl_every=None):
     Returns:
         Verilog code
     """
+    if isinstance(vals, dict):
+        vals = list(vals.values())
     assert isinstance(vals, list), f"variable {vals} expected to be of type list"
     assert isinstance(sep, (type(None), str)), sep
     assert isinstance(nl_every, (type(None), int)), nl_every
@@ -432,6 +464,7 @@ def dec(num, bits=1): # pylint: disable=redefined-outer-name
     """
     assert isinstance(num, int), num
     assert isinstance(bits, int), bits
+    _check_bits(num, bits)
 
     bits = abs(bits)
     if isinstance(num, bool):
@@ -488,47 +521,6 @@ def bin(num, bits=None, add_sep=4, prefix="'b"): # pylint: disable=redefined-bui
         bits = log2(num)
     return p2v_signal(None, str(rtrn), bits=bits)
 
-def bits(name, bits, start=0): # pylint: disable=redefined-outer-name
-    """
-    Extract a partial range from a Verilog bus.
-
-    Args:
-        name(str): signal name
-        bits(int): number of bits to extract
-        start(int): lsb
-
-    Returns:
-        Verilog code
-    """
-    _assert_signal("bits", name)
-    assert _is_legal_name(name), f"{name} is not a legal name"
-    assert isinstance(bits, int) and bits > 0, f"{name} cannot be of {bits} bits"
-    assert isinstance(start, int) and start >= 0, f"{name} bit range cannot start a bit {start}"
-    end = start + bits - 1
-    if start == end:
-        rtrn = f"{name}[{start}]"
-    elif start > end:
-        return None
-    else:
-        rtrn = f"{name}[{end}:{start}]"
-    return p2v_signal(None, str(rtrn), bits=bits)
-
-def bit(name, idx):
-    """
-    Extract a single bit from a Verilog bus.
-
-    Args:
-        name(str): signal name
-        idx([int, str]): bit location (can also be a Verilog signal for multi dimention arrays)
-
-    Returns:
-        Verilog code
-    """
-    _assert_signal("bit", name)
-    assert _is_legal_name(name), f"{name} is not a legal name"
-    rtrn = f"{name}[{idx}]"
-    return p2v_signal(None, str(rtrn), bits=1)
-
 def is_hotone(var, bits, allow_zero=False): # pylint: disable=redefined-outer-name
     """
     Check if a Verilog expression is hot one.
@@ -551,36 +543,3 @@ def is_hotone(var, bits, allow_zero=False): # pylint: disable=redefined-outer-na
     else:
         rtrn = f"(({var} & ({var} - {dec(1, bits)})) == {dec(0, bits)})" + cond(allow_zero, f" | ({var} == {dec(0, bits)})")
     return p2v_signal(None, str(rtrn), bits=1)
-
-def invert(var, not_op="~"): # TBD - remove
-    """
-    Verilog not expression, removed previous not if present.
-
-    Args:
-        var(str): Verilog expression
-        not_op(str): not operand
-
-    Returns:
-        Verilog code
-    """
-    var = str(var)
-    if var.startswith(not_op):
-        var_not = var.replace(not_op, "", 1)
-        if _is_in_paren(var_not):
-            return _remove_extra_paren(var_not)
-    rtrn = f"{not_op}({var})"
-    return p2v_signal(None, str(rtrn), bits=1)
-
-def add_paren(expr, open_char="(", close_char=")"):
-    """
-    Verilog not expression, removed previous not if present.
-
-    Args:
-        expr(str): Verilog expression
-        open_char(str): open paren
-        close_char(str): close paren
-
-    Returns:
-        Verilog code
-    """
-    return _remove_extra_paren(open_char + str(expr) + close_char)

@@ -1,7 +1,7 @@
 module adder__bits8 (
     input logic clk,
     input logic rst_n,
-    input logic valid,  //  default width is 1 bit
+    input logic valid,
     input logic [7:0] a,
     input logic [7:0] b,
     output logic [7:0] o,

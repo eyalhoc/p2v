@@ -19,9 +19,9 @@ class ports(p2v):
         dd = self.input(bits) # parametric width
         e = self.input([bits]) # parametric width but forces [0:0] bus if width is 1
         
-        f = []
+        f = {}
         for n in range(num):
-            f.append(self.input(f"f{n}", bits)) # port in loop
+            f[n] = self.input(bits) # port in loop
         
         if var:
             g = self.input(bits*2) # conditional port
@@ -32,18 +32,22 @@ class ports(p2v):
         ddo = self.output(bits) # parametric width
         eo = self.output([bits]) # parametric width but forces [0:0] bus if width is 1
         
-        fo = []
+        fo = {}
         for n in range(num):
-            fo.append(self.output(f"f{n}o", bits)) # port in loop
+            fo[n] = self.output(bits) # port in loop
         
         if var:
             go = self.output(bits*2) # conditional port
         
-        lst_in =  [a, b, c, dd, e] + f
+        lst_in =  [a, b, c, dd, e]
+        for n in range(num):
+            lst_in.append(f[n])
         if var:
             lst_in.append(g)
             
-        lst_out =  [ao, bo, co, ddo, eo] + fo
+        lst_out =  [ao, bo, co, ddo, eo]
+        for n in range(num):
+            lst_out.append(fo[n])
         if var:
             lst_out.append(go)
             
@@ -59,10 +63,10 @@ class ports(p2v):
         self.assign(t, s)
         
         
-        self.parameter("BITS", 32) # Verilog parameter
+        BITS = self.parameter("BITS", 32) # Verilog parameter
         
-        z = self.input("z", "BITS") # Verilog parametric port - name must be explicit
-        zo = self.output("zo", "BITS") # Verilog parametric port - name must be explicit
+        z = self.input(BITS) # Verilog parametric port
+        zo = self.output(BITS) # Verilog parametric port
         
         self.assign(zo, z)
         
