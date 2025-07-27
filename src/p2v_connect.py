@@ -16,7 +16,7 @@ p2v_connect module
 """
 
 import p2v_misc as misc
-from p2v_signal import p2v_signal
+from p2v_signal import p2v_signal, p2v_kind
 from p2v_clock import p2v_clock as clock
 
 class p2v_connect():
@@ -92,7 +92,7 @@ class p2v_connect():
         """
         if isinstance(val, int):
             val = str(val)
-        self._connect(name, val, kind="parameter")
+        self._connect(name, val, kind=p2v_kind.PARAMETER)
         self._parent._set_used(val)
 
     def _get_wire(self, pin, wire):
@@ -131,7 +131,7 @@ class p2v_connect():
         """
         if not _use_wire:
             wire = self._get_wire(pin, wire)
-        self._connect(pin, wire, kind="input")
+        self._connect(pin, wire, kind=p2v_kind.INPUT)
         if not isinstance(wire, int):
             self._parent._set_used(wire)
 
@@ -148,7 +148,7 @@ class p2v_connect():
         """
         if not _use_wire:
             wire = self._get_wire(pin, wire)
-        self._connect(pin, wire, kind="output")
+        self._connect(pin, wire, kind=p2v_kind.OUTPUT)
         self._parent._set_driven(wire)
 
     def connect_io(self, pin, wire="", _use_wire=False):
@@ -164,7 +164,7 @@ class p2v_connect():
         """
         if not _use_wire:
             wire = self._get_wire(pin, wire)
-        self._connect(pin, wire, kind="inout")
+        self._connect(pin, wire, kind=p2v_kind.INOUT)
 
     def connect_auto(self, ports=False, suffix=""):
         """
@@ -183,19 +183,19 @@ class p2v_connect():
                 wire = name + suffix
                 if not ports and wire not in self._parent._signals:
                     self._parent.logic(wire, signal._bits, _allow_str=True)
-                if signal._kind == "input":
+                if signal._kind == p2v_kind.INPUT:
                     if ports:
-                        if not (wire in self._parent._signals and self._parent._signals[name]._kind == "input"):
+                        if not (wire in self._parent._signals and self._parent._signals[name]._kind == p2v_kind.INPUT):
                             self._parent.input(wire, signal._bits, _allow_str=True)
                     self.connect_in(name, wire, _use_wire=True)
-                elif signal._kind == "output":
+                elif signal._kind == p2v_kind.OUTPUT:
                     if ports:
-                        if not (wire in self._parent._signals and self._parent._signals[name]._kind == "output"):
+                        if not (wire in self._parent._signals and self._parent._signals[name]._kind == p2v_kind.OUTPUT):
                             self._parent.output(wire, signal._bits, _allow_str=True)
                     self.connect_out(name, wire, _use_wire=True)
-                elif signal._kind == "inout":
+                elif signal._kind == p2v_kind.INOUT:
                     if ports:
-                        if not (wire in self._parent._signals and self._parent._signals[name]._kind == "inout"):
+                        if not (wire in self._parent._signals and self._parent._signals[name]._kind == p2v_kind.INOUT):
                             self._parent.inout(wire, _allow_str=True)
                     self.connect_io(name, wire, _use_wire=True)
 
@@ -228,7 +228,7 @@ class p2v_connect():
         lines.append(");")
         lines.append("")
         self._parent.line("\n".join(lines))
-        signal = p2v_signal("inst", instname, bits=1, used=True, driven=True)
+        signal = p2v_signal(p2v_kind.INST, instname, bits=1, used=True, driven=True)
         self._parent._add_signal(signal)
         self._pins = {}
         self._params = {}

@@ -34,7 +34,7 @@ import p2v_misc as misc
 from p2v_clock import clk_0rst, clk_arst, clk_srst, clk_2rst # needed for clock loading from gen csv file # # pylint: disable=unused-import
 from p2v_clock import p2v_clock as clock
 from p2v_clock import default_clk
-from p2v_signal import p2v_signal
+from p2v_signal import p2v_signal, p2v_kind
 from p2v_connect import p2v_connect
 from p2v_tb import p2v_tb, PASS_STATUS
 from p2v_struct import FIELD_SEP
@@ -465,7 +465,7 @@ class p2v():
     def _get_signals(self, kinds=None):
         if kinds is None:
             kinds = []
-        if isinstance(kinds, str):
+        if isinstance(kinds, p2v_kind):
             kinds = [kinds]
         signals = []
         for name in self._signals:
@@ -477,7 +477,7 @@ class p2v():
     def _get_module_header(self):
         lines = []
         lines.append(f"module {self._modname}")
-        parameters = self._get_signals("parameter")
+        parameters = self._get_signals(p2v_kind.PARAMETER)
         if len(parameters) > 0:
             lines.append("#(")
             for signal in parameters:
@@ -485,7 +485,7 @@ class p2v():
             lines[-1] = lines[-1].replace(",", "", 1)
             lines.append(")")
         lines.append("(")
-        for port in self._get_signals(["input", "output", "inout"]):
+        for port in self._get_signals([p2v_kind.INPUT, p2v_kind.OUTPUT, p2v_kind.INOUT]):
             if port._bits != 0:
                 lines.append(port.declare(delimiter=","))
         lines[-1] = lines[-1].replace(",", "", 1)
@@ -726,12 +726,12 @@ class p2v():
                 signals.append(self._port(kind, n, bits=bits, used=used, driven=driven))
             return signals
         elif isinstance(bits, dict):
-            self._assert(kind in ["input", "output"], f"struct {name} is of illegal kind {kind}")
+            self._assert(kind in [p2v_kind.INPUT, p2v_kind.OUTPUT], f"struct {name} is of illegal kind {kind}")
             signal = self._add_signal(p2v_signal(kind, name, bits=0, strct=bits, used=True, driven=True, remark=self._get_remark(depth=3)))
             fields = signal._strct.fields
             for field_name in fields:
                 field_bits = fields[field_name]
-                input_port = misc.cond(field_bits > 0, kind == "input", kind == "output")
+                input_port = misc.cond(field_bits > 0, kind == p2v_kind.INPUT, kind == p2v_kind.OUTPUT)
                 if input_port:
                     self.input(field_name, abs(field_bits), _allow_str=True)
                 else:
@@ -883,15 +883,15 @@ class p2v():
                         bits = abs(left - right) + 1
 
                     if port.direction.name == "In":
-                        kind = "input"
+                        kind = p2v_kind.INPUT
                     elif port.direction.name == "Out":
-                        kind = "output"
+                        kind = p2v_kind.OUTPUT
                     else:
-                        kind = "inout"
+                        kind = p2v_kind.INOUT
                     signals[port.name] = p2v_signal(kind, port.name, bits=bits)
                 for param in inst.body.parameters:
                     bits = misc._to_int(str(param.value), allow=True)
-                    signals[param.name] = p2v_signal("parameter", param.name, bits=bits)
+                    signals[param.name] = p2v_signal(p2v_kind.PARAMETER, param.name, bits=bits)
         return signals
 
     def _get_verilog_ports(self, modname):
@@ -1092,6 +1092,7 @@ class p2v():
         return not isinstance(name, (str, list, clock))
 
     def _get_receive_name(self, cmd, depth=2):
+        cmd = str(cmd)
         caller = self._get_caller(depth=depth)
         current_line = self._get_current_line(caller=caller)
         line = current_line.replace(" ", "").split("#")[0]
@@ -1317,7 +1318,7 @@ class p2v():
         self._assert_type(local, bool)
         if self._exists():
             return None
-        signal = self._add_signal(p2v_signal(misc.cond(local, "localparam", "parameter"), name, val, driven=True))
+        signal = self._add_signal(p2v_signal(misc.cond(local, p2v_kind.LOCALPARAM, p2v_kind.PARAMETER), name, val, driven=True))
         if local:
             self.line(signal.declare())
         return signal
@@ -1355,10 +1356,10 @@ class p2v():
         enum_vals = {}
         for name, val in enum_names.items():
             self.parameter(name, misc.dec(val, enum_bits), local=True)
-            enum_vals[name] = p2v_signal("enum", name, bits=enum_bits)
+            enum_vals[name] = p2v_signal(p2v_kind.ENUM, name, bits=enum_bits)
             #enum_vals[f"__{name}"] = val
         self.line()
-        enum_vals["NAME"] = p2v_signal("enum", self._get_receive_name("enum"), bits=enum_bits)
+        enum_vals["NAME"] = p2v_signal(p2v_kind.ENUM, self._get_receive_name("enum"), bits=enum_bits)
         enum_vals["BITS"] = enum_bits
         return p2v_enum(**enum_vals)
 
@@ -1389,7 +1390,7 @@ class p2v():
 
         self._assert_type(name, [str, list ,clock])
         self._assert_type(bits, SIGNAL_TYPES)
-        return self._port("input", name, bits, driven=True)
+        return self._port(p2v_kind.INPUT, name, bits, driven=True)
 
     def output(self, name="", bits=1, _allow_str=False):
         """
@@ -1418,7 +1419,7 @@ class p2v():
 
         self._assert_type(name, [str, list, clock])
         self._assert_type(bits, SIGNAL_TYPES)
-        return self._port("output", name, bits, used=True)
+        return self._port(p2v_kind.OUTPUT, name, bits, used=True)
 
     def inout(self, name="", _allow_str=False):
         """
@@ -1435,7 +1436,7 @@ class p2v():
                 self._assert(name == "", "port name should not use string type")
 
         self._assert_type(name, [str])
-        self._port("inout", name, bits=1, used=True, driven=True)
+        self._port(p2v_kind.INOUT, name, bits=1, used=True, driven=True)
 
     def logic(self, name="", bits=1, assign=None, initial=None, _allow_str=False):
         """
@@ -1491,7 +1492,7 @@ class p2v():
         elif isinstance(bits, dict):
             if remark is not None:
                 self.remark(remark)
-            signal = self._add_signal(p2v_signal("logic", name, bits=0, strct=bits, used=True, driven=True))
+            signal = self._add_signal(p2v_signal(p2v_kind.LOGIC, name, bits=0, strct=bits, used=True, driven=True))
             fields = signal._strct.fields
             for field_name in fields:
                 self.logic(field_name, abs(fields[field_name]), _allow_str=True)
@@ -1499,7 +1500,7 @@ class p2v():
         else:
             for bits_str in self._get_names(str(bits)):
                 self._set_used(bits_str)
-            signal = self._add_signal(p2v_signal("logic", name, bits, remark=remark))
+            signal = self._add_signal(p2v_signal(p2v_kind.LOGIC, name, bits, remark=remark))
             self.line(signal.declare())
             rtrn = signal
         if assign is not None:

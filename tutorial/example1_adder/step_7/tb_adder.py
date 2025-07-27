@@ -44,8 +44,8 @@ class tb_adder(p2v):
         en = self.logic(initial=0)
         valid = self.sample(clk, valid, en)
         
-        self.tb.fifo("data_in_q", bits*num)
-        self.tb.fifo("expected_q", bits)
+        data_in_q = self.tb.fifo(bits*num)
+        expected_q = self.tb.fifo(bits)
         data_in = self.logic(bits*num, initial=0)
         expected = self.logic(bits, initial=0)
         

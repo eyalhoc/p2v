@@ -450,25 +450,26 @@ class p2v_tb():
             vals.append(val_str.ljust(col_width))
         misc._write_file(filename, ", ".join(vals), append=True)
 
-    def fifo(self, name, bits=1):
+    def fifo(self, bits=1):
         """
         Create SystemVerilog behavioral fifo (queue).
 
         Args:
-            name(str): name of signal
             bits(int): width of fifo
 
         Returns:
             None
         """
-        self._parent._assert_type(name, str)
         self._parent._assert_type(bits, int)
+
+        name = self._parent._get_receive_name("fifo")
 
         if misc._is_int(bits):
             msb = bits - 1
         else:
             msb = f"{bits}-1"
         self._parent.line(f"reg [{msb}:0] {name}[$];")
+        return self.expr(name, bits=bits)
 
     def syn_off(self):
         """
@@ -513,7 +514,7 @@ class p2v_tb():
         else:
             self._parent.line(p2v_tools.lint_on(self._parent._args.lint_bin))
 
-    def expr(self, line):
+    def expr(self, line, bits=0):
         """
         Convert a testbench string expression to a p2v signal.
         Args:
@@ -522,4 +523,4 @@ class p2v_tb():
         Returns:
             p2v_signal
         """
-        return p2v_signal(None, line, bits=0)
+        return p2v_signal(None, line, bits=bits)
