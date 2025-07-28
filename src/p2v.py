@@ -36,6 +36,7 @@ from p2v_clock import p2v_clock as clock
 from p2v_clock import default_clk
 from p2v_signal import p2v_signal, p2v_kind
 from p2v_connect import p2v_connect
+from p2v_fsm import p2v_fsm
 from p2v_tb import p2v_tb, PASS_STATUS
 from p2v_struct import FIELD_SEP
 import p2v_tools
@@ -716,6 +717,12 @@ class p2v():
         if isinstance(name, str) and name == "":
             name = self._get_receive_name(kind, depth=3)
         self._assert(type(bits) in SIGNAL_TYPES, f"unknown type {bits} for port", fatal=True)
+        if isinstance(bits, p2v_enum):
+            enum = vars(bits)
+            bits = bits.BITS
+        else:
+            enum = None
+
         if isinstance(name, clock):
             self._assert(bits == 1, f"{kind} clock {name} must be declared with bits = 1")
             for net in name.get_nets():
@@ -742,7 +749,11 @@ class p2v():
             if isinstance(bits, str):
                 for bits_str in self._get_names(bits):
                     self._set_used(bits_str)
-            return self._add_signal(p2v_signal(kind, name, bits, used=used, driven=driven, remark=self._get_remark(depth=3)))
+            signal = self._add_signal(p2v_signal(kind, name, bits, used=used, driven=driven, remark=self._get_remark(depth=3)))
+            if enum is not None:
+                for _name, _val in enum.items():
+                    setattr(signal, _name, p2v_signal(None, f"({name} == {_val})", bits=bits))
+            return signal
         return None
 
     def _find_file(self, filename, allow_dir=False, allow=False):
@@ -1347,7 +1358,7 @@ class p2v():
         max_val = 0
         for name, val in enum_names.items():
             self._assert(misc._is_legal_name(name), f"enumerated type {name} does not use a legal name", fatal=True)
-            self._assert(name not in ["NAME", "BITS", "DEFAULT"], f"enum cannot use reserevd name {name}", fatal=True)
+            self._assert(name not in ["NAME", "BITS"], f"enum cannot use reserevd name {name}", fatal=True)
             self._assert(isinstance(val, int), f"enumerated type {name} is of type {type(val)} while expecting type int", fatal=True)
             max_val = max(max_val, val)
         max_val_bin = misc.bin(max_val, add_sep=0, prefix=None)
@@ -1357,7 +1368,6 @@ class p2v():
         for name, val in enum_names.items():
             self.parameter(name, misc.dec(val, enum_bits), local=True)
             enum_vals[name] = p2v_signal(p2v_kind.ENUM, name, bits=enum_bits)
-            #enum_vals[f"__{name}"] = val
         self.line()
         enum_vals["NAME"] = p2v_signal(p2v_kind.ENUM, self._get_receive_name("enum"), bits=enum_bits)
         enum_vals["BITS"] = enum_bits
@@ -1476,7 +1486,10 @@ class p2v():
             name = str(name)
 
         if isinstance(bits, p2v_enum):
+            enum = vars(bits)
             bits = bits.BITS
+        else:
+            enum = None
 
         remark = self._get_remark(depth=2)
 
@@ -1501,6 +1514,9 @@ class p2v():
             for bits_str in self._get_names(str(bits)):
                 self._set_used(bits_str)
             signal = self._add_signal(p2v_signal(p2v_kind.LOGIC, name, bits, remark=remark))
+            if enum is not None:
+                for _name, _val in enum.items():
+                    setattr(signal, _name, p2v_signal(None, f"({name} == {_val})", bits=bits))
             self.line(signal.declare())
             rtrn = signal
         if assign is not None:
@@ -1548,7 +1564,7 @@ class p2v():
                     remark = self._get_remark(depth=2)
                 self.line(f"{keyword} {tgt} = {src};", remark=remark)
 
-    def sample(self, clk, tgt, src, valid=None, reset=None, reset_val=0, bits=None, bypass=False):
+    def sample(self, clk, tgt, src, valid=None, reset=None, reset_val=0, bits=None, bypass=False, _allow_str=False):
         """
         Sample signal using FFs.
 
@@ -1567,6 +1583,16 @@ class p2v():
         """
         if self._exists():
             return
+        if _allow_str:
+            if isinstance(src, str):
+                src = p2v_signal(None, src, bits=0)
+            if isinstance(tgt, str):
+                tgt = p2v_signal(None, tgt, bits=0)
+            if isinstance(valid, str):
+                valid = p2v_signal(None, valid, bits=1)
+            if isinstance(reset, str):
+                reset = p2v_signal(None, reset, bits=1)
+
         self._assert_type(clk, clock)
         self._assert_type(src, [p2v_signal])
         self._assert_type(tgt, [p2v_signal])
@@ -1877,6 +1903,27 @@ class p2v():
             self._parent._err_num += self._err_num
         return self._get_connects(parent=self._parent, modname=self._modname, signals=self._signals, params={})
 
+    def fsm(self, clk, enum, reset_val=None):
+        """
+        Creates an FSM class.
+
+        Args:
+            clk(clock): state machine clock
+            enum(p2v_enum): enumerated type for states
+            reset_val([None, enum_state]): reset state
+
+        Returns:
+            state machine class
+        """
+        self._assert_type(clk, clock)
+        self._assert_type(enum, p2v_enum)
+        self._assert_type(reset_val, [None, p2v_signal])
+
+        if reset_val is None:
+            first_key = list(vars(enum).keys())[0]
+            reset_val = getattr(enum, first_key)
+
+        return p2v_fsm(self, clk, enum, reset_val=reset_val)
 
 # top constructor
 if __name__ != "__main__" and os.path.basename(sys.argv[0]) != "pydoc.py":

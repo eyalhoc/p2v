@@ -232,4 +232,7 @@ class p2v_connect():
         self._parent._add_signal(signal)
         self._pins = {}
         self._params = {}
+
+        for _name, _signal in self._signals.items():
+            setattr(signal, _name, p2v_signal(None, f"{instname}.{_name}", bits=0))
         return signal

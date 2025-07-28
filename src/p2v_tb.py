@@ -43,6 +43,7 @@ class p2v_tb():
             self.seed = seed
         if set_seed:
             self._set_seed(self.seed)
+        self._ifdefs = []
 
 
     def _test_finish(self, status, condition=None, message=None, params=None, stop=True):
@@ -469,7 +470,7 @@ class p2v_tb():
         else:
             msb = f"{bits}-1"
         self._parent.line(f"reg [{msb}:0] {name}[$];")
-        return self.expr(name, bits=bits)
+        return p2v_signal(None, name, bits=bits)
 
     def syn_off(self):
         """
@@ -514,13 +515,25 @@ class p2v_tb():
         else:
             self._parent.line(p2v_tools.lint_on(self._parent._args.lint_bin))
 
-    def expr(self, line, bits=0):
+    def ifdef(self, name):
         """
-        Convert a testbench string expression to a p2v signal.
-        Args:
-            line(str): Verilog expression
+        Insert a Verilog `ifdef statement
+        """
+        self._parent.line(f"`ifdef {name}")
+        self._ifdefs.append(name)
 
-        Returns:
-            p2v_signal
+    def ifndef(self, name):
         """
-        return p2v_signal(None, line, bits=bits)
+        Insert a Verilog `ifndef statement
+        """
+        self._parent.line(f"`ifndef {name}")
+        self._ifdefs.append(name)
+
+    def endif(self, name):
+        """
+        Insert a Verilog `endif statement
+        """
+        if self._parent._assert(len(self._ifdefs) > 0, "endif without previous ifdef"):
+            if self._parent._assert(self._ifdefs[-1] == name, f"endif {name} while expecting {self._ifdefs[-1]}"):
+                self._ifdefs = self._ifdefs[:-1]
+        self._parent.line("`endif", remark=name)

@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='p2v-compiler',
-    version='0.11.0',
+    version='0.12.0',
     packages=find_packages(where="src"),
     package_dir={"": "src"},
 
@@ -11,7 +11,7 @@ setup(
         "pyslang>=8.0.0"
     ],
     
-    py_modules=["p2v", "p2v_connect", "p2v_signal", "p2v_struct", "p2v_tools", "p2v_clock", "p2v_misc", "p2v_tb"],
+    py_modules=["p2v", "p2v_connect", "p2v_signal", "p2v_struct", "p2v_tools", "p2v_clock", "p2v_misc", "p2v_tb", "p2v_fsm"],
     
     author='Eyal Hochberg',  
     author_email='eyalhoc@gmail.com',
