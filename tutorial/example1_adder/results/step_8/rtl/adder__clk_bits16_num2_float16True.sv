@@ -32,9 +32,9 @@ module adder__clk_bits16_num2_float16True (
     assert property (@(posedge clk) disable iff (!resetn) ~(overflow))
     else $fatal(1, "received unexpected overflow");
 
-    // CODE ADDED TO SUPPORT LEGACY SIMULATION THAT DOES NOT SUPPORT CONCURRENT ASSERTIONS
+    // CODE ADDED TO SUPPORT LEGACY SIMULATOR vvp THAT DOES NOT SUPPORT CONCURRENT ASSERTIONS
     logic assert_never__received_unexpected_overflow;
-    assign assert_never__received_unexpected_overflow = overflow;
+    assign assert_never__received_unexpected_overflow = (overflow);
 
     always @(posedge clk)
         if (resetn & assert_never__received_unexpected_overflow)
@@ -44,9 +44,9 @@ module adder__clk_bits16_num2_float16True (
     assert property (@(posedge clk) disable iff (!resetn) ~(zero))
     else $fatal(1, "received unexpected zero");
 
-    // CODE ADDED TO SUPPORT LEGACY SIMULATION THAT DOES NOT SUPPORT CONCURRENT ASSERTIONS
+    // CODE ADDED TO SUPPORT LEGACY SIMULATOR vvp THAT DOES NOT SUPPORT CONCURRENT ASSERTIONS
     logic assert_never__received_unexpected_zero;
-    assign assert_never__received_unexpected_zero = zero;
+    assign assert_never__received_unexpected_zero = (zero);
 
     always @(posedge clk)
         if (resetn & assert_never__received_unexpected_zero)
@@ -56,9 +56,9 @@ module adder__clk_bits16_num2_float16True (
     assert property (@(posedge clk) disable iff (!resetn) ~(NaN))
     else $fatal(1, "received unexpected NaN");
 
-    // CODE ADDED TO SUPPORT LEGACY SIMULATION THAT DOES NOT SUPPORT CONCURRENT ASSERTIONS
+    // CODE ADDED TO SUPPORT LEGACY SIMULATOR vvp THAT DOES NOT SUPPORT CONCURRENT ASSERTIONS
     logic assert_never__received_unexpected_NaN;
-    assign assert_never__received_unexpected_NaN = NaN;
+    assign assert_never__received_unexpected_NaN = (NaN);
 
     always @(posedge clk)
         if (resetn & assert_never__received_unexpected_NaN)

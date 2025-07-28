@@ -145,6 +145,9 @@ class p2v_signal:
         expr = misc._invert(self)
         return self._signal(expr, bits=self._bits)
 
+    def __abs__(self):
+        return self._signal(f"$abs({self})", bits=self._bits)
+
     def __lshift__(self, other):
         if isinstance(other, int):
             expr = misc.pad(0, self, other)

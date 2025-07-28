@@ -292,7 +292,6 @@ def _invert(var, not_op="~"):
 def _add_paren(expr, open_char="(", close_char=")"):
     return _remove_extra_paren(open_char + str(expr) + close_char)
 
-
 def ceil(n):
     """
     Round to ceil.
@@ -316,7 +315,10 @@ def log2(n):
     Returns:
         int
     """
-    assert isinstance(n, int) and n > 0, n
+    assert isinstance(n, (int, str)), n
+    if isinstance(n, str):
+        return f"$clog2({n})"
+    assert n > 0, n
     return ceil(math.log2(n))
 
 def is_pow2(n):
@@ -521,25 +523,25 @@ def bin(num, bits=None, add_sep=4, prefix="'b"): # pylint: disable=redefined-bui
         bits = log2(num)
     return p2v_signal(None, str(rtrn), bits=bits)
 
-def is_hotone(var, bits, allow_zero=False): # pylint: disable=redefined-outer-name
+def format_str(s, params=None):
     """
-    Check if a Verilog expression is hot one.
+    Create Verilog formated string like: "address = 0x%0h", addr
 
     Args:
-        var(str): Verilog expression
-        bits(int): number of bits of expression
-        allow_zero(bool): allow expression to be zero or hot one
+        s(src): string
+        params([str, p2v_signal, list]): format parameters
 
     Returns:
         Verilog code
     """
-    _assert_signal("is_hotone", var)
-    assert isinstance(bits, int) and bits > 0, f"variable {bits} expected to be a non zero positive integer"
-    assert isinstance(allow_zero, bool), f"variable {allow_zero} expected to be of type bool"
-    if bits == 1:
-        if allow_zero:
-            return 1
-        rtrn = var
-    else:
-        rtrn = f"(({var} & ({var} - {dec(1, bits)})) == {dec(0, bits)})" + cond(allow_zero, f" | ({var} == {dec(0, bits)})")
-    return p2v_signal(None, str(rtrn), bits=1)
+    if params is None:
+        params = []
+    assert isinstance(s, str), s
+    assert isinstance(params, (p2v_signal, str, list)), params
+    full_s = f'"{s}"'
+    if isinstance(params, (p2v_signal, str)):
+        params = [params]
+    for param in params:
+        full_s += f", {param}"
+    return full_s
+    

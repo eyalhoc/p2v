@@ -1118,6 +1118,55 @@ class p2v():
         self._assert(misc._is_legal_name(name), f"missing receive variable for {cmd}", fatal=True)
         return name
 
+    def _assert_property(self, clk, condition, message, name=None, fatal=True, property_type="assert"):
+        self._assert_type(clk, [clock, None])
+        self._assert_type(condition, [p2v_signal, str])
+        self._assert_type(message, str)
+        self._assert_type(name, [None, str])
+        self._assert_type(fatal, bool)
+        self._assert_type(property_type, str)
+        self._assert(property_type in ["assert", "assume", "cover"], f"unknown assertion property {property_type}")
+        self._check_line_balanced(condition)
+
+        if not self._exists():
+            if name is None:
+                name = misc._make_name_legal(message)
+            else:
+                self._assert(misc._is_legal_name(name), f"assertion name '{name}' is illegal", fatal=True)
+            if message[0] != '"':
+                full_messgae = f'"{message}"'
+            else:
+                full_messgae = message
+
+            if property_type == "cover":
+                err_str = f"$info({full_messgae})"
+            elif fatal:
+                err_str = f"$fatal(1, {full_messgae})"
+            else:
+                err_str = f"$error({full_messgae})"
+
+            self._set_used(condition)
+            if clk is None:
+                self._assert(property_type == "assert", f"non clocked assertions only supports assert type while received {property_type}")
+                self.line(f"""{name}_{property_type}: {property_type} final {misc._add_paren(condition)} else {err_str};
+                          """)
+            else:
+                self._set_used(clk)
+                disable_str = misc.cond(clk.rst_n is not None, f" disable iff (!{clk.rst_n})")
+                self.line(f"""{name}_{property_type}: {property_type} property (@(posedge {clk}){disable_str} {condition})
+                                         {misc.cond(property_type != "cover", "else")} {err_str};
+                          """)
+
+                if self._args.sim and self._args.sim_bin in ["vvp"] and property_type != "cover":
+                    self.remark(f"CODE ADDED TO SUPPORT LEGACY SIMULATOR {self._args.sim_bin} THAT DOES NOT SUPPORT CONCURRENT ASSERTIONS")
+                    assert_never = {}
+                    assert_never[name] = self.logic(assign=misc._invert(condition), _allow_str=True)
+                    self.allow_unused(assert_never[name])
+                    self.line(f"""always @(posedge {clk})
+                                      if ({misc.cond(clk.rst_n is not None, f'{clk.rst_n} & ')}{assert_never[name]})
+                                          {err_str};
+                                """)
+
 
     def set_modname(self, modname=None, suffix=True):
         """
@@ -1520,14 +1569,14 @@ class p2v():
             self.line(signal.declare())
             rtrn = signal
         if assign is not None:
-            self.assign(signal, assign, keyword="assign", remark=remark)
+            self.assign(signal, assign, keyword="assign", remark=remark, _allow_str=_allow_str)
             self.line()
         elif initial is not None:
-            self.assign(signal, initial, keyword="initial", remark=remark)
+            self.assign(signal, initial, keyword="initial", remark=remark, _allow_str=_allow_str)
             self.line()
         return rtrn
 
-    def assign(self, tgt, src, keyword="assign", remark=None):
+    def assign(self, tgt, src, keyword="assign", remark=None, _allow_str=False):
         """
         Signal assignment.
 
@@ -1540,7 +1589,7 @@ class p2v():
             None
         """
         self._assert_type(tgt, [clock, p2v_signal])
-        self._assert_type(src, [clock, p2v_signal, int])
+        self._assert_type(src, [clock, p2v_signal, int] + int(_allow_str) * [str])
         self._assert_type(keyword, str)
         if self._exists():
             return
@@ -1707,155 +1756,68 @@ class p2v():
             self._write_empty_module(modname)
         return self._get_connects(parent=self, modname=modname, signals=ports, params=params, verilog=True)
 
-    def assert_never(self, clk, condition, message, params=None, name=None, fatal=True, property_type="assert"):
+    def assert_final(self, condition=None, message=None, name=None, fatal=True):
         """
-        Assertion on Verilog signals with clock (ignores condition during async reset if present).
+        Assertion on Verilog signals without clock.
 
         Args:
-            clk([clock, str]): triggering clock or trigerring event
-            condition([p2v_signal, str]): Error occurs when condition is True
+            condition([p2v_signal, str]): Error occurs when condition is False
             message(str): Error message
-            params([str, list]): parameters for Verilog % format string
             name([None, str]): Explicit assertion name
             fatal(bool): stop on error
-            property(str): assert or assume
 
         Returns:
             NA
         """
-        if params is None:
-            params = []
-        if isinstance(clk, p2v_signal): # triggering event
-            clk = str(clk)
+        self._assert_property(None, condition, message, name=name, fatal=fatal, property_type="assert")
 
-        self._assert_type(condition, [p2v_signal, str])
-        self._assert_type(message, str)
-        self._assert_type(params, [p2v_signal, list])
-        self._assert_type(name, [None, str])
-        self._assert_type(fatal, bool)
-        self._assert_type(property_type, str)
-        self._assert(property_type in ["assert", "assume", "cover"], f"unknown assertion property {property_type}")
-        self._check_line_balanced(condition)
-
-        if not self._exists():
-            if name is None:
-                name = misc._make_name_legal(message)
-            else:
-                self._assert(misc._is_legal_name(name), f"assertion name '{name}' is illegal", fatal=True)
-            full_messgae = f'"{message}"'
-            if isinstance(params, (p2v_signal, str)):
-                params = [params]
-            for param in params:
-                full_messgae += f", {param}"
-
-            if property_type == "cover":
-                err_str = f"$info({full_messgae})"
-            elif fatal:
-                err_str = f"$fatal(1, {full_messgae})"
-            else:
-                err_str = f"$error({full_messgae})"
-
-            self._set_used([clk, condition])
-            if isinstance(clk, str):
-                self._check_declared(clk)
-                self.line(f"""always @({clk})
-                                  begin
-                                  #0; // ignore glitches
-                                  if ({condition}) {err_str};
-                                  end
-                            """)
-            else:
-                self._assert_type(clk, clock)
-                disable_str = misc.cond(clk.rst_n is not None, f"disable iff (!{clk.rst_n})")
-                self.line(f"""{name}_{property_type}: {property_type} property (@(posedge {clk}){disable_str} {misc._invert(condition)})
-                                         {misc.cond(property_type != "cover", "else")} {err_str};
-                          """)
-
-                if self._args.sim and property_type != "cover":
-                    self.remark("CODE ADDED TO SUPPORT LEGACY SIMULATION THAT DOES NOT SUPPORT CONCURRENT ASSERTIONS")
-                    assert_never = {}
-                    assert_never[name] = self.logic(assign=condition)
-                    self.allow_unused(assert_never[name])
-                    self.line(f"""always @(posedge {clk})
-                                      if ({misc.cond(clk.rst_n is not None, f'{clk.rst_n} & ')}{assert_never[name]})
-                                          {err_str};
-                                """)
-
-    def assert_always(self, clk, condition, message, params=None, name=None, fatal=True, property_type="assert"):
+    def assert_property(self, clk=None, condition=None, message=None, name=None, fatal=True):
         """
-        Assertion on Verilog signals with clock (ignores condition during async reset if present).
+        Assertion on Verilog signals with clock.
 
         Args:
-            clk([clock, str]): triggering clock or trigerring event
-            condition([p2v_signal, str]): Error occurs when condition is True
+            clk(clock): triggering clock
+            condition([p2v_signal, str]): Error occurs when condition is False
             message(str): Error message
-            params([str, list]): parameters for Verilog % format string
             name([None, str]): Explicit assertion name
             fatal(bool): stop on error
-            property(str): assert or assume
 
         Returns:
             NA
         """
-        if params is None:
-            params = []
-        self._assert_type(condition, [p2v_signal, str])
-        self._assert_type(message, str)
-        self._assert_type(params, [str, list])
-        self._assert_type(fatal, bool)
-        if not self._exists():
-            self.assert_never(clk, condition=misc._invert(condition), message=message, params=params, name=name, fatal=fatal, property_type=property_type)
+        self._assert_property(clk, condition, message, name=name, fatal=fatal, property_type="assert")
 
-    def check_never(self, condition, message, params=None, fatal=True):
+    def assume_property(self, clk, condition, message, name=None, fatal=True):
         """
-        Assertion on Verilog signals with no clock.
+        Assumptions on Verilog signals (constrain design).
 
         Args:
-            condition(str): Error occurs when condition is True
+            clk(clock): triggering clock
+            condition([p2v_signal, str]): Error occurs when condition is False
             message(str): Error message
-            params([str, list]): parameters for Verilog % format string
+            name([None, str]): Explicit assertion name
             fatal(bool): stop on error
 
         Returns:
-            Verilog assertion string
+            NA
         """
-        if params is None:
-            params = []
-        self._assert_type(condition, str)
-        self._assert_type(message, str)
-        self._assert_type(params, [str, list])
-        self._assert_type(fatal, bool)
-        if self._exists():
-            return ""
-        full_messgae = f'"{message}"'
-        if isinstance(params, str):
-            params = [params]
-        for param in params:
-            full_messgae += f", {param}"
-        return f"""if ({condition}) {misc.cond(fatal, f'$fatal(0, {full_messgae});', f'$error("{full_messgae}");')}"""
+        self._assert_property(clk, condition, message, name=name, fatal=fatal, property_type="assume")
 
-    def check_always(self, condition, message, params=None, fatal=True):
+    def cover_property(self, clk, condition, message, name=None, fatal=True):
         """
-        Assertion on Verilog signals with no clock.
+        Assumptions on Verilog signals (constrain design).
 
         Args:
-            condition(str): Error occurs when condition is False
+            clk(clock): triggering clock
+            condition([p2v_signal, str]): Error occurs when condition is False
             message(str): Error message
-            params([str, list]): parameters for Verilog % format string
+            name([None, str]): Explicit assertion name
             fatal(bool): stop on error
 
         Returns:
-            Verilog assertion string
+            NA
         """
-        if params is None:
-            params = []
-        self._assert_type(condition, str)
-        self._assert_type(message, str)
-        self._assert_type(params, [str, list])
-        self._assert_type(fatal, bool)
-        if self._exists():
-            return ""
-        return self.check_never(condition=misc._invert(condition), params=params, message=message, fatal=fatal)
+        self._assert_property(clk, condition, message, name=name, fatal=fatal, property_type="cover")
 
     def assert_static(self, condition, message, warning=False, fatal=True):
         """
