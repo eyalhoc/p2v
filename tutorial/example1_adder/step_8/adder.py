@@ -49,7 +49,7 @@ class adder(p2v):
                 son.inst()
                 
                 for stat in [overflow, zero, NaN]:
-                    self.assert_never(clk, stat, f"received unexpected {stat}")
+                    self.assert_property(clk, ~stat, f"received unexpected {stat}")
             else:
                 self.assign(o_pre, data_in[0] + data_in[1])
                 

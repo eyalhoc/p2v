@@ -403,7 +403,7 @@ class p2v_tb():
         self._parent.line(f"""
                              always @(posedge {clk}) { _count_timeout[name]} <= { _count_timeout[name] + 1};
                           """)
-        self._parent.assert_never(clk, _count_timeout[name] >= timeout, f"reached timeout after {timeout} cycles of {clk}")
+        self._parent.assert_property(clk, _count_timeout[name] < timeout, f"reached timeout after {timeout} cycles of {clk}")
         self._parent.allow_unused( _count_timeout[name])
 
 
