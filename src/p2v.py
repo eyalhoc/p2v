@@ -1358,7 +1358,7 @@ class p2v():
         max_val = 0
         for name, val in enum_names.items():
             self._assert(misc._is_legal_name(name), f"enumerated type {name} does not use a legal name", fatal=True)
-            self._assert(name not in ["NAME", "BITS", "DEFAULT"], f"enum cannot use reserevd name {name}", fatal=True)
+            self._assert(name not in ["NAME", "BITS"], f"enum cannot use reserevd name {name}", fatal=True)
             self._assert(isinstance(val, int), f"enumerated type {name} is of type {type(val)} while expecting type int", fatal=True)
             max_val = max(max_val, val)
         max_val_bin = misc.bin(max_val, add_sep=0, prefix=None)

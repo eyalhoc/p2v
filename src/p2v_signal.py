@@ -84,6 +84,9 @@ class p2v_signal:
     def __str__(self):
         return self._name
 
+    def __hash__(self):
+        return id(self)  # or use something meaningful
+
     def _signal(self, expr, bits):
         return p2v_signal(None, str(expr), bits=bits)
 

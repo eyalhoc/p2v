@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='p2v-compiler',
-    version='0.11.0',
+    version='0.12.0',
     packages=find_packages(where="src"),
     package_dir={"": "src"},
 
