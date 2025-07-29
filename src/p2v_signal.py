@@ -87,15 +87,8 @@ class p2v_signal:
     def __hash__(self):
         return id(self)  # or use something meaningful
 
-    def _signal(self, expr, bits):
-        return p2v_signal(None, str(expr), bits=bits)
-
-    def _create(self, other, op):
-        if isinstance(other, int):
-            other = misc.dec(other, self._bits)
-        expr = misc._remove_extra_paren(f"({self} {op} {other})")
-        return self._signal(expr, bits=self._bits)
-
+    def __truediv__(self, other):
+        return self._signal(f"{self} {other}", bits=self._bits)
 
     def __add__(self, other):
         return self._create(other, "+")
@@ -173,6 +166,15 @@ class p2v_signal:
             return self._bit_range(bits=stop-start, start=start)
         return self._bit_range(bits=1, start=key)
 
+
+    def _signal(self, expr, bits):
+        return p2v_signal(None, str(expr), bits=bits)
+
+    def _create(self, other, op):
+        if isinstance(other, int):
+            other = misc.dec(other, self._bits)
+        expr = misc._remove_extra_paren(f"({self} {op} {other})")
+        return self._signal(expr, bits=self._bits)
 
     def _declare_bits_dim(self, bits):
         assert isinstance(bits, (str, int)), bits
