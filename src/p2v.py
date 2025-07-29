@@ -1120,7 +1120,7 @@ class p2v():
 
     def _assert_property(self, clk, condition, message, name=None, fatal=True, property_type="assert"):
         self._assert_type(clk, [clock, None])
-        self._assert_type(condition, [p2v_signal, str])
+        self._assert_type(condition, p2v_signal)
         self._assert_type(message, str)
         self._assert_type(name, [None, str])
         self._assert_type(fatal, bool)
@@ -1158,14 +1158,15 @@ class p2v():
                           """)
 
                 if self._args.sim and self._args.sim_bin in ["vvp"] and property_type != "cover":
-                    self.remark(f"CODE ADDED TO SUPPORT LEGACY SIMULATOR {self._args.sim_bin} THAT DOES NOT SUPPORT CONCURRENT ASSERTIONS")
-                    assert_never = {}
-                    assert_never[name] = self.logic(assign=misc._invert(condition), _allow_str=True)
-                    self.allow_unused(assert_never[name])
-                    self.line(f"""always @(posedge {clk})
-                                      if ({misc.cond(clk.rst_n is not None, f'{clk.rst_n} & ')}{assert_never[name]})
-                                          {err_str};
-                                """)
+                    if "->" not in condition and "=>" not in condition:
+                        self.remark(f"CODE ADDED TO SUPPORT LEGACY SIMULATOR {self._args.sim_bin} THAT DOES NOT SUPPORT CONCURRENT ASSERTIONS")
+                        assert_never = {}
+                        assert_never[name] = self.logic(assign=misc._invert(condition), _allow_str=True)
+                        self.allow_unused(assert_never[name])
+                        self.line(f"""always @(posedge {clk})
+                                          if ({misc.cond(clk.rst_n is not None, f'{clk.rst_n} & ')}{assert_never[name]})
+                                              {err_str};
+                                    """)
 
 
     def set_modname(self, modname=None, suffix=True):
@@ -1761,7 +1762,7 @@ class p2v():
         Assertion on Verilog signals without clock.
 
         Args:
-            condition([p2v_signal, str]): Error occurs when condition is False
+            condition(p2v_signal): Error occurs when condition is False
             message(str): Error message
             name([None, str]): Explicit assertion name
             fatal(bool): stop on error
@@ -1777,7 +1778,7 @@ class p2v():
 
         Args:
             clk(clock): triggering clock
-            condition([p2v_signal, str]): Error occurs when condition is False
+            condition(p2v_signal): Error occurs when condition is False
             message(str): Error message
             name([None, str]): Explicit assertion name
             fatal(bool): stop on error
@@ -1793,7 +1794,7 @@ class p2v():
 
         Args:
             clk(clock): triggering clock
-            condition([p2v_signal, str]): Error occurs when condition is False
+            condition(p2v_signal): Error occurs when condition is False
             message(str): Error message
             name([None, str]): Explicit assertion name
             fatal(bool): stop on error
@@ -1809,7 +1810,7 @@ class p2v():
 
         Args:
             clk(clock): triggering clock
-            condition([p2v_signal, str]): Error occurs when condition is False
+            condition(p2v_signal): Error occurs when condition is False
             message(str): Error message
             name([None, str]): Explicit assertion name
             fatal(bool): stop on error

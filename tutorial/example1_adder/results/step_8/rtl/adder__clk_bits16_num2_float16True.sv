@@ -32,37 +32,13 @@ module adder__clk_bits16_num2_float16True (
     assert property (@(posedge clk) disable iff (!resetn) ~(overflow))
     else $fatal(1, "received unexpected overflow");
 
-    // CODE ADDED TO SUPPORT LEGACY SIMULATOR vvp THAT DOES NOT SUPPORT CONCURRENT ASSERTIONS
-    logic assert_never__received_unexpected_overflow;
-    assign assert_never__received_unexpected_overflow = (overflow);
-
-    always @(posedge clk)
-        if (resetn & assert_never__received_unexpected_overflow)
-            $fatal(1, "received unexpected overflow");
-
     received_unexpected_zero_assert :
     assert property (@(posedge clk) disable iff (!resetn) ~(zero))
     else $fatal(1, "received unexpected zero");
 
-    // CODE ADDED TO SUPPORT LEGACY SIMULATOR vvp THAT DOES NOT SUPPORT CONCURRENT ASSERTIONS
-    logic assert_never__received_unexpected_zero;
-    assign assert_never__received_unexpected_zero = (zero);
-
-    always @(posedge clk)
-        if (resetn & assert_never__received_unexpected_zero)
-            $fatal(1, "received unexpected zero");
-
     received_unexpected_NaN_assert :
     assert property (@(posedge clk) disable iff (!resetn) ~(NaN))
     else $fatal(1, "received unexpected NaN");
-
-    // CODE ADDED TO SUPPORT LEGACY SIMULATOR vvp THAT DOES NOT SUPPORT CONCURRENT ASSERTIONS
-    logic assert_never__received_unexpected_NaN;
-    assign assert_never__received_unexpected_NaN = (NaN);
-
-    always @(posedge clk)
-        if (resetn & assert_never__received_unexpected_NaN)
-            $fatal(1, "received unexpected NaN");
 
     always_ff @(posedge clk or negedge resetn)
         if (!resetn) o <= 16'd0;

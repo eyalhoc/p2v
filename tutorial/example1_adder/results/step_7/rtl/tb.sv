@@ -123,14 +123,6 @@ module tb ();
     assert property (@(posedge clk) disable iff (!resetn) (_count_timeout__clk < 32'd400))
     else $fatal(1, "reached timeout after 400 cycles of clk");
 
-    // CODE ADDED TO SUPPORT LEGACY SIMULATOR vvp THAT DOES NOT SUPPORT CONCURRENT ASSERTIONS
-    logic assert_never__reached_timeout_after_400_cycles_of_clk;
-    assign assert_never__reached_timeout_after_400_cycles_of_clk = ~((_count_timeout__clk < 32'd400));
-
-    always @(posedge clk)
-        if (resetn & assert_never__reached_timeout_after_400_cycles_of_clk)
-            $fatal(1, "reached timeout after 400 cycles of clk");
-
 
     initial begin
         $dumpfile("dump.fst");
