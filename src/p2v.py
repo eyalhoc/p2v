@@ -576,11 +576,16 @@ class p2v():
         self._check_line_balanced(wire)
         return misc._get_names(wire)
 
-    def _check_declared(self, wire):
+    def _check_declared(self, wire, allow=False):
         for name in self._get_names(wire):
+            if allow and name not in self._signals:
+                return False
             self._assert(name in self._signals, f"{name} was not declared", fatal=True)
+        return True
 
     def _set_used(self, wire, allow=False, drive=True):
+        if wire is None:
+            return
         if isinstance(wire, p2v_signal):
             wire = str(wire)
 
@@ -602,8 +607,8 @@ class p2v():
             self._assert(isinstance(wire, str), f"unknown type {type(wire)} for signal", fatal=True)
             wire = str(wire)
             for name in self._get_names(wire):
-                self._check_declared(name)
-                self._signals[name]._used = True
+                if self._check_declared(name, allow=allow):
+                    self._signals[name]._used = True
 
     def _set_driven_str(self, wire, allow=False):
         arrays = []
@@ -639,6 +644,8 @@ class p2v():
 
     def _set_driven(self, wire, allow=False):
         if self._exists(): # is called from p2v_connect
+            return
+        if wire is None:
             return
         if isinstance(wire, p2v_signal):
             wire = str(wire)
@@ -1148,7 +1155,7 @@ class p2v():
             self._set_used(condition)
             if clk is None:
                 self._assert(property_type == "assert", f"non clocked assertions only supports assert type while received {property_type}")
-                self.line(f"""{name}_{property_type}: {property_type} final {misc._add_paren(condition)} else {err_str};
+                self.line(f"""{name}_{property_type}: {property_type} property {misc._add_paren(condition)} else {err_str};
                           """)
             else:
                 self._set_used(clk)
@@ -1158,15 +1165,14 @@ class p2v():
                           """)
 
                 if self._args.sim and self._args.sim_bin in ["vvp"] and property_type != "cover":
-                    if "->" not in condition and "=>" not in condition:
-                        self.remark(f"CODE ADDED TO SUPPORT LEGACY SIMULATOR {self._args.sim_bin} THAT DOES NOT SUPPORT CONCURRENT ASSERTIONS")
-                        assert_never = {}
-                        assert_never[name] = self.logic(assign=misc._invert(condition), _allow_str=True)
-                        self.allow_unused(assert_never[name])
-                        self.line(f"""always @(posedge {clk})
-                                          if ({misc.cond(clk.rst_n is not None, f'{clk.rst_n} & ')}{assert_never[name]})
-                                              {err_str};
-                                    """)
+                    self.remark(f"CODE ADDED TO SUPPORT LEGACY SIMULATOR {self._args.sim_bin} THAT DOES NOT SUPPORT CONCURRENT ASSERTIONS")
+                    assert_never = {}
+                    assert_never[name] = self.logic(assign=misc._invert(condition), _allow_str=True)
+                    self.allow_unused(assert_never[name])
+                    self.line(f"""always @(posedge {clk})
+                                      if ({misc.cond(clk.rst_n is not None, f'{clk.rst_n} & ')}{assert_never[name]})
+                                          {err_str};
+                                """)
 
 
     def set_modname(self, modname=None, suffix=True):
@@ -1182,6 +1188,7 @@ class p2v():
         """
         self._assert_type(modname, [None, str])
         self._assert_type(suffix, bool)
+        self._assert(self._modname is None, "set_modname() was previously called", fatal=True)
 
         # create a new dictionary and remove self since it is illegal to delete items from locals
         module_locals = {}
@@ -1359,7 +1366,7 @@ class p2v():
         else:
             self.line("", remark=comment)
 
-    def parameter(self, name, val, local=False):
+    def parameter(self, name, val="", local=False):
         """
         Declare a Verilog parameter.
 
@@ -1371,6 +1378,11 @@ class p2v():
         Returns:
             None
         """
+        if isinstance(val, str) and val == "":
+            val = str(name)
+            name = ""
+        if isinstance(name, str) and name == "":
+            name = self._get_receive_name("parameter")
         if isinstance(val, p2v_signal):
             val = str(val)
 
@@ -1379,7 +1391,7 @@ class p2v():
         self._assert_type(local, bool)
         if self._exists():
             return None
-        signal = self._add_signal(p2v_signal(misc.cond(local, p2v_kind.LOCALPARAM, p2v_kind.PARAMETER), name, val, driven=True))
+        signal = self._add_signal(p2v_signal(misc.cond(local, p2v_kind.LOCALPARAM, p2v_kind.PARAMETER), name.upper(), val, driven=True))
         if local:
             self.line(signal.declare())
         return signal
@@ -1601,7 +1613,8 @@ class p2v():
             if tgt_is_strct:
                 self._assign_structs(tgt, src, keyword=keyword)
             else:
-                self._set_driven(tgt)
+                if keyword != "":
+                    self._set_driven(tgt)
                 if isinstance(src, int):
                     bits = self._get_signal_bits(tgt)
                     if isinstance(tgt._bits, str): # Verilog parameter width
@@ -1757,21 +1770,6 @@ class p2v():
             self._write_empty_module(modname)
         return self._get_connects(parent=self, modname=modname, signals=ports, params=params, verilog=True)
 
-    def assert_final(self, condition=None, message=None, name=None, fatal=True):
-        """
-        Assertion on Verilog signals without clock.
-
-        Args:
-            condition(p2v_signal): Error occurs when condition is False
-            message(str): Error message
-            name([None, str]): Explicit assertion name
-            fatal(bool): stop on error
-
-        Returns:
-            NA
-        """
-        self._assert_property(None, condition, message, name=name, fatal=fatal, property_type="assert")
-
     def assert_property(self, clk=None, condition=None, message=None, name=None, fatal=True):
         """
         Assertion on Verilog signals with clock.
@@ -1854,7 +1852,8 @@ class p2v():
             return self._cache["conn"][self._modname]
         self._assert(self._modname is not None, "module name was not set (set_modname() was not called)", fatal=True)
         self._assert(self._modname not in self._bbox, f"module {self._modname} previosuly used as verilog module", fatal=True)
-        self._check_signals()
+        if lint:
+            self._check_signals()
         self._check_mod_loop()
         lines = self._get_modlines(lint=lint)
         outfile = self._get_outfile()

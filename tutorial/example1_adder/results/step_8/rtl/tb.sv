@@ -98,14 +98,13 @@ module tb ();
         if (valid_out) begin
             expected = expected_q.pop_front();
             if ((o > expected) ? ((o - expected) > 16'd16) : ((expected - o) > 16'd16)) begin
-                $display("%0d: test FAILED (mismatch expected: 0x%0h, actual: 0x%0h)", $time,
-                         expected, o);
+                $display("test FAILED: mismatch expected: 0x%0h, actual: 0x%0h", expected, o);
                 #10;
                 $finish;
             end
 
             if (expected_q.size() == 0) begin
-                $display("%0d: test PASSED (successfully tested 4 additions)", $time);
+                $display("test PASSED: successfully tested 4 additions");
                 #10;
                 $finish;
             end
@@ -121,6 +120,14 @@ module tb ();
     reached_timeout_after_400_cycles_of_clk_assert :
     assert property (@(posedge clk) disable iff (!resetn) (_count_timeout__clk < 32'd400))
     else $fatal(1, "reached timeout after 400 cycles of clk");
+
+    // CODE ADDED TO SUPPORT LEGACY SIMULATOR vvp THAT DOES NOT SUPPORT CONCURRENT ASSERTIONS
+    logic assert_never__reached_timeout_after_400_cycles_of_clk;
+    assign assert_never__reached_timeout_after_400_cycles_of_clk = ~((_count_timeout__clk < 32'd400));
+
+    always @(posedge clk)
+        if (resetn & assert_never__reached_timeout_after_400_cycles_of_clk)
+            $fatal(1, "reached timeout after 400 cycles of clk");
 
 
     initial begin

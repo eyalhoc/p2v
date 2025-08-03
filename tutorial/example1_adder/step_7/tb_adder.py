@@ -88,7 +88,7 @@ class tb_adder(p2v):
                             if (valid_out)
                                 begin
                                     expected = expected_q.pop_front();
-                                    {self.tb.test_fail(condition=o != expected, message="mismatch expected: 0x%0h, actual: 0x%0h", params=[expected, o])}
+                                    {self.tb.test_fail(condition=o != expected, message=misc.format_str("mismatch expected: 0x%0h, actual: 0x%0h", [expected, o]))}
                                     if (expected_q.size() == 0)
                                         {self.tb.test_pass(message=f"successfully tested {size} additions")}
                                 end

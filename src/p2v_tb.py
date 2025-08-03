@@ -46,23 +46,11 @@ class p2v_tb():
         self._ifdefs = []
 
 
-    def _test_finish(self, status, condition=None, message=None, params=None, stop=True):
-        if params is None:
-            params = []
-        param_str = ", $time"
-        if message is None:
-            msg = ""
-        else:
-            msg = f' ({message})'
-            if isinstance(params, str):
-                params = [params]
-            if len(params) > 0:
-                for n, name in enumerate(params):
-                    params[n] = str(name)
-                param_str += ", " + ", ".join(params)
+    def _test_finish(self, condition=None, message="", stop=True):
+        self._parent._set_used(condition, allow=True)
         return f""" {misc.cond(condition is not None, f"if ({condition})")}
                     begin
-                        $display("%0d: test {status}{msg}"{param_str});
+                        $display({message});
                         {misc.cond(stop, "#10; $finish;")}
                     end
                 """
@@ -211,68 +199,70 @@ class p2v_tb():
                                       end
                                """)
 
-    def test_pass(self, condition=None, message=None, params=None):
+    def _get_messgae(self, status, message=""):
+        self._parent._check_line_balanced(message)
+        full_message = f'"test {status}"'
+        message = message.strip()
+        if message != "":
+            if message[0] != '"':
+                message = f'"{message}"'
+            full_message = full_message[:-1] # remove closing quote
+            full_message += f': {message[1:]}'
+        return full_message
+
+    def test_pass(self, condition=None, message=""):
         """
         Finish test successfully if condition is met.
 
         Args:
             condition([None, str]): condition for finishing test, None is unconditional
-            message([None, str]): completion message
-            params([str, list]): parameters for Verilog % format string
+            message(str): completion message
 
         Returns:
             None
         """
-        if params is None:
-            params = []
         self._parent._assert_type(condition, [None, str, p2v_signal])
-        self._parent._assert_type(message, [None, str])
-        self._parent._assert_type(params, [str, list])
-        return self._test_finish(PASS_STATUS, condition=condition, message=message, params=params)
+        self._parent._assert_type(message, str)
+        full_message = self._get_messgae(PASS_STATUS, message)
+        return self._test_finish(condition=condition, message=full_message)
 
-    def test_fail(self, condition=None, message=None, params=None):
+    def test_fail(self, condition=None, message=""):
         """
         Finish test with error if condition is met.
 
         Args:
             condition([None, str]): condition for finishing test, None is unconditional
-            message([None, str]): completion message
-            params([str, list]): parameters for Verilog % format string
+            message(str): completion message
 
         Returns:
             None
         """
-        if params is None:
-            params = []
         self._parent._assert_type(condition, [None, str, p2v_signal])
-        self._parent._assert_type(message, [None, str])
-        self._parent._assert_type(params, [str, list])
-        return self._test_finish(FAIL_STATUS, condition=condition, message=message, params=params)
+        self._parent._assert_type(message, str)
+        full_message = self._get_messgae(FAIL_STATUS, message)
+        return self._test_finish(condition=condition, message=full_message)
 
-    def test_finish(self, condition, pass_message=None, fail_message=None, params=None):
+    def test_finish(self, condition, pass_message="", fail_message=""):
         """
         Finish test if condition is met.
 
         Args:
-            condition([None, str]): condition for finishing test, None is unconditional
-            pass_message([None, str]): good completion message
-            fail_message([None, str]): bad completion message
-            params([str, list]): parameters for Verilog % format string
+            condition([None, str, p2v_signal]): condition for successfully finishing test, None is unconditional
+            pass_message(str): good completion message
+            fail_message(str): bad completion message
 
         Returns:
             None
         """
-        if params is None:
-            params = []
-        self._parent._assert_type(condition, [None, str])
-        self._parent._assert_type(pass_message, [None, str])
-        self._parent._assert_type(fail_message, [None, str])
-        self._parent._assert_type(params, [str, list])
+        self._parent._assert_type(condition, [None, str, p2v_signal])
+        self._parent._assert_type(pass_message, str)
+        self._parent._assert_type(fail_message, str)
+        self._parent._set_used(condition, allow=True)
         return f"""
-                if ({condition})
-                    {self.test_pass(pass_message, params=params)}
+                if {misc._add_paren(condition)}
+                    {self.test_pass(message=pass_message)}
                 else
-                    {self.test_fail(fail_message, params=params)}
+                    {self.test_fail(message=fail_message)}
                 """
 
     def gen_clk(self, clk, cycle=10, reset_cycles=20, pre_reset_cycles=5):
