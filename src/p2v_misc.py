@@ -19,6 +19,8 @@ import re
 import hashlib
 import math
 import os
+from decimal import Decimal
+
 
 from p2v_signal import p2v_signal #pylint: disable=cyclic-import
 
@@ -74,8 +76,9 @@ def _declare_bits(bits, start=0): # pylint: disable=redefined-outer-name
         return ""
     return f"[{start+bits-1}:{start}]"
 
-def _declare(name, bits, start=0): # pylint: disable=redefined-outer-name
-    return  p2v_signal(None, name + _declare_bits(bits, start=start), bits=0)
+def _declare(name, bits, start=0): # pylint: disable=redefined-outer-name)
+    assert isinstance(bits, int), type(bits)
+    return  p2v_signal(None, name + _declare_bits([bits], start=start), bits=0)
 
 def _get_paren_depth(line, open_char="(", close_char=")"):
     depth = 0
@@ -195,7 +198,7 @@ def _base(base, n, bits=None, add_sep=4, prefix=None): # pylint: disable=redefin
                 s = s.replace("_", "", 1)
     else:
         s = prefix + s
-        if bits is not None and not s.startswith(f"{n_bits}'"):
+        if "'" in prefix and bits is not None and not s.startswith(f"{n_bits}'"):
             s = str(n_bits) + s
         else:
             while s.startswith(f"{prefix}0") or s.startswith(f"{prefix}_"):
@@ -286,7 +289,9 @@ def _invert(var, not_op="~"):
         var_not = var.replace(not_op, "", 1)
         if _is_in_paren(var_not):
             return _remove_extra_paren(var_not)
-    rtrn = f"{not_op}({var})"
+    if not _is_legal_name(var):
+        var = f"({var})"
+    rtrn = not_op + var
     return p2v_signal(None, str(rtrn), bits=1)
 
 def _add_paren(expr, open_char="(", close_char=")"):
@@ -321,9 +326,22 @@ def log2(n):
     assert n > 0, n
     return ceil(math.log2(n))
 
+def root(n, dim=2):
+    """
+    Root of number (default is square root).
+
+    Args:
+        n(int): input value
+        dim(int): root dimension
+
+    Returns:
+        Decimal
+    """
+    return Decimal(n) ** (Decimal(1) / Decimal(dim))
+
 def is_pow2(n):
     """
-    Returns True of number is power to 2.
+    Returns True if number is power to 2.
 
     Args:
         n(int): input value
@@ -333,6 +351,23 @@ def is_pow2(n):
     """
     assert isinstance(n, int), n
     return n > 0 and n == (1 << log2(n))
+
+def is_prime(n):
+    """
+    Returns True if number is prime.
+
+    Args:
+        n(int): input value
+
+    Returns:
+        bool
+    """
+    if n < 2:
+        return False
+    for i in range(2, int(math.isqrt(n)) + 1):
+        if n % i == 0:
+            return False
+    return True
 
 def roundup(num, round_to):
     """
