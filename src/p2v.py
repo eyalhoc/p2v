@@ -25,6 +25,7 @@ import shutil
 import logging
 import traceback
 import inspect
+import linecache
 import argparse
 import csv
 from types import SimpleNamespace as p2v_enum
@@ -559,9 +560,9 @@ class p2v():
     def _get_current_line(self, depth=2, caller=None):
         if caller is None:
             caller = self._get_caller(depth)
-        frame_info = inspect.getframeinfo(caller)
-        current_line = frame_info.code_context[0].strip()
-        return current_line
+        filename = caller.f_code.co_filename
+        lineno = caller.f_lineno
+        return linecache.getline(filename, lineno).strip()
 
     def _get_remark(self, line=None, depth=1):
         if line is None:
