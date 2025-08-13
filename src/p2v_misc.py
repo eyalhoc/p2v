@@ -269,7 +269,6 @@ def _remove_extra_paren(line, open_char="(", close_char=")"):
         line = f"{open_char}{line}{close_char}" # put one back
     return line
 
-
 def _remark_line(line):
     line = re.sub("\n *","\n ", line)
     remark_line = "// " + line.replace("\n", "\n// ")
@@ -296,6 +295,37 @@ def _invert(var, not_op="~"):
 
 def _add_paren(expr, open_char="(", close_char=")"):
     return _remove_extra_paren(open_char + str(expr) + close_char)
+
+def _verilog_keywords():
+    return [
+    "always", "and", "assign", "begin", "buf", "bufif0", "bufif1", "case", "casex", "casez",
+    "cmos", "deassign", "default", "defparam", "disable", "edge", "else", "end", "endcase",
+    "endfunction", "endmodule", "endprimitive", "endspecify", "endtable", "endtask", "event",
+    "for", "force", "forever", "fork", "function", "if", "initial", "inout", "input", "join",
+    "macromodule", "module", "nand", "negedge", "nmos", "nor", "not", "notif0", "notif1",
+    "or", "output", "parameter", "pmos", "posedge", "primitive", "pull0", "pull1", "pulldown",
+    "pullup", "rcmos", "reg", "release", "repeat", "rnmos", "rpmos", "rtran", "rtranif0",
+    "rtranif1", "scalared", "small", "specify", "specparam", "strong0", "strong1", "supply0",
+    "supply1", "table", "task", "time", "tran", "tranif0", "tranif1", "tri", "tri0", "tri1",
+    "triand", "trior", "trireg", "vectored", "wait", "wand", "weak0", "weak1", "while", "wire",
+    "wor", "xnor", "xor"]
+
+def _systemverilog_keywords():
+    return _verilog_keywords() + [
+    "accept_on", "alias", "always_comb", "always_ff", "always_latch", "assert", "assume",
+    "before", "bind", "bins", "binsof", "bit", "break", "byte", "chandle", "class", "clocking",
+    "const", "constraint", "context", "continue", "cover", "covergroup", "coverpoint", "cross",
+    "dist", "do", "endclass", "endclocking", "endgroup", "endinterface", "endpackage",
+    "endprogram", "endproperty", "endsequence", "enum", "expect", "export", "extends", "extern",
+    "final", "first_match", "foreach", "forkjoin", "generate", "genvar", "highz0", "highz1",
+    "iff", "ignore_bins", "illegal_bins", "import", "inside", "int", "interface", "intersect",
+    "join_any", "join_none", "local", "localparam", "logic", "longint", "matches", "modport",
+    "new", "null", "package", "packed", "priority", "program", "property", "protected",
+    "pure", "rand", "randc", "randcase", "randsequence", "ref", "return", "sequence", "shortint",
+    "shortreal", "solve", "static", "string", "struct", "super", "tagged", "this", "throughout",
+    "timeprecision", "timeunit", "type", "typedef", "union", "unique", "var", "virtual", "void",
+    "wait_order", "wildcard", "with", "within"]
+
 
 def ceil(n):
     """

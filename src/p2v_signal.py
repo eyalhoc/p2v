@@ -149,7 +149,11 @@ class p2v_signal:
 
     def __rshift__(self, other):
         if isinstance(other, int):
-            expr = misc.pad(other, self[other:self._bits])
+            assert self._bits >= other, f"cannot shift right {other} a {self._bits} bits signal"
+            if self._bits == other:
+                expr = misc.dec(0, self._bits)
+            else:
+                expr = misc.pad(other, self[other:self._bits])
             return self._signal(expr, bits=self._bits)
         return self._create(other, ">>")
 

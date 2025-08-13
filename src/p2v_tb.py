@@ -17,6 +17,7 @@ p2v_tb module. Responsible for behavioral code, building test-benches and testin
 
 import os
 import random
+import string
 import numpy as np
 
 from p2v_clock import p2v_clock as clock, clk_0rst, clk_arst, clk_srst, clk_2rst
@@ -106,6 +107,18 @@ class p2v_tb():
         """
         return self.rand_chance(50)
 
+    def rand_char(self):
+        """
+        Random printable character.
+
+        Args:
+            NA
+
+        Returns:
+            str
+        """
+        return random.choice(string.ascii_letters + string.digits)
+
     def rand_chance(self, chance):
         """
         Random bool with chance.
@@ -133,7 +146,7 @@ class p2v_tb():
         self._parent._assert_type(l, list)
         return l[self.rand_int(len(l))]
 
-    def rand_clock(self, prefix="", has_async=None, has_sync=None, must_have_reset=False):
+    def rand_clock(self, prefix="", has_async=None, has_sync=None, must_have_reset=True):
         """
         Create clock with random resets.
 
