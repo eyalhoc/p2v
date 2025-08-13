@@ -1,2 +1,2 @@
 clk                 , bits                , num                 
-clk_arst()          , 8                   , 32                  
+clk_arst()          , 35                  , 4                   

@@ -28,7 +28,7 @@ import inspect
 import linecache
 import argparse
 import csv
-from types import SimpleNamespace as p2v_enum
+from types import SimpleNamespace as p2v_enum, FunctionType
 import pyslang # pylint: disable=syntax-error
 
 import p2v_misc as misc
@@ -64,6 +64,7 @@ class p2v():
         self._lines = []
         self._params = {}
         self._sons = []
+        self._parse = parse
 
         if parent is None:
             self._outfiles = {}
@@ -262,8 +263,9 @@ class p2v():
     def _get_gen_args(self, top_class, params=None):
         if params is None:
             params = {}
-        self._assert("gen" in dir(top_class), f"{top_class.__name__} is missing gen() function")
-        return top_class.gen(self, **params)
+        if hasattr(top_class, "gen") and isinstance(getattr(top_class, "gen"), FunctionType):
+            return top_class.gen(self, **params)
+        return params
 
     def _get_cmd(self):
         cmd = sys.executable
@@ -321,7 +323,8 @@ class p2v():
                 self._logger.info(f"starting gen iteration {i}/{iter_num-1}")
             if self._args.sim or not gen_loop:
                 self.__init__(None, modname=misc.cond(not gen_loop, None, f"_tb{i}"), parse=False) # pylint: disable=unnecessary-dunder-call
-                top_connect = top_class.module(self, **self._args.params)
+                args = self._get_gen_args(top_class, params=self._args.params)
+                top_connect = top_class.module(self, **args)
 
                 for process in self._processes:
                     process.wait()
@@ -456,6 +459,7 @@ class p2v():
         if self._exists(): # is called from p2v_connect
             return self._signals[signal._name]
         self._assert(self._modname is not None, "module name was not set (set_modname() was not called)", fatal=True)
+        self._assert(signal._name not in misc._systemverilog_keywords(), f"{signal._name} is a reserevd Verilog keyword", fatal=True)
         if self._assert(signal._name not in self._signals, f"{signal._name} was previously defined"):
             if isinstance(signal._bits, int):
                 self._assert(abs(signal._bits) <= MAX_BITS, f"{signal._name} uses {abs(signal._bits)} bits which exceeds maximum of {MAX_BITS}", warning=True)
@@ -1189,7 +1193,8 @@ class p2v():
         """
         self._assert_type(modname, [None, str])
         self._assert_type(suffix, bool)
-        self._assert(self._modname is None, "set_modname() was previously called", fatal=True)
+        if self._parse:
+            self._assert(self._modname is None, "set_modname() was previously called", fatal=True)
 
         # create a new dictionary and remove self since it is illegal to delete items from locals
         module_locals = {}
