@@ -28,11 +28,12 @@ import inspect
 import linecache
 import argparse
 import csv
-from types import SimpleNamespace as p2v_enum, FunctionType
+import pickle
+from types import SimpleNamespace, SimpleNamespace as p2v_enum, FunctionType # pylint: disable=reimported
 import pyslang # pylint: disable=syntax-error
 
 import p2v_misc as misc
-from p2v_clock import clk_0rst, clk_arst, clk_srst, clk_2rst # needed for clock loading from gen csv file # # pylint: disable=unused-import
+from p2v_clock import clk_0rst, clk_arst, clk_srst, clk_2rst # needed for clock loading from gen csv file # pylint: disable=unused-import
 from p2v_clock import p2v_clock as clock
 from p2v_clock import default_clk
 from p2v_signal import p2v_signal, p2v_kind
@@ -212,6 +213,10 @@ class p2v():
 
     def _build_seach_path(self):
         search = [os.getcwd()]
+        if self._args.cocotb_filename is not None:
+            cocotb_dir = os.path.dirname(self._args.cocotb_filename)
+            if cocotb_dir not in search:
+                search.append(cocotb_dir)
         incdirs = [os.path.dirname(self._get_top_filename())] + self._args.I
         for incdir in self._args.Im:
             if os.path.isdir(incdir):
@@ -250,21 +255,34 @@ class p2v():
         return False
 
     def _sim(self):
+        success = logfile = None
         if self._args.sim:
-            if self._assert(p2v_tools.check(self._args.sim_bin), f"cannot perform verilog simulation, {self._args.sim_bin} is not installed", warning=True):
+            if self._args.cocotb_filename is not None:
+                cocotb_exports = {"SEED":self.tb.seed}
+                for name, val in self._args.sim_args.items():
+                    cocotb_exports[name] = val
+                logfile, success = p2v_tools.cocotb_sim(rtldir=self._get_rtldir(), outdir=self._args.outdir,
+                                                        cocotb_filename=self._args.cocotb_filename, modname=self._modname,
+                                                        search=self._search, libs=self._libs, exports=cocotb_exports)
+            elif self._assert(p2v_tools.check(self._args.sim_bin), f"cannot perform verilog simulation, {self._args.sim_bin} is not installed", warning=True):
                 if self._comp():
                     logfile, success = p2v_tools.sim(self._args.sim_bin, dirname=self._args.outdir, outdir=self._args.outdir, pass_str=PASS_STATUS)
-                    if self._assert(success, f"verilog simulation failed, logfile: {logfile}"):
-                        self._logger.info("verilog simulation completed successfully")
-                        return True
-                    self._logger.debug("verilog simulation completed with errors:\n %s", misc._read_file(logfile))
+        if success is None:
+            return False
+        if self._assert(success, f"verilog simulation failed, logfile: {logfile}"):
+            self._logger.info("verilog simulation completed successfully")
+            return True
+        self._logger.debug("verilog simulation completed with errors:\n %s", misc._read_file(logfile))
         return False
 
     def _get_gen_args(self, top_class, params=None):
         if params is None:
             params = {}
         if hasattr(top_class, "gen") and isinstance(getattr(top_class, "gen"), FunctionType):
-            return top_class.gen(self, **params)
+            args = top_class.gen(self)
+            for name, val in params.items():
+                args[name] = val
+            return args
         return params
 
     def _get_cmd(self):
@@ -304,12 +322,13 @@ class p2v():
         if self._args.sim or self._args.gen_num is not None:
             self._logger.info(f"starting with seed {self.tb.seed}")
 
-        gen_loop = self._args.gen_num is not None or isinstance(self._args.params, list)
+        params_is_csv_file = isinstance(self._args.params, list)
+        gen_loop = self._args.gen_num is not None or params_is_csv_file
         if gen_loop:
-            if misc._is_int(self._args.gen_num):
-                iter_num = self._args.gen_num
-            else:
+            if params_is_csv_file:
                 iter_num = len(self._args.params)
+            else:
+                iter_num = self._args.gen_num
             gen_seeds = []
             for i in range(iter_num):
                 gen_seeds.append(self.tb.rand_int(1, MAX_SEED))
@@ -416,6 +435,7 @@ class p2v():
         parser.add_argument("-comp_bin", default="iverilog", choices=["iverilog"], help="Verilog compiler")
         parser.add_argument("-sim_bin", default="vvp", choices=["vvp"], help="Verilog simulator")
         parser.add_argument("-sim_args", type=ast.literal_eval, default={}, help="simulation override arguments")
+        parser.add_argument("-cocotb_filename", type=str, help="cocotb testbench file")
 
         return parser.parse_args()
 
@@ -448,7 +468,7 @@ class p2v():
     def _add_strct_attr(self, signal, names, fields):
         for key, value in names.items():
             if isinstance(value, dict):
-                nested = p2v_enum()
+                nested = SimpleNamespace()
                 self._add_strct_attr(nested, value, fields=fields)
                 setattr(signal, key, nested)
             else:
@@ -531,6 +551,24 @@ class p2v():
         if indent and self._args.indent:
             if self._assert(p2v_tools.check(self._args.indent_bin), f"cannot perform verilog indentation, {self._args.indent_bin} is not installed", warning=True):
                 self._processes.append(p2v_tools.indent(self._args.indent_bin, outfile))
+
+    def _write_pins(self, connects):
+        pins = SimpleNamespace()
+        for name in dir(connects):
+            if not name.startswith("_"):
+                attr = getattr(connects, name)
+                if isinstance(attr, (p2v_signal, dict)):
+                    setattr(pins, name, attr)
+                    if isinstance(attr, dict) and "_NAME" in attr:
+                        getattr(pins, name).pop("_NAME", None)
+
+        pickle_file = os.path.abspath(os.path.join(self._args.outdir, "pins.pkl"))
+        with open(pickle_file, 'wb') as f:
+            pickle.dump(pins, f)
+        s = "import pickle\n"
+        s += f"with open('{pickle_file}', 'rb') as f:\n"
+        s += "    pins = pickle.load(f)\n"
+        misc._write_file("dut_pins.py", s)
 
     def _exists(self):
         return self._modname in self._cache["conn"]
@@ -1228,9 +1266,10 @@ class p2v():
                         self._assert(val == self._modules[self._modname][name], \
                         f"module {self._modname} was recreated with different content (variable {name} does not affect module name)", fatal=True)
         else:
-            clsname = self._get_clsname()
-            if clsname != "_test":
-                self._find_file(f"{clsname}.py")
+            if not self._modname.startswith("_"):
+                clsname = self._get_clsname()
+                if clsname != "_test":
+                    self._find_file(f"{clsname}.py")
             self._modules[self._modname] = module_locals
         if self._parent is not None:
             self._parent._sons.append(self._modname)
@@ -1867,9 +1906,12 @@ class p2v():
         # write Verilog file
         self._write_lines(outfile, lines)
         self._logger.info("created: %s", os.path.basename(outfile))
-        if self._parent is not None:
+        connects = self._get_connects(parent=self._parent, modname=self._modname, signals=self._signals, params={})
+        if self._parent is None: # top
+            self._write_pins(connects)
+        else:
             self._parent._err_num += self._err_num
-        return self._get_connects(parent=self._parent, modname=self._modname, signals=self._signals, params={})
+        return connects
 
     def fsm(self, clk, enum, reset_val=None):
         """

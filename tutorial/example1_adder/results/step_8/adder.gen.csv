@@ -1,2 +1,2 @@
 clk                 , bits                , num                 , float16             
-"clock('clk', rst_n='resetn')", 16                  , 4                   , True                
+clk_arst()          , 16                  , 4                   , False               

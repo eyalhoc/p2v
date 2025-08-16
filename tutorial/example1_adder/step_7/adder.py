@@ -33,22 +33,25 @@ class adder(p2v):
         if num == 2:                
             o_pre = self.logic(bits)
             if float16:
-                float16_stat = ["overflow", "zero", "NaN", "precisionLost"]
-                self.logic(float16_stat)
+                overflow = self.logic()
+                zero = self.logic()
+                NaN = self.logic()
+                precisionLost = self.logic()
                 
                 son = self.verilog_module("float_adder")
                 son.connect_in(son.num1, data_in[0])
                 son.connect_in(son.num2, data_in[1])
                 son.connect_out(son.result, o_pre)
-                for stat in float16_stat:
-                    son.connect_out(stat)
+                son.connect_out(overflow)
+                son.connect_out(zero)
+                son.connect_out(NaN)
+                son.connect_out(precisionLost)
                 son.inst()
                 
-                for stat in float16_stat:
-                    if stat not in ["precisionLost"]:
-                        self.assert_never(clk, stat, f"received unexpected {stat}")
-                    else:
-                        self.allow_unused(stat)
+                self.assert_property(clk, ~overflow, f"received unexpected overflow")
+                self.assert_property(clk, ~zero, f"received unexpected zero")
+                self.assert_property(clk, ~NaN, f"received unexpected NaN")
+                self.allow_unused(precisionLost)
             else:
                 self.assign(o_pre, data_in[0] + data_in[1])
                 
@@ -86,9 +89,12 @@ class adder(p2v):
         return self.write()
 
 
-    def gen(self):
+    def gen(self, float16=None):
         args = {}
-        args["float16"] = self.tb.rand_bool()
+        if float16 is None:
+            args["float16"] = self.tb.rand_bool()
+        else:
+            args["float16"] = float16
         if args["float16"]:
             args["bits"] = 16
         else:
