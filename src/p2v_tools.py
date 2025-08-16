@@ -20,7 +20,7 @@ import subprocess
 import p2v_misc as misc
 
 
-def system(dirname, outdir, cmd, logfile=None, log_out=True, log_err=True):
+def system(dirname, outdir, cmd, logfile=None, log_out=True, log_err=True, bin_name=None):
     """
     Run system command while logging the command and output.
 
@@ -37,7 +37,8 @@ def system(dirname, outdir, cmd, logfile=None, log_out=True, log_err=True):
     """
     assert os.path.isdir(dirname), f"{dirname} does not exist"
     outdir = os.path.abspath(outdir)
-    bin_name = cmd.split()[0]
+    if bin_name is None:
+        bin_name = cmd.split()[0]
     if logfile is not None:
         logfile = os.path.join(outdir, logfile)
         if log_out and log_err:
@@ -49,7 +50,8 @@ def system(dirname, outdir, cmd, logfile=None, log_out=True, log_err=True):
     pwd = os.getcwd()
     os.chdir(dirname)
     os.system(cmd)
-    misc._write_file(os.path.join(outdir, f"{bin_name}.cmd"), cmd)
+    if logfile is not None:
+        misc._write_file(os.path.join(outdir, f"{bin_name}.cmd"), cmd)
     os.chdir(pwd)
     if logfile is not None:
         return os.path.join(os.path.abspath(dirname), logfile)
@@ -238,7 +240,7 @@ def cocotb_sim(rtldir, outdir, cocotb_filename, modname, search=None, libs=None,
     logfile = "p2v_sim.log"
 
     cmd = f"make -f {makefile}"
-    full_logfile = system(outdir, outdir, cmd, logfile, log_out=True, log_err=True)
+    full_logfile = system(outdir, outdir, cmd, logfile, log_out=True, log_err=True, bin_name="cocotb")
     system(outdir, outdir, "ln -s sim_build/*.fst dump.fst")
     for line in misc._read_file(full_logfile).split("\n"):
         if pass_str in line:
