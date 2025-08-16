@@ -21,8 +21,10 @@ import math
 import os
 from decimal import Decimal
 
-
-from p2v_signal import p2v_signal #pylint: disable=cyclic-import
+try:
+    from p2v_signal import p2v_signal #pylint: disable=cyclic-import
+except ImportError:
+    pass
 
 def _get_hash(s):
     assert isinstance(s, str), s

@@ -20,7 +20,7 @@ import subprocess
 import p2v_misc as misc
 
 
-def system(dirname, outdir, cmd, logfile, log_out=True, log_err=True):
+def system(dirname, outdir, cmd, logfile=None, log_out=True, log_err=True):
     """
     Run system command while logging the command and output.
 
@@ -37,20 +37,23 @@ def system(dirname, outdir, cmd, logfile, log_out=True, log_err=True):
     """
     assert os.path.isdir(dirname), f"{dirname} does not exist"
     outdir = os.path.abspath(outdir)
-    logfile = os.path.join(outdir, logfile)
     bin_name = cmd.split()[0]
-    if log_out and log_err:
-        cmd += f" > {logfile}"
-    elif log_err:
-        cmd += f" > /dev/null 2> {logfile}"
-    elif log_out:
-        cmd += f" 2> {logfile}"
+    if logfile is not None:
+        logfile = os.path.join(outdir, logfile)
+        if log_out and log_err:
+            cmd += f" > {logfile}"
+        elif log_err:
+            cmd += f" > /dev/null 2> {logfile}"
+        elif log_out:
+            cmd += f" 2> {logfile}"
     pwd = os.getcwd()
     os.chdir(dirname)
     os.system(cmd)
     misc._write_file(os.path.join(outdir, f"{bin_name}.cmd"), cmd)
     os.chdir(pwd)
-    return os.path.join(os.path.abspath(dirname), logfile)
+    if logfile is not None:
+        return os.path.join(os.path.abspath(dirname), logfile)
+    return None
 
 def check(tool_bin):
     """
@@ -127,6 +130,15 @@ def lint(tool_bin, dirname, outdir, filename):
     success = misc._read_file(full_logfile) == ""
     return full_logfile, success
 
+def _get_iverilog_flags(search):
+    flags = "-g2005-sv -gsupported-assertions"
+    if len(search) > 0:
+        flags += " -Y .v -Y .sv"
+        flags += " -y " + " -y ".join(search)
+        flags += " -I " + " -I ".join(search)
+    return flags
+
+
 def comp(tool_bin, dirname, outdir, modname=None, search=None, libs=None):
     """
     Run compile on Verilog file.
@@ -149,11 +161,7 @@ def comp(tool_bin, dirname, outdir, modname=None, search=None, libs=None):
     logfile = "p2v_comp.log"
 
     if tool_bin.startswith("iverilog"):
-        flags = "-g2005-sv -gsupported-assertions"
-        if len(search) > 0:
-            flags += " -Y .v -Y .sv"
-            flags += " -y " + " -y ".join(search)
-            flags += " -I " + " -I ".join(search)
+        flags = _get_iverilog_flags(search)
         topmodule = misc.cond(modname is not None, f"-s {modname}")
         ofile = os.path.join(os.path.abspath(outdir), "iverilog.o")
         cmd = f"{tool_bin} {flags} {topmodule} {' '.join(libs)} *.* -o {ofile} {flags}"
@@ -197,6 +205,48 @@ def sim(tool_bin, dirname, outdir, pass_str, err_str=None):
                 success = False
     return full_logfile, success
 
+def cocotb_sim(rtldir, outdir, cocotb_filename, modname, search=None, libs=None, exports=None):
+    """
+    Run cocotb simulation.
+
+    Args:
+        rtldir(str): directory of Verilog file
+        outdir(str): directory for log file
+        cocotb_filename(str): cocotb testbench file name
+        modname(str): top verilog module name
+        search(list): list of search paths
+        libs(list): list of verilog library files
+        exports(dict): environment variables for test
+
+    Returns:
+        full path of logfile and a boolean if simulation completed successfully
+    """
+
+    pass_str="PASS "
+    err_str="FAIL "
+
+    rtldir = os.path.abspath(rtldir)
+    outdir = os.path.abspath(outdir)
+
+    # create makefile
+    makefile = os.path.join(outdir, "cocotb.makefile")
+    tb_modname = os.path.basename(cocotb_filename).split(".")[0]
+    makefile_lines = cocotb_makefile(tb_modname=tb_modname, top_modname=modname, rtldir=rtldir, search=search, libs=libs, exports=exports)
+    misc._write_file(makefile, makefile_lines)
+
+    success = False
+    logfile = "p2v_sim.log"
+
+    cmd = f"make -f {makefile}"
+    full_logfile = system(outdir, outdir, cmd, logfile, log_out=True, log_err=True)
+    system(outdir, outdir, "ln -s sim_build/*.fst dump.fst")
+    for line in misc._read_file(full_logfile).split("\n"):
+        if pass_str in line:
+            success = True
+        if err_str in line.lower():
+            success = False
+    return full_logfile, success
+
 def lint_off(tool_bin):
     """
     Marks the beginning of a code block not to run lint on.
@@ -224,3 +274,52 @@ def lint_on(tool_bin):
     if tool_bin.startswith("verilator"):
         return "`endif // VERILATOR"
     return ""
+
+def cocotb_makefile(tb_modname, top_modname, rtldir, search=None, libs=None, exports=None, sim_name="icarus"):
+    """
+    Builds a cocotb make file.
+
+    Args:
+        tb_modname(str): name of cocotb testbench file
+        top_modname(str): verilog wrapper module
+        rtldir(str): verilog files directory
+        search(list): list of search paths
+        libs(list): list of library files
+        exports(dict): environment variables for test
+        sim_name(str): simulator name
+
+    Returns:
+        coco tb make file as string
+    """
+    if search is None:
+        search = []
+    if libs is None:
+        libs = []
+    if exports is None:
+        exports = []
+
+    line = ""
+    for name, val in exports.items():
+        line += f"export {name}={val}\n"
+
+    line += f"""
+            # Makefile
+
+            # defaults
+            SIM ?= {sim_name}
+            WAVES=1
+            TOPLEVEL_LANG ?= verilog
+            PLUSARGS += -fst
+
+            VERILOG_SOURCES += {rtldir}/*.*v {" ".join(libs)}
+
+            TOPLEVEL = {top_modname}
+
+            export PYTHONPATH := $(PYTHONPATH):{":".join(search)}
+            MODULE = {tb_modname}
+
+            # include cocotb's make rules to take care of the simulator setup
+            include $(shell cocotb-config --makefiles)/Makefile.sim
+
+    """
+    return line

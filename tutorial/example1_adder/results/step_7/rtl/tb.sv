@@ -41,7 +41,7 @@ module tb ();
 
     logic [15:0] o;
     logic valid_out;
-    adder__clk_bits16_num4_float16True adder (
+    adder__clk_bits16_num4_float16False adder (
         .clk(clk),  // input
         .resetn(resetn),  // input
         .valid(valid),  // input
@@ -61,14 +61,14 @@ module tb ();
 
     initial begin
 
-        data_in_q.push_back({16'h36ac, 16'h39c3, 16'h077f, 16'h34d6});
-        expected_q.push_back(16'h3dc2);
-        data_in_q.push_back({16'h30b2, 16'h2de9, 16'h31f6, 16'h3587});
-        expected_q.push_back(16'h3a2a);
-        data_in_q.push_back({16'h3659, 16'h384f, 16'h36b5, 16'h397b});
-        expected_q.push_back(16'h4014);
-        data_in_q.push_back({16'h328b, 16'h3b06, 16'h2703, 16'h395d});
-        expected_q.push_back(16'h3f1e);
+        data_in_q.push_back({16'h3c5f, 16'hfda9, 16'he623, 16'hf1ca});
+        expected_q.push_back(16'h11f5);
+        data_in_q.push_back({16'hc25c, 16'h6b7f, 16'h300e, 16'hf9c8});
+        expected_q.push_back(16'h57b1);
+        data_in_q.push_back({16'h0e83, 16'hc795, 16'hdd93, 16'h0114});
+        expected_q.push_back(16'hb4bf);
+        data_in_q.push_back({16'he409, 16'h885c, 16'h7520, 16'h3457});
+        expected_q.push_back(16'h15dc);
 
     end
 
@@ -97,7 +97,7 @@ module tb ();
     always @(posedge clk)
         if (valid_out) begin
             expected = expected_q.pop_front();
-            if ((o > expected) ? ((o - expected) > 16'd16) : ((expected - o) > 16'd16)) begin
+            if ((o != expected)) begin
                 $display("test FAILED: mismatch expected: 0x%0h, actual: 0x%0h", expected, o);
                 #10;
                 $finish;

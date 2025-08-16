@@ -403,3 +403,9 @@ class p2v_signal:
             p2v_signal
         """
         return misc.pad(left, self, right=right, val=val)
+
+    def bits(self):
+        """
+        Returns signal bits
+        """
+        return self._bits

@@ -13,6 +13,8 @@ do
 	echo "starting step $step"
 	if [ -e $SCRIPT_DIR/step_$step/tb_adder.py ];then
 		python3 $SCRIPT_DIR/step_$step/tb_adder.py -sim -outdir $OUTDIR/step_$step  -params '{"size":4}' -sim_args '{"bits":16,"num":4}'
+	elif [ -e $SCRIPT_DIR/step_$step/tb_adder_coco.py ];then
+                python3 $SCRIPT_DIR/step_$step/adder.py -sim -outdir $OUTDIR/step_$step  -params '{"bits":16,"num":4}' -sim_args '{"TEST_LEN":4}' -cocotb_file $SCRIPT_DIR/step_$step/tb_adder_coco.py
 	else
 		python3 $SCRIPT_DIR/step_$step/adder.py -outdir $OUTDIR/step_$step
 	fi

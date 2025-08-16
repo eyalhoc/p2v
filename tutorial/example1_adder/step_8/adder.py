@@ -6,7 +6,6 @@
 # step 5: generate random permutations to check robustness of code
 # step 6: support float16 adder
 # step 7: create a test bench that drives inputs and tests sum of adder
-# step 8: support float16
 
 from p2v import p2v, misc, clock, default_clk
 
@@ -37,6 +36,7 @@ class adder(p2v):
                 overflow = self.logic()
                 zero = self.logic()
                 NaN = self.logic()
+                precisionLost = self.logic()
                 
                 son = self.verilog_module("float_adder")
                 son.connect_in(son.num1, data_in[0])
@@ -45,11 +45,13 @@ class adder(p2v):
                 son.connect_out(overflow)
                 son.connect_out(zero)
                 son.connect_out(NaN)
-                son.connect_out(son.precisionLost, None)
+                son.connect_out(precisionLost)
                 son.inst()
                 
-                for stat in [overflow, zero, NaN]:
-                    self.assert_property(clk, ~stat, f"received unexpected {stat}")
+                self.assert_property(clk, ~overflow, f"received unexpected overflow")
+                self.assert_property(clk, ~zero, f"received unexpected zero")
+                self.assert_property(clk, ~NaN, f"received unexpected NaN")
+                self.allow_unused(precisionLost)
             else:
                 self.assign(o_pre, data_in[0] + data_in[1])
                 
@@ -63,7 +65,7 @@ class adder(p2v):
             for i in range(2):
                 datas[i] = self.logic(bits)
                 valids[i] = self.logic()
-                son = adder(self).module(clk, bits=bits, num=son_num, float16=float16)
+                son = adder(self).module(clk, bits=bits, num=son_num)
                 son.connect_in(clk)
                 son.connect_in(son.valid) # assumes port name equals wire name
                 for n in range(son_num):
@@ -74,7 +76,7 @@ class adder(p2v):
         
         
             # add the results
-            son = adder(self).module(clk, bits=bits, num=2, float16=float16)
+            son = adder(self).module(clk, bits=bits, num=2)
             son.connect_in(clk)
             son.connect_in(son.valid, valids[0] & valids[1])
             son.connect_in(son.data_in[0], datas[0])
@@ -87,9 +89,12 @@ class adder(p2v):
         return self.write()
 
 
-    def gen(self):
+    def gen(self, float16=None):
         args = {}
-        args["float16"] = self.tb.rand_bool()
+        if float16 is None:
+            args["float16"] = self.tb.rand_bool()
+        else:
+            args["float16"] = float16
         if args["float16"]:
             args["bits"] = 16
         else:
