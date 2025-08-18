@@ -91,6 +91,7 @@ class adder(p2v):
 
     def gen(self, float16=None):
         args = {}
+        args["clk"] = self.tb.rand_clock()
         if float16 is None:
             args["float16"] = self.tb.rand_bool()
         else:

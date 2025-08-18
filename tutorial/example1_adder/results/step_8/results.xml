@@ -1,6 +1,6 @@
 <testsuites name="results">
   <testsuite name="all" package="all">
-    <property name="random_seed" value="1755477293" />
-    <testcase name="test" classname="tb_adder_coco" file="/mnt/c/Users/eyalh/work/p2v_work/p2v/tutorial/example1_adder/step_8/tb_adder_coco.py" lineno="71" time="0.011688947677612305" sim_time_ns="208.001" ratio_time="17794.672859934322" />
+    <property name="random_seed" value="1755489883" />
+    <testcase name="test" classname="tb_adder_coco" file="/mnt/c/Users/eyalh/work/p2v_work/p2v/tutorial/example1_adder/step_8/tb_adder_coco.py" lineno="92" time="0.008282184600830078" sim_time_ns="184.501" ratio_time="22276.851928838736" />
   </testsuite>
 </testsuites>

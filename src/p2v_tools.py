@@ -234,7 +234,7 @@ def cocotb_sim(rtldir, outdir, cocotb_filename, modname, search=None, libs=None,
     outdir = os.path.abspath(outdir)
 
     # create makefile
-    build_dir = "sim_build2"
+    build_dir = "sim_build"
     makefile = os.path.join(outdir, "cocotb.makefile")
     tb_modname = os.path.basename(cocotb_filename).split(".")[0]
     makefile_lines = cocotb_makefile(tb_modname=tb_modname, top_modname=modname, rtldir=rtldir, search=search, libs=libs, exports=exports, build_dir=build_dir)

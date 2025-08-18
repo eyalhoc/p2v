@@ -1,6 +1,7 @@
 # test_my_design.py (extended)
 
 import cocotb
+from cocotb.clock import Clock
 from cocotb.triggers import FallingEdge, RisingEdge, Timer
 
 import os
@@ -8,8 +9,9 @@ import random
 from dut_module import pins
 
 test_flags = {}
-test_flags["reset_done"] = False
 test_flags["test_done"] = False
+
+DUT_CLKGEN = False
 
 SEED = int(os.getenv("SEED", 1))
 TEST_LEN = int(os.getenv("TEST_LEN", 32))
@@ -20,26 +22,40 @@ async def generate_clock(dut):
     """Generate clock pulses."""
 
     cycle = random.randint(2, 10)
-    while True:
-        dut.clk.value = 0
-        await Timer(cycle//2, units="ns")
-        dut.clk.value = 1
-        await Timer(cycle-(cycle//2), units="ns")
+    cocotb.start_soon(Clock(dut.clk, cycle, units="ns").start())
+    
+#    while True:
+#        dut.clk.value = 0
+#        await Timer(cycle//2, units="ns")
+#        dut.clk.value = 1
+#        await Timer(cycle-(cycle//2), units="ns")
 
 async def generate_reset(dut):
     """Generate reset."""
-    dut.rst_n.value = 1
+    if hasattr(dut, "reset"):
+        dut.reset.value = 0
+    else:
+        dut.rst_n.value = 1
     await FallingEdge(dut.clk)
-    dut.rst_n.value = 0
+    if hasattr(dut, "reset"):
+        dut.reset.value = 1
+    else:
+        dut.rst_n.value = 0
     reset_duration = random.randint(2, 16)
     for _ in range(reset_duration):
         await RisingEdge(dut.clk)
-    dut.rst_n.value = 1
+    if hasattr(dut, "reset"):
+        dut.reset.value = 0
+    else:
+        dut.rst_n.value = 1
     await RisingEdge(dut.clk)
-    test_flags["reset_done"] = True
 
 async def check_data(dut, expected):
-    await RisingEdge(dut.rst_n)
+    if hasattr(dut, "reset"):
+        await FallingEdge(dut.reset)
+    else:
+        await RisingEdge(dut.rst_n)
+    await FallingEdge(dut.clk)
     for i in range(TEST_LEN):
         while dut.valid_out.value != 1:
             await FallingEdge(dut.clk)
@@ -52,6 +68,11 @@ async def check_data(dut, expected):
     test_flags["test_done"] = True
     
 async def drive_data(dut, datas):
+    if hasattr(dut, "reset"):
+        await FallingEdge(dut.reset)
+    else:
+        await RisingEdge(dut.rst_n)
+    await FallingEdge(dut.clk)
     cnt = 0
     while cnt < len(datas):
         delay_high = random.randint(1, 8)
@@ -93,13 +114,13 @@ async def test(dut):
     for n in range(num):
         getattr(dut, str(pins.data_in[n])).value = 0
         
-    await cocotb.start(generate_clock(dut))
-    await cocotb.start(generate_reset(dut))
-    await cocotb.start(check_data(dut, expected=expected))
-
-    while not test_flags["reset_done"]:
-        await FallingEdge(dut.clk)
+    if not DUT_CLKGEN:
+        await cocotb.start(generate_clock(dut))
+        await cocotb.start(generate_reset(dut))
         
+    for _ in range(3):
+        await FallingEdge(dut.clk)
+    await cocotb.start(check_data(dut, expected=expected))
     await cocotb.start(drive_data(dut, datas=datas))
     
     while not test_flags["test_done"]:
