@@ -329,7 +329,7 @@ def cocotb_makefile(tb_modname, top_modname, rtldir, search=None, libs=None, exp
             WAVES=1
             TOPLEVEL_LANG ?= verilog
             PLUSARGS += -fst
-            COMPILE_ARGS += {_get_iverilog_flags()}
+            COMPILE_ARGS += {_get_iverilog_flags(search_full)}
 
             SIM_BUILD = {build_dir}
             VERILOG_SOURCES += {rtldir}/*.*v {" ".join(libs_full)}

@@ -40,7 +40,7 @@ from p2v_signal import p2v_signal, p2v_kind
 from p2v_connect import p2v_connect
 from p2v_fsm import p2v_fsm
 from p2v_tb import p2v_tb, PASS_STATUS
-from p2v_struct import FIELD_SEP
+from p2v_struct import p2v_struct, FIELD_SEP
 import p2v_tools
 
 MAX_MODNAME = 150
@@ -258,7 +258,7 @@ class p2v():
         success = logfile = None
         if self._args.sim:
             if self._args.cocotb_filename is not None:
-                cocotb_exports = {"SEED":self.tb.seed}
+                cocotb_exports = {"RANDOM_SEED":self.tb.seed}
                 for name, val in self._args.sim_args.items():
                     cocotb_exports[name] = val
                 logfile, success = p2v_tools.cocotb_sim(rtldir=self._get_rtldir(), outdir=self._args.outdir,
@@ -484,7 +484,7 @@ class p2v():
             if isinstance(signal._bits, int):
                 self._assert(abs(signal._bits) <= MAX_BITS, f"{signal._name} uses {abs(signal._bits)} bits which exceeds maximum of {MAX_BITS}", warning=True)
             self._signals[signal._name] = signal
-        if signal._strct is not None:
+        if isinstance(signal._strct, p2v_struct):
             self._add_strct_attr(signal, names=signal._strct.names, fields=signal._strct.fields)
         return signal
 
@@ -554,13 +554,22 @@ class p2v():
 
     def _write_pins(self, connects):
         pins = SimpleNamespace()
+        clks = []
         for name in dir(connects):
             if not name.startswith("_"):
                 attr = getattr(connects, name)
                 if isinstance(attr, (p2v_signal, dict)):
                     setattr(pins, name, attr)
-                    if isinstance(attr, dict) and "_NAME" in attr:
+                    if isinstance(attr, p2v_signal):
+                        if isinstance(attr._strct, clock):
+                            clks.append(attr._strct)
+                    elif isinstance(attr, dict) and "_NAME" in attr:
                         getattr(pins, name).pop("_NAME", None)
+        for clk in clks:
+            for name in clk.get_nets():
+                if hasattr(pins, str(name)):
+                    delattr(pins, str(name))
+            setattr(pins, str(clk), clk)
 
         pickle_file = os.path.abspath(os.path.join(self._args.outdir, "pins.pkl"))
         with open(pickle_file, 'wb') as f:
@@ -643,7 +652,7 @@ class p2v():
         elif isinstance(wire, list):
             for name in wire:
                 self._set_used(name, allow=allow)
-        elif isinstance(wire, str) and wire in self._signals and (self._signals[wire]._strct is not None):
+        elif isinstance(wire, str) and wire in self._signals and isinstance(self._signals[wire]._strct, p2v_struct):
             fields = self._signals[wire]._strct.fields
             for field_name in fields:
                 bits = fields[field_name]
@@ -768,7 +777,7 @@ class p2v():
         else:
             self._outfiles[modname] = outhash
 
-    def _port(self, kind, name, bits=1, used=False, driven=False):
+    def _port(self, kind, name, bits=1, used=False, driven=False, strct=None):
         if isinstance(name, str) and name == "":
             name = self._get_receive_name(kind, depth=3)
         self._assert(type(bits) in SIGNAL_TYPES, f"unknown type {bits} for port", fatal=True)
@@ -780,8 +789,11 @@ class p2v():
 
         if isinstance(name, clock):
             self._assert(bits == 1, f"{kind} clock {name} must be declared with bits = 1")
-            for net in name.get_nets():
-                self._port(kind, str(net), used=used, driven=driven)
+            self._port(kind, str(name), used=used, driven=driven, strct=name)
+            if name.reset is not None:
+                self._port(kind, str(name.reset), used=used, driven=driven)
+            if name.rst_n is not None:
+                self._port(kind, str(name.rst_n), used=used, driven=driven)
         elif isinstance(name, list):
             signals = []
             for n in name:
@@ -804,10 +816,10 @@ class p2v():
             if isinstance(bits, str):
                 for bits_str in self._get_names(bits):
                     self._set_used(bits_str)
-            signal = self._add_signal(p2v_signal(kind, name, bits, used=used, driven=driven, remark=self._get_remark(depth=3)))
+            signal = self._add_signal(p2v_signal(kind, name, bits, used=used, driven=driven, remark=self._get_remark(depth=3), strct=strct))
             if enum is not None:
                 for _name, _val in enum.items():
-                    setattr(signal, _name, p2v_signal(None, f"({name} == {_val})", bits=bits))
+                    setattr(signal, _name, p2v_signal(None, f"({name} == {_val})", bits=bits, strct=strct))
             return signal
         return None
 
@@ -1271,6 +1283,7 @@ class p2v():
                         self._assert(val == self._modules[self._modname][name], \
                         f"module {self._modname} was recreated with different content (variable {name} does not affect module name)", fatal=True)
         else:
+            self._assert(self._modname not in self._modules, f"module {self._modname} already exists", fatal=True)
             if not self._modname.startswith("_"):
                 clsname = self._get_clsname()
                 if clsname != "_test":

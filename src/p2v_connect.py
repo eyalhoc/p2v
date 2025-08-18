@@ -18,6 +18,7 @@ p2v_connect module
 import p2v_misc as misc
 from p2v_signal import p2v_signal, p2v_kind
 from p2v_clock import p2v_clock as clock
+from p2v_struct import p2v_struct
 
 class p2v_connect():
     """
@@ -67,7 +68,7 @@ class p2v_connect():
                 self._parent._assert(pin not in self._pins, f"pin {pin} was previosuly assigned")
                 if signal._bits != 0:
                     self._pins[pin] = wire
-            if signal._strct is not None:
+            if isinstance(signal._strct, p2v_struct):
                 strct = signal._strct
                 for field_name in strct.fields:
                     self._connect(field_name, strct.update_field_name(wire, field_name), self._signals[field_name]._kind)
