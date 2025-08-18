@@ -8,12 +8,12 @@
 :vpi_module "/usr/lib/x86_64-linux-gnu/ivl/v2005_math.vpi";
 :vpi_module "/usr/lib/x86_64-linux-gnu/ivl/va_math.vpi";
 :vpi_module "/usr/lib/x86_64-linux-gnu/ivl/v2009.vpi";
-S_0x57fe940614b0 .scope package, "$unit" "$unit" 2 1;
+S_0x55ac98fd4ee0 .scope package, "$unit" "$unit" 2 1;
  .timescale -9 -12;
-S_0x57fe94061640 .scope module, "adder__bits16_num4_float16False" "adder__bits16_num4_float16False" 3 1;
+S_0x55ac98fe2270 .scope module, "adder__clk_bits16_num4_float16True" "adder__clk_bits16_num4_float16True" 3 1;
  .timescale -9 -12;
     .port_info 0 /INPUT 1 "clk";
-    .port_info 1 /INPUT 1 "rst_n";
+    .port_info 1 /INPUT 1 "reset";
     .port_info 2 /INPUT 1 "valid";
     .port_info 3 /INPUT 16 "data_in__0";
     .port_info 4 /INPUT 16 "data_in__1";
@@ -21,198 +21,190 @@ S_0x57fe94061640 .scope module, "adder__bits16_num4_float16False" "adder__bits16
     .port_info 6 /INPUT 16 "data_in__3";
     .port_info 7 /OUTPUT 16 "o";
     .port_info 8 /OUTPUT 1 "valid_out";
-L_0x57fe94052a50 .functor AND 1, v0x57fe9407c5a0_0, v0x57fe9407cf60_0, C4<1>, C4<1>;
-o0x7b8401066018 .functor BUFZ 1, C4<z>; HiZ drive
-v0x57fe9407daf0_0 .net "clk", 0 0, o0x7b8401066018;  0 drivers
-o0x7b8401066048 .functor BUFZ 16, C4<zzzzzzzzzzzzzzzz>; HiZ drive
-v0x57fe9407dbb0_0 .net "data_in__0", 15 0, o0x7b8401066048;  0 drivers
-o0x7b8401066078 .functor BUFZ 16, C4<zzzzzzzzzzzzzzzz>; HiZ drive
-v0x57fe9407dc70_0 .net "data_in__1", 15 0, o0x7b8401066078;  0 drivers
-o0x7b84010662e8 .functor BUFZ 16, C4<zzzzzzzzzzzzzzzz>; HiZ drive
-v0x57fe9407dd40_0 .net "data_in__2", 15 0, o0x7b84010662e8;  0 drivers
-o0x7b8401066318 .functor BUFZ 16, C4<zzzzzzzzzzzzzzzz>; HiZ drive
-v0x57fe9407de10_0 .net "data_in__3", 15 0, o0x7b8401066318;  0 drivers
-v0x57fe9407df00_0 .net "datas__0", 15 0, v0x57fe940522e0_0;  1 drivers
-v0x57fe9407dff0_0 .net "datas__1", 15 0, v0x57fe9407cc10_0;  1 drivers
-v0x57fe9407e0e0_0 .net "o", 15 0, v0x57fe9407d5d0_0;  1 drivers
-o0x7b8401066108 .functor BUFZ 1, C4<z>; HiZ drive
-v0x57fe9407e1a0_0 .net "rst_n", 0 0, o0x7b8401066108;  0 drivers
-o0x7b8401066138 .functor BUFZ 1, C4<z>; HiZ drive
-v0x57fe9407e240_0 .net "valid", 0 0, o0x7b8401066138;  0 drivers
-v0x57fe9407e2e0_0 .net "valid_out", 0 0, v0x57fe9407d950_0;  1 drivers
-v0x57fe9407e380_0 .net "valids__0", 0 0, v0x57fe9407c5a0_0;  1 drivers
-v0x57fe9407e420_0 .net "valids__1", 0 0, v0x57fe9407cf60_0;  1 drivers
-S_0x57fe94065fe0 .scope module, "adder0" "adder__bits16_num2_float16False" 3 21, 4 1 0, S_0x57fe94061640;
+L_0x55ac98fd3610 .functor AND 1, v0x55ac98ffd160_0, v0x55ac98ffdb20_0, C4<1>, C4<1>;
+o0x7f9ffe59f018 .functor BUFZ 1, C4<z>; HiZ drive
+v0x55ac98ffe6b0_0 .net "clk", 0 0, o0x7f9ffe59f018;  0 drivers
+o0x7f9ffe59f048 .functor BUFZ 16, C4<zzzzzzzzzzzzzzzz>; HiZ drive
+v0x55ac98ffe770_0 .net "data_in__0", 15 0, o0x7f9ffe59f048;  0 drivers
+o0x7f9ffe59f078 .functor BUFZ 16, C4<zzzzzzzzzzzzzzzz>; HiZ drive
+v0x55ac98ffe830_0 .net "data_in__1", 15 0, o0x7f9ffe59f078;  0 drivers
+o0x7f9ffe59f2e8 .functor BUFZ 16, C4<zzzzzzzzzzzzzzzz>; HiZ drive
+v0x55ac98ffe900_0 .net "data_in__2", 15 0, o0x7f9ffe59f2e8;  0 drivers
+o0x7f9ffe59f318 .functor BUFZ 16, C4<zzzzzzzzzzzzzzzz>; HiZ drive
+v0x55ac98ffe9d0_0 .net "data_in__3", 15 0, o0x7f9ffe59f318;  0 drivers
+v0x55ac98ffeac0_0 .net "datas__0", 15 0, v0x55ac98fd2f40_0;  1 drivers
+v0x55ac98ffebb0_0 .net "datas__1", 15 0, v0x55ac98ffd7d0_0;  1 drivers
+v0x55ac98ffeca0_0 .net "o", 15 0, v0x55ac98ffe190_0;  1 drivers
+o0x7f9ffe59f108 .functor BUFZ 1, C4<z>; HiZ drive
+v0x55ac98ffed60_0 .net "reset", 0 0, o0x7f9ffe59f108;  0 drivers
+o0x7f9ffe59f138 .functor BUFZ 1, C4<z>; HiZ drive
+v0x55ac98ffee00_0 .net "valid", 0 0, o0x7f9ffe59f138;  0 drivers
+v0x55ac98ffeea0_0 .net "valid_out", 0 0, v0x55ac98ffe510_0;  1 drivers
+v0x55ac98ffef40_0 .net "valids__0", 0 0, v0x55ac98ffd160_0;  1 drivers
+v0x55ac98ffefe0_0 .net "valids__1", 0 0, v0x55ac98ffdb20_0;  1 drivers
+S_0x55ac98fe6c10 .scope module, "adder0" "adder__clk_bits16_num2_float16False" 3 21, 4 1 0, S_0x55ac98fe2270;
  .timescale -9 -12;
     .port_info 0 /INPUT 1 "clk";
-    .port_info 1 /INPUT 1 "rst_n";
+    .port_info 1 /INPUT 1 "reset";
     .port_info 2 /INPUT 1 "valid";
     .port_info 3 /INPUT 16 "data_in__0";
     .port_info 4 /INPUT 16 "data_in__1";
     .port_info 5 /OUTPUT 16 "o";
     .port_info 6 /OUTPUT 1 "valid_out";
-v0x57fe940537d0_0 .net "clk", 0 0, o0x7b8401066018;  alias, 0 drivers
-v0x57fe94051c60_0 .net "data_in__0", 15 0, o0x7b8401066048;  alias, 0 drivers
-v0x57fe94051d60_0 .net "data_in__1", 15 0, o0x7b8401066078;  alias, 0 drivers
-v0x57fe940522e0_0 .var "o", 15 0;
-v0x57fe940523b0_0 .net "o_pre", 15 0, L_0x57fe9407e5e0;  1 drivers
-v0x57fe94037800_0 .net "rst_n", 0 0, o0x7b8401066108;  alias, 0 drivers
-v0x57fe94037bf0_0 .net "valid", 0 0, o0x7b8401066138;  alias, 0 drivers
-v0x57fe9407c5a0_0 .var "valid_out", 0 0;
-E_0x57fe9405fe60/0 .event negedge, v0x57fe94037800_0;
-E_0x57fe9405fe60/1 .event posedge, v0x57fe940537d0_0;
-E_0x57fe9405fe60 .event/or E_0x57fe9405fe60/0, E_0x57fe9405fe60/1;
-L_0x57fe9407e5e0 .arith/sum 16, o0x7b8401066048, o0x7b8401066078;
-S_0x57fe9407c740 .scope module, "adder1" "adder__bits16_num2_float16False" 3 33, 4 1 0, S_0x57fe94061640;
+v0x55ac98fd3c00_0 .net "clk", 0 0, o0x7f9ffe59f018;  alias, 0 drivers
+v0x55ac98fd4140_0 .net "data_in__0", 15 0, o0x7f9ffe59f048;  alias, 0 drivers
+v0x55ac98fd2a00_0 .net "data_in__1", 15 0, o0x7f9ffe59f078;  alias, 0 drivers
+v0x55ac98fd2f40_0 .var "o", 15 0;
+v0x55ac98fb8800_0 .net "o_pre", 15 0, L_0x55ac98fff1a0;  1 drivers
+v0x55ac98ffcfe0_0 .net "reset", 0 0, o0x7f9ffe59f108;  alias, 0 drivers
+v0x55ac98ffd0a0_0 .net "valid", 0 0, o0x7f9ffe59f138;  alias, 0 drivers
+v0x55ac98ffd160_0 .var "valid_out", 0 0;
+E_0x55ac98fe0e60 .event posedge, v0x55ac98fd3c00_0;
+L_0x55ac98fff1a0 .arith/sum 16, o0x7f9ffe59f048, o0x7f9ffe59f078;
+S_0x55ac98ffd300 .scope module, "adder1" "adder__clk_bits16_num2_float16False" 3 33, 4 1 0, S_0x55ac98fe2270;
  .timescale -9 -12;
     .port_info 0 /INPUT 1 "clk";
-    .port_info 1 /INPUT 1 "rst_n";
+    .port_info 1 /INPUT 1 "reset";
     .port_info 2 /INPUT 1 "valid";
     .port_info 3 /INPUT 16 "data_in__0";
     .port_info 4 /INPUT 16 "data_in__1";
     .port_info 5 /OUTPUT 16 "o";
     .port_info 6 /OUTPUT 1 "valid_out";
-v0x57fe9407c9f0_0 .net "clk", 0 0, o0x7b8401066018;  alias, 0 drivers
-v0x57fe9407ca90_0 .net "data_in__0", 15 0, o0x7b84010662e8;  alias, 0 drivers
-v0x57fe9407cb50_0 .net "data_in__1", 15 0, o0x7b8401066318;  alias, 0 drivers
-v0x57fe9407cc10_0 .var "o", 15 0;
-v0x57fe9407ccf0_0 .net "o_pre", 15 0, L_0x57fe9407e700;  1 drivers
-v0x57fe9407ce20_0 .net "rst_n", 0 0, o0x7b8401066108;  alias, 0 drivers
-v0x57fe9407cec0_0 .net "valid", 0 0, o0x7b8401066138;  alias, 0 drivers
-v0x57fe9407cf60_0 .var "valid_out", 0 0;
-L_0x57fe9407e700 .arith/sum 16, o0x7b84010662e8, o0x7b8401066318;
-S_0x57fe9407d0c0 .scope module, "adder_out" "adder__bits16_num2_float16False" 3 43, 4 1 0, S_0x57fe94061640;
+v0x55ac98ffd5b0_0 .net "clk", 0 0, o0x7f9ffe59f018;  alias, 0 drivers
+v0x55ac98ffd650_0 .net "data_in__0", 15 0, o0x7f9ffe59f2e8;  alias, 0 drivers
+v0x55ac98ffd710_0 .net "data_in__1", 15 0, o0x7f9ffe59f318;  alias, 0 drivers
+v0x55ac98ffd7d0_0 .var "o", 15 0;
+v0x55ac98ffd8b0_0 .net "o_pre", 15 0, L_0x55ac98fff2c0;  1 drivers
+v0x55ac98ffd9e0_0 .net "reset", 0 0, o0x7f9ffe59f108;  alias, 0 drivers
+v0x55ac98ffda80_0 .net "valid", 0 0, o0x7f9ffe59f138;  alias, 0 drivers
+v0x55ac98ffdb20_0 .var "valid_out", 0 0;
+L_0x55ac98fff2c0 .arith/sum 16, o0x7f9ffe59f2e8, o0x7f9ffe59f318;
+S_0x55ac98ffdc80 .scope module, "adder_out" "adder__clk_bits16_num2_float16False" 3 43, 4 1 0, S_0x55ac98fe2270;
  .timescale -9 -12;
     .port_info 0 /INPUT 1 "clk";
-    .port_info 1 /INPUT 1 "rst_n";
+    .port_info 1 /INPUT 1 "reset";
     .port_info 2 /INPUT 1 "valid";
     .port_info 3 /INPUT 16 "data_in__0";
     .port_info 4 /INPUT 16 "data_in__1";
     .port_info 5 /OUTPUT 16 "o";
     .port_info 6 /OUTPUT 1 "valid_out";
-v0x57fe9407d350_0 .net "clk", 0 0, o0x7b8401066018;  alias, 0 drivers
-v0x57fe9407d440_0 .net "data_in__0", 15 0, v0x57fe940522e0_0;  alias, 1 drivers
-v0x57fe9407d500_0 .net "data_in__1", 15 0, v0x57fe9407cc10_0;  alias, 1 drivers
-v0x57fe9407d5d0_0 .var "o", 15 0;
-v0x57fe9407d670_0 .net "o_pre", 15 0, L_0x57fe9407e840;  1 drivers
-v0x57fe9407d7a0_0 .net "rst_n", 0 0, o0x7b8401066108;  alias, 0 drivers
-v0x57fe9407d890_0 .net "valid", 0 0, L_0x57fe94052a50;  1 drivers
-v0x57fe9407d950_0 .var "valid_out", 0 0;
-L_0x57fe9407e840 .arith/sum 16, v0x57fe940522e0_0, v0x57fe9407cc10_0;
-S_0x57fe94065e50 .scope module, "cocotb_iverilog_dump" "cocotb_iverilog_dump" 5 1;
+v0x55ac98ffdf10_0 .net "clk", 0 0, o0x7f9ffe59f018;  alias, 0 drivers
+v0x55ac98ffe000_0 .net "data_in__0", 15 0, v0x55ac98fd2f40_0;  alias, 1 drivers
+v0x55ac98ffe0c0_0 .net "data_in__1", 15 0, v0x55ac98ffd7d0_0;  alias, 1 drivers
+v0x55ac98ffe190_0 .var "o", 15 0;
+v0x55ac98ffe230_0 .net "o_pre", 15 0, L_0x55ac98fff400;  1 drivers
+v0x55ac98ffe360_0 .net "reset", 0 0, o0x7f9ffe59f108;  alias, 0 drivers
+v0x55ac98ffe450_0 .net "valid", 0 0, L_0x55ac98fd3610;  1 drivers
+v0x55ac98ffe510_0 .var "valid_out", 0 0;
+L_0x55ac98fff400 .arith/sum 16, v0x55ac98fd2f40_0, v0x55ac98ffd7d0_0;
+S_0x55ac98fe24e0 .scope module, "cocotb_iverilog_dump" "cocotb_iverilog_dump" 5 1;
  .timescale -9 -12;
-    .scope S_0x57fe94065fe0;
+    .scope S_0x55ac98fe6c10;
 T_0 ;
-    %wait E_0x57fe9405fe60;
-    %load/vec4 v0x57fe94037800_0;
-    %nor/r;
+    %wait E_0x55ac98fe0e60;
+    %load/vec4 v0x55ac98ffcfe0_0;
     %flag_set/vec4 8;
     %jmp/0xz  T_0.0, 8;
     %pushi/vec4 0, 0, 16;
-    %assign/vec4 v0x57fe940522e0_0, 0;
+    %assign/vec4 v0x55ac98fd2f40_0, 0;
     %jmp T_0.1;
 T_0.0 ;
-    %load/vec4 v0x57fe94037bf0_0;
+    %load/vec4 v0x55ac98ffd0a0_0;
     %flag_set/vec4 8;
     %jmp/0xz  T_0.2, 8;
-    %load/vec4 v0x57fe940523b0_0;
-    %assign/vec4 v0x57fe940522e0_0, 0;
+    %load/vec4 v0x55ac98fb8800_0;
+    %assign/vec4 v0x55ac98fd2f40_0, 0;
 T_0.2 ;
 T_0.1 ;
     %jmp T_0;
     .thread T_0;
-    .scope S_0x57fe94065fe0;
+    .scope S_0x55ac98fe6c10;
 T_1 ;
-    %wait E_0x57fe9405fe60;
-    %load/vec4 v0x57fe94037800_0;
-    %nor/r;
+    %wait E_0x55ac98fe0e60;
+    %load/vec4 v0x55ac98ffcfe0_0;
     %flag_set/vec4 8;
     %jmp/0xz  T_1.0, 8;
     %pushi/vec4 0, 0, 1;
-    %assign/vec4 v0x57fe9407c5a0_0, 0;
+    %assign/vec4 v0x55ac98ffd160_0, 0;
     %jmp T_1.1;
 T_1.0 ;
-    %load/vec4 v0x57fe94037bf0_0;
-    %assign/vec4 v0x57fe9407c5a0_0, 0;
+    %load/vec4 v0x55ac98ffd0a0_0;
+    %assign/vec4 v0x55ac98ffd160_0, 0;
 T_1.1 ;
     %jmp T_1;
     .thread T_1;
-    .scope S_0x57fe9407c740;
+    .scope S_0x55ac98ffd300;
 T_2 ;
-    %wait E_0x57fe9405fe60;
-    %load/vec4 v0x57fe9407ce20_0;
-    %nor/r;
+    %wait E_0x55ac98fe0e60;
+    %load/vec4 v0x55ac98ffd9e0_0;
     %flag_set/vec4 8;
     %jmp/0xz  T_2.0, 8;
     %pushi/vec4 0, 0, 16;
-    %assign/vec4 v0x57fe9407cc10_0, 0;
+    %assign/vec4 v0x55ac98ffd7d0_0, 0;
     %jmp T_2.1;
 T_2.0 ;
-    %load/vec4 v0x57fe9407cec0_0;
+    %load/vec4 v0x55ac98ffda80_0;
     %flag_set/vec4 8;
     %jmp/0xz  T_2.2, 8;
-    %load/vec4 v0x57fe9407ccf0_0;
-    %assign/vec4 v0x57fe9407cc10_0, 0;
+    %load/vec4 v0x55ac98ffd8b0_0;
+    %assign/vec4 v0x55ac98ffd7d0_0, 0;
 T_2.2 ;
 T_2.1 ;
     %jmp T_2;
     .thread T_2;
-    .scope S_0x57fe9407c740;
+    .scope S_0x55ac98ffd300;
 T_3 ;
-    %wait E_0x57fe9405fe60;
-    %load/vec4 v0x57fe9407ce20_0;
-    %nor/r;
+    %wait E_0x55ac98fe0e60;
+    %load/vec4 v0x55ac98ffd9e0_0;
     %flag_set/vec4 8;
     %jmp/0xz  T_3.0, 8;
     %pushi/vec4 0, 0, 1;
-    %assign/vec4 v0x57fe9407cf60_0, 0;
+    %assign/vec4 v0x55ac98ffdb20_0, 0;
     %jmp T_3.1;
 T_3.0 ;
-    %load/vec4 v0x57fe9407cec0_0;
-    %assign/vec4 v0x57fe9407cf60_0, 0;
+    %load/vec4 v0x55ac98ffda80_0;
+    %assign/vec4 v0x55ac98ffdb20_0, 0;
 T_3.1 ;
     %jmp T_3;
     .thread T_3;
-    .scope S_0x57fe9407d0c0;
+    .scope S_0x55ac98ffdc80;
 T_4 ;
-    %wait E_0x57fe9405fe60;
-    %load/vec4 v0x57fe9407d7a0_0;
-    %nor/r;
+    %wait E_0x55ac98fe0e60;
+    %load/vec4 v0x55ac98ffe360_0;
     %flag_set/vec4 8;
     %jmp/0xz  T_4.0, 8;
     %pushi/vec4 0, 0, 16;
-    %assign/vec4 v0x57fe9407d5d0_0, 0;
+    %assign/vec4 v0x55ac98ffe190_0, 0;
     %jmp T_4.1;
 T_4.0 ;
-    %load/vec4 v0x57fe9407d890_0;
+    %load/vec4 v0x55ac98ffe450_0;
     %flag_set/vec4 8;
     %jmp/0xz  T_4.2, 8;
-    %load/vec4 v0x57fe9407d670_0;
-    %assign/vec4 v0x57fe9407d5d0_0, 0;
+    %load/vec4 v0x55ac98ffe230_0;
+    %assign/vec4 v0x55ac98ffe190_0, 0;
 T_4.2 ;
 T_4.1 ;
     %jmp T_4;
     .thread T_4;
-    .scope S_0x57fe9407d0c0;
+    .scope S_0x55ac98ffdc80;
 T_5 ;
-    %wait E_0x57fe9405fe60;
-    %load/vec4 v0x57fe9407d7a0_0;
-    %nor/r;
+    %wait E_0x55ac98fe0e60;
+    %load/vec4 v0x55ac98ffe360_0;
     %flag_set/vec4 8;
     %jmp/0xz  T_5.0, 8;
     %pushi/vec4 0, 0, 1;
-    %assign/vec4 v0x57fe9407d950_0, 0;
+    %assign/vec4 v0x55ac98ffe510_0, 0;
     %jmp T_5.1;
 T_5.0 ;
-    %load/vec4 v0x57fe9407d890_0;
-    %assign/vec4 v0x57fe9407d950_0, 0;
+    %load/vec4 v0x55ac98ffe450_0;
+    %assign/vec4 v0x55ac98ffe510_0, 0;
 T_5.1 ;
     %jmp T_5;
     .thread T_5;
-    .scope S_0x57fe94065e50;
+    .scope S_0x55ac98fe24e0;
 T_6 ;
-    %vpi_call/w 5 3 "$dumpfile", "sim_build/adder__bits16_num4_float16False.fst" {0 0 0};
-    %vpi_call/w 5 4 "$dumpvars", 32'sb00000000000000000000000000000000, S_0x57fe94061640 {0 0 0};
+    %vpi_call/w 5 3 "$dumpfile", "sim_build/adder__clk_bits16_num4_float16True.fst" {0 0 0};
+    %vpi_call/w 5 4 "$dumpvars", 32'sb00000000000000000000000000000000, S_0x55ac98fe2270 {0 0 0};
     %end;
     .thread T_6;
 # The file index is used to find the file name in the following table.
@@ -220,6 +212,6 @@ T_6 ;
     "N/A";
     "<interactive>";
     "-";
-    "/mnt/c/Users/eyalh/work/p2v_work/p2v/tutorial/example1_adder/results/step_8/rtl/adder__bits16_num4_float16False.sv";
-    "/mnt/c/Users/eyalh/work/p2v_work/p2v/tutorial/example1_adder/results/step_8/rtl/adder__bits16_num2_float16False.sv";
+    "/mnt/c/Users/eyalh/work/p2v_work/p2v/tutorial/example1_adder/results/step_8/rtl/adder__clk_bits16_num4_float16True.sv";
+    "/mnt/c/Users/eyalh/work/p2v_work/p2v/tutorial/example1_adder/results/step_8/rtl/adder__clk_bits16_num2_float16False.sv";
     "sim_build/cocotb_iverilog_dump.v";

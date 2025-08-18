@@ -15,6 +15,7 @@
 p2v_tools module. Responsible for external tools, checking if intalled and operating using system commands.
 """
 import os
+import glob
 import subprocess
 
 import p2v_misc as misc
@@ -132,7 +133,9 @@ def lint(tool_bin, dirname, outdir, filename):
     success = misc._read_file(full_logfile) == ""
     return full_logfile, success
 
-def _get_iverilog_flags(search):
+def _get_iverilog_flags(search=None):
+    if search is None:
+        search = []
     flags = "-g2005-sv -gsupported-assertions"
     if len(search) > 0:
         flags += " -Y .v -Y .sv"
@@ -231,17 +234,22 @@ def cocotb_sim(rtldir, outdir, cocotb_filename, modname, search=None, libs=None,
     outdir = os.path.abspath(outdir)
 
     # create makefile
+    build_dir = "sim_build"
     makefile = os.path.join(outdir, "cocotb.makefile")
     tb_modname = os.path.basename(cocotb_filename).split(".")[0]
-    makefile_lines = cocotb_makefile(tb_modname=tb_modname, top_modname=modname, rtldir=rtldir, search=search, libs=libs, exports=exports)
+    makefile_lines = cocotb_makefile(tb_modname=tb_modname, top_modname=modname, rtldir=rtldir, search=search, libs=libs, exports=exports, build_dir=build_dir)
     misc._write_file(makefile, makefile_lines)
 
     success = False
     logfile = "p2v_sim.log"
 
     cmd = f"make -f {makefile}"
+    system(outdir, outdir, f"rm -rf {build_dir}")
     full_logfile = system(outdir, outdir, cmd, logfile, log_out=True, log_err=True, bin_name="cocotb")
-    system(outdir, outdir, "ln -s sim_build/*.fst dump.fst")
+    misc._unlink(os.path.join(outdir, "dump.fst"))
+    for src_path in glob.glob(f"{outdir}/{build_dir}/*.fst"):
+        system(outdir, outdir, f"ln -s {src_path} dump.fst")
+        break
     for line in misc._read_file(full_logfile).split("\n"):
         if pass_str in line:
             success = True
@@ -277,7 +285,7 @@ def lint_on(tool_bin):
         return "`endif // VERILATOR"
     return ""
 
-def cocotb_makefile(tb_modname, top_modname, rtldir, search=None, libs=None, exports=None, sim_name="icarus"):
+def cocotb_makefile(tb_modname, top_modname, rtldir, search=None, libs=None, exports=None, sim_name="icarus", build_dir="sim_build"):
     """
     Builds a cocotb make file.
 
@@ -289,6 +297,7 @@ def cocotb_makefile(tb_modname, top_modname, rtldir, search=None, libs=None, exp
         libs(list): list of library files
         exports(dict): environment variables for test
         sim_name(str): simulator name
+        build_dir(str): directory for coctb simulation files
 
     Returns:
         coco tb make file as string
@@ -304,6 +313,14 @@ def cocotb_makefile(tb_modname, top_modname, rtldir, search=None, libs=None, exp
     for name, val in exports.items():
         line += f"export {name}={val}\n"
 
+    search_full = []
+    for path in search:
+        search_full.append(os.path.abspath(path))
+
+    libs_full = []
+    for path in libs:
+        libs_full.append(os.path.abspath(path))
+
     line += f"""
             # Makefile
 
@@ -312,12 +329,14 @@ def cocotb_makefile(tb_modname, top_modname, rtldir, search=None, libs=None, exp
             WAVES=1
             TOPLEVEL_LANG ?= verilog
             PLUSARGS += -fst
+            COMPILE_ARGS += {_get_iverilog_flags()}
 
-            VERILOG_SOURCES += {rtldir}/*.*v {" ".join(libs)}
+            SIM_BUILD = {build_dir}
+            VERILOG_SOURCES += {rtldir}/*.*v {" ".join(libs_full)}
 
             TOPLEVEL = {top_modname}
 
-            export PYTHONPATH := $(PYTHONPATH):{":".join(search)}
+            export PYTHONPATH := $(PYTHONPATH):{":".join(search_full)}
             MODULE = {tb_modname}
 
             # include cocotb's make rules to take care of the simulator setup

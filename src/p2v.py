@@ -564,11 +564,16 @@ class p2v():
 
         pickle_file = os.path.abspath(os.path.join(self._args.outdir, "pins.pkl"))
         with open(pickle_file, 'wb') as f:
-            pickle.dump(pins, f)
+            data = SimpleNamespace()
+            setattr(data, "args", self._modules[self._modname])
+            setattr(data, "pins", pins)
+            pickle.dump(data, f)
         s = "import pickle\n"
         s += f"with open('{pickle_file}', 'rb') as f:\n"
-        s += "    pins = pickle.load(f)\n"
-        misc._write_file("dut_pins.py", s)
+        s += "    data = pickle.load(f)\n"
+        s += "    args = data.args\n"
+        s += "    pins = data.pins\n"
+        misc._write_file(os.path.join(self._args.outdir, "dut_module.py"), s)
 
     def _exists(self):
         return self._modname in self._cache["conn"]
