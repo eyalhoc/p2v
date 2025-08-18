@@ -54,8 +54,10 @@ class p2v_signal:
         self._name = name
         if strct is None:
             self._strct = None
-        else:
+        if isinstance(strct, dict):
             self._strct = p2v_struct(self, name, strct)
+        else:
+            self._strct = strct
         self._ctrl = isinstance(bits, float)
         if self._ctrl:
             assert bits in [1.0, -1.0], f"control {kind} {name} is {bits} but it can only be 1.0 (valid) or -1.0 (ready)"
