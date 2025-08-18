@@ -5,7 +5,7 @@ from cocotb.triggers import FallingEdge, RisingEdge, Timer
 
 import os
 import random
-from dut_pins import pins
+from dut_module import pins
 
 test_flags = {}
 test_flags["reset_done"] = False

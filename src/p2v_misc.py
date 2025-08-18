@@ -24,7 +24,7 @@ from decimal import Decimal
 try:
     from p2v_signal import p2v_signal #pylint: disable=cyclic-import
 except ImportError:
-    pass
+    p2v_signal = str
 
 def _get_hash(s):
     assert isinstance(s, str), s
@@ -250,9 +250,13 @@ def _compare_files(filename1, filename2):
     with open(filename1, 'r', encoding='utf-8') as f1, open(filename2, 'r', encoding='utf-8') as f2:
         return f1.read() == f2.read()
 
+def _unlink(name):
+    if os.path.exists(name):
+        os.unlink(name)
+
 def _link(src, name):
-    if not os.path.exists(name):
-        os.symlink(src, name)
+    _unlink(name)
+    os.symlink(src, name)
 
 def _comment_remover(s):
     # remove all occurrences streamed comments (/*COMMENT */) from string
