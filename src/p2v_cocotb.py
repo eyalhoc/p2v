@@ -23,6 +23,7 @@ import warnings
 import cocotb
 from cocotb.clock import Clock
 from cocotb.triggers import FallingEdge, RisingEdge, Combine, Join
+from cocotb.utils import get_sim_time
 
 def GetParam(name, default):
     """
@@ -34,7 +35,6 @@ def GetParam(name, default):
 SEED = GetParam("SEED", 1)
 random.seed(SEED)
 
-
 class p2v_cocotb:
     """
     This class is a p2v cocotb.
@@ -42,15 +42,32 @@ class p2v_cocotb:
     def __init__(self, dut):
         self.dut = dut
 
+    def SimTime(self):
+        """Return simulation time."""
+        return get_sim_time()
+
+    def Info(self, msg, *args):
+        """Log info."""
+        return self.dut._log.info(msg, *args)
+
     def DutSignal(self, son):
         """Get DUT signal."""
         return getattr(self.dut, str(son))
 
-    async def GenClkRst(self, clk, max_cycle=10, min_cycle=2, units="ns", reset_max=64, reset_min=2):
+    async def timeout(self, clk, timeout=10000):
+        """Simulation timeout."""
+        cnt = 0
+        while cnt < timeout:
+            await self.WaitDelay(clk)
+            cnt += 1
+        raise cocotb.result.TestFailure(f"reached timeout after {timeout} cycles")
+
+    async def GenClkRst(self, clk, max_cycle=10, min_cycle=2, units="ns", reset_max=64, reset_min=2, timeout=None):
         """Generate clock and resets."""
+        if timeout is not None:
+            await cocotb.start(self.timeout(clk, timeout=timeout))
         await cocotb.start(self.GenClk(clk, max_cycle=max_cycle, min_cycle=min_cycle, units=units))
-        await cocotb.start(self.GenRst(clk, max_duration=reset_max, min_duration=reset_min))
-        await self.WaitRstDone(clk)
+        await self.GenRst(clk, max_duration=reset_max, min_duration=reset_min)
 
     async def GenClk(self, clk, max_cycle=10, min_cycle=2, units="ns"):
         """Generate clock pulses."""
@@ -141,3 +158,7 @@ class p2v_cocotb:
         dut_clk = self.DutSignal(clk)
         while signal.value != val:
             await FallingEdge(dut_clk)
+
+    async def WaitPosedge(self, signal):
+        """Wait for signal positive edge."""
+        await FallingEdge(signal)
