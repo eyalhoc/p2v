@@ -14,8 +14,6 @@ TEST_LEN = GetParam("TEST_LEN", 32)
 
 async def check_data(dut, clk, expected):
     common = p2v_cocotb(dut)
-    await common.WaitRstDone(clk)
-    
     for i in range(TEST_LEN):
         await common.WaitValue(clk, dut.valid_out)
         assert len(expected) > 0, f"unexpected valid_out"
@@ -28,8 +26,6 @@ async def check_data(dut, clk, expected):
     
 async def drive_data(dut, clk, datas):
     common = p2v_cocotb(dut)
-    await common.WaitRstDone(clk)
-    
     cnt = 0
     while cnt < len(datas):
         delay_high = random.randint(1, 8)
@@ -72,7 +68,7 @@ async def test(dut):
     for n in range(num):
         common.DutSignal(pins.data_in[n]).value = 0
         
-    await common.GenClkRst(clk)
+    await common.GenClkRst(clk, timeout=10000)
         
     await common.WaitDelay(clk, 3)
     await cocotb.start(check_data(dut, clk, expected=expected))
