@@ -571,10 +571,12 @@ class p2v():
                     delattr(pins, str(name))
             setattr(pins, str(clk), clk)
 
+
+        args = self._modules[self._modname]
         pickle_file = os.path.abspath(os.path.join(self._args.outdir, "pins.pkl"))
         with open(pickle_file, 'wb') as f:
             data = SimpleNamespace()
-            setattr(data, "args", self._modules[self._modname])
+            setattr(data, "args", args)
             setattr(data, "pins", pins)
             pickle.dump(data, f)
         s = "import pickle\n"
