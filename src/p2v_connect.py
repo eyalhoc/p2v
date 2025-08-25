@@ -58,7 +58,7 @@ class p2v_connect():
             self._parent._assert(pin in self._signals, f"module {self._modname} does not have a pin named {pin}", fatal=True)
             signal = self._signals[pin]
             self._parent._assert(signal._kind == kind, f"trying to connect {signal._kind} {pin} to {kind}")
-            if kind == "parameter":
+            if kind == p2v_kind.PARAMETER:
                 self._parent._assert(pin not in self._params, f"parameter {pin} was previosuly assigned")
                 self._params[pin] = wire
             else:
@@ -68,10 +68,10 @@ class p2v_connect():
                 self._parent._assert(pin not in self._pins, f"pin {pin} was previosuly assigned")
                 if signal._bits != 0:
                     self._pins[pin] = wire
-            if isinstance(signal._strct, p2v_struct):
-                strct = signal._strct
-                for field_name in strct.fields:
-                    self._connect(field_name, strct.update_field_name(wire, field_name), self._signals[field_name]._kind)
+                if isinstance(signal._strct, p2v_struct):
+                    strct = signal._strct
+                    for field_name in strct.fields:
+                        self._connect(field_name, strct.update_field_name(wire, field_name), self._signals[field_name]._kind)
 
     def _check_connected(self):
         for name in self._signals:
@@ -94,7 +94,7 @@ class p2v_connect():
         if isinstance(val, int):
             val = str(val)
         self._connect(name, val, kind=p2v_kind.PARAMETER)
-        self._parent._set_used(val)
+        self._parent._set_used(val, allow=True)
 
     def _get_wire(self, pin, wire):
         if isinstance(wire, str) and wire == "":
@@ -119,13 +119,14 @@ class p2v_connect():
             return ""
         return wire
 
-    def connect_in(self, pin, wire="", _use_wire=False):
+    def connect_in(self, pin, wire="", _use_wire=False, drive=True):
         """
         Connect input port to instance.
 
         Args:
             pin(str): Verilog pin name
             wire(str): Verilog wire name
+            drive(bool): set struct return fields as driven
 
         Returns:
             None
@@ -134,7 +135,7 @@ class p2v_connect():
             wire = self._get_wire(pin, wire)
         self._connect(pin, wire, kind=p2v_kind.INPUT)
         if not isinstance(wire, int):
-            self._parent._set_used(wire)
+            self._parent._set_used(wire, drive=drive)
 
     def connect_out(self, pin, wire="", _use_wire=False):
         """
@@ -218,8 +219,10 @@ class p2v_connect():
         lines.append(f"{self._modname}")
         if len(self._params) > 0:
             lines.append("#(")
-            for name in self._params:
+            for name, val in self._params.items():
                 lines.append(f".{name}({self._params[name]}),")
+                if isinstance(val, p2v_signal):
+                    self._parent._set_used(val)
             lines[-1] = lines[-1].rstrip(",")
             lines.append(")")
         lines.append(f"{instname} (")

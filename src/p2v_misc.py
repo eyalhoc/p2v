@@ -594,12 +594,29 @@ def bin(num, bits=None, add_sep=4, prefix="'b"): # pylint: disable=redefined-bui
         bits = log2(num)
     return p2v_signal(None, str(rtrn), bits=bits)
 
+def quote(s="", q='"'):
+    """
+    Add quotes to string
+
+    Args:
+        s([str, p2v_signal]): string
+        q(str): quote char
+
+    Returns:
+        Quoted string
+    """
+    s = str(s).strip()
+    if len(s) >= 3:
+        if s[0] == s[-1] == q:
+            return s
+    return q + s + q
+
 def format_str(s, params=None):
     """
     Create Verilog formated string like: "address = 0x%0h", addr
 
     Args:
-        s(src): string
+        s(str): string
         params([str, p2v_signal, list]): format parameters
 
     Returns:

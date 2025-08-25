@@ -256,6 +256,7 @@ class p2v():
 
     def _sim(self):
         success = logfile = None
+        sim_start_time = time.time()
         if self._args.sim:
             if self._args.cocotb_filename is not None:
                 cocotb_exports = {"RANDOM_SEED":self.tb.seed}
@@ -270,7 +271,7 @@ class p2v():
         if success is None:
             return False
         if self._assert(success, f"verilog simulation failed, logfile: {logfile}"):
-            self._logger.info("verilog simulation completed successfully")
+            self._logger.info("verilog simulation completed successfully (%d sec)", misc.ceil(time.time() - sim_start_time))
             return True
         self._logger.debug("verilog simulation completed with errors:\n %s", misc._read_file(logfile))
         return False
@@ -779,7 +780,7 @@ class p2v():
         else:
             self._outfiles[modname] = outhash
 
-    def _port(self, kind, name, bits=1, used=False, driven=False, strct=None):
+    def _port(self, kind, name, bits=1, used=False, driven=False, strct=None, force_dir=False):
         if isinstance(name, str) and name == "":
             name = self._get_receive_name(kind, depth=3)
         self._assert(type(bits) in SIGNAL_TYPES, f"unknown type {bits} for port", fatal=True)
@@ -807,7 +808,10 @@ class p2v():
             fields = signal._strct.fields
             for field_name in fields:
                 field_bits = fields[field_name]
-                input_port = misc.cond(field_bits > 0, kind == p2v_kind.INPUT, kind == p2v_kind.OUTPUT)
+                if force_dir:
+                    input_port = kind == p2v_kind.INPUT
+                else:
+                    input_port = misc.cond(field_bits > 0, kind == p2v_kind.INPUT, kind == p2v_kind.OUTPUT)
                 if input_port:
                     self.input(field_name, abs(field_bits), _allow_str=True)
                 else:
@@ -892,6 +896,7 @@ class p2v():
         #s = re.sub(rf".*?\bmodule *{modname}\b", f"module {modname} ", s, flags=re.S) # remove everything before relevant module
         #s = re.sub(r"\bendmodule\b.*", "", s, flags=re.DOTALL) # remove everything after relevant module
         # performance problems - rewrote without regex
+        s = s.replace("\n", " \n")
         while not s.startswith(f"module {modname} "):
             self._assert(f"module {modname} " in s, f"failed to extract module {modname} from {filename}", fatal=True)
             replace = s.split(f"module {modname} ")[0]
@@ -1500,7 +1505,7 @@ class p2v():
         enum_vals["BITS"] = enum_bits
         return p2v_enum(**enum_vals)
 
-    def input(self, name="", bits=1, _allow_str=False):
+    def input(self, name="", bits=1, force_dir=False, _allow_str=False):
         """
         Create an input port.
 
@@ -1512,6 +1517,7 @@ class p2v():
                                              list is used to prevent a scalar signal (input x[0:0]; instead of input x;). \n\
                                              tuple is used for multi-dimentional Verilog arrays. \n\
                                              dict is used as a struct.
+            force_dir(bool): force bidirectionl struct fields to be input
 
         Returns:
             p2v signal
@@ -1527,9 +1533,9 @@ class p2v():
 
         self._assert_type(name, [str, list ,clock])
         self._assert_type(bits, SIGNAL_TYPES)
-        return self._port(p2v_kind.INPUT, name, bits, driven=True)
+        return self._port(p2v_kind.INPUT, name, bits, driven=True, force_dir=force_dir)
 
-    def output(self, name="", bits=1, _allow_str=False):
+    def output(self, name="", bits=1, force_dir=False, _allow_str=False):
         """
         Create an output port.
 
@@ -1541,6 +1547,7 @@ class p2v():
                                              list is used to prevent a scalar signal (input x[0:0]; instead of input x;). \n\
                                              tuple is used for multi-dimentional Verilog arrays. \n\
                                              dict is used as a struct.
+            force_dir(bool): force bidirectionl struct fields to be output
 
         Returns:
             p2v signal
@@ -1556,7 +1563,7 @@ class p2v():
 
         self._assert_type(name, [str, list, clock])
         self._assert_type(bits, SIGNAL_TYPES)
-        return self._port(p2v_kind.OUTPUT, name, bits, used=True)
+        return self._port(p2v_kind.OUTPUT, name, bits, used=True, force_dir=force_dir)
 
     def inout(self, name="", _allow_str=False):
         """

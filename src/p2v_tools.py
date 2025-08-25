@@ -208,6 +208,7 @@ def sim(tool_bin, dirname, outdir, pass_str, err_str=None):
         for err_s in err_str:
             if err_s in line.lower():
                 success = False
+                return full_logfile, success
     return full_logfile, success
 
 def cocotb_sim(rtldir, outdir, cocotb_filename, modname, search=None, libs=None, exports=None):

@@ -1,6 +1,6 @@
 <testsuites name="results">
   <testsuite name="all" package="all">
     <property name="random_seed" value="1" />
-    <testcase name="test" classname="cocotb_adder" file="/mnt/c/Users/eyalh/work/p2v_work/p2v/tutorial/example1_adder/step_8/cocotb_adder.py" lineno="45" time="0.06930136680603027" sim_time_ns="254.001" ratio_time="3665.165807060216" />
+    <testcase name="test" classname="cocotb_adder" file="/mnt/c/Users/eyalh/work/p2v_work/p2v/tutorial/example1_adder/step_8/cocotb_adder.py" lineno="45" time="0.027252197265625" sim_time_ns="254.001" ratio_time="9320.386078387459" />
   </testsuite>
 </testsuites>
