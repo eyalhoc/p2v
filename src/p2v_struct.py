@@ -91,10 +91,13 @@ class p2v_struct():
         """
         name = str(name)
         if FIELD_SEP in name:
-            sep = ""
+            if name[-1].isdigit():
+                sep = "_"
+            else:
+                sep = ""
         else:
             sep = FIELD_SEP
-        return f"{name}{sep}{field_name}"
+        return f"{name}{sep}{field_name.strip('_')}"
 
     def update_field_name(self, name, field_name):
         """
@@ -105,7 +108,7 @@ class p2v_struct():
             field_name(str): field name
 
         Returns:
-            updated ffull struct field name (str)
+            updated full struct field name (str)
         """
         field_name = str(field_name)
         name = str(name)

@@ -82,7 +82,7 @@ class p2v_cocotb:
             return
         dut_clk = self.DutSignal(clk)
 
-        self.DutSignal(clk.reset).value = 0
+        self.DutSignal(clk.reset).setimmediatevalue(0)
         await RisingEdge(dut_clk)
         self.DutSignal(clk.reset).value = 1
         reset_duration = random.randint(min_duration, max_duration)
@@ -97,7 +97,7 @@ class p2v_cocotb:
             return
         dut_clk = self.DutSignal(clk)
 
-        self.DutSignal(clk.rst_n).value = 1
+        self.DutSignal(clk.rst_n).setimmediatevalue(1)
         await FallingEdge(dut_clk) # on purpose not sync to clock
         self.DutSignal(clk.rst_n).value = 0
         reset_duration = random.randint(min_duration, max_duration)
