@@ -78,7 +78,7 @@ def _declare_bits(bits, start=0): # pylint: disable=redefined-outer-name
         return ""
     return f"[{start+bits-1}:{start}]"
 
-def _declare(name, bits, start=0): # pylint: disable=redefined-outer-name)
+def _declare(name, bits=1, start=0): # pylint: disable=redefined-outer-name)
     assert isinstance(bits, int), type(bits)
     return  p2v_signal(None, name + _declare_bits([bits], start=start), bits=0)
 
@@ -435,11 +435,17 @@ def cond(condition, true_var, false_var=""):
     Returns:
         Selected input parameter
     """
-    if isinstance(true_var, p2v_signal):
-        _bits = true_var._bits
-    else:
-        _bits = 0
     if not isinstance(condition, bool): # verilog condition
+        if isinstance(true_var, p2v_signal):
+            _bits = true_var._bits
+        elif isinstance(false_var, p2v_signal):
+            _bits = false_var._bits
+        else:
+            _bits = 0
+        if isinstance(true_var, int) and _bits > 0:
+            true_var = dec(true_var, _bits)
+        if isinstance(false_var, int) and _bits > 0:
+            false_var = dec(false_var, _bits)
         rtrn = f"{condition} ? {true_var} : {false_var}"
         return p2v_signal(None, str(rtrn), bits=_bits)
 
@@ -447,7 +453,7 @@ def cond(condition, true_var, false_var=""):
         return true_var
     return false_var
 
-def concat(vals, sep=None, nl_every=None):
+def concat(vals, sep=None, nl_every=None, add_paren=True):
     """
     Converts a Python list into Verilog concatenation or join list of signals with operator.
 
@@ -455,6 +461,7 @@ def concat(vals, sep=None, nl_every=None):
         vals(list): list of signals
         sep([None, str]): if None will perform Verilog concatenation else will perfrom join on sep
         nl_every([None, int]): insert new line every number of items
+        add_paren(bool): add paren to list items
 
     Returns:
         Verilog code
@@ -490,7 +497,7 @@ def concat(vals, sep=None, nl_every=None):
     else:
         for i, val in enumerate(vals):
             if not val.startswith("(") or not val.endswith(")"):
-                if not _is_legal_name(val): # don't add brackets on single variable
+                if add_paren and not _is_legal_name(val): # don't add brackets on single variable
                     vals[i] = f"({val})"
         if len(sep) == 1:
             sep = f" {sep} "
@@ -524,7 +531,7 @@ def pad(left, name, right=0, val=0):
     rtrn = concat(vals)
     return p2v_signal(None, str(rtrn), bits=_bits)
 
-def dec(num, bits=1): # pylint: disable=redefined-outer-name
+def dec(num, bits=None): # pylint: disable=redefined-outer-name
     """
     Represent integer in Verilog decimal representation.
 
@@ -536,6 +543,8 @@ def dec(num, bits=1): # pylint: disable=redefined-outer-name
         Verilog code
     """
     assert isinstance(num, int), num
+    if bits is None:
+        bits = num.bit_length()
     assert isinstance(bits, int), bits
     _check_bits(num, bits)
 

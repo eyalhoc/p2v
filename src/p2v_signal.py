@@ -170,6 +170,9 @@ class p2v_signal:
             else:
                 stop = key.stop
             return self._bit_range(bits=stop-start, start=start)
+        # single bit access
+        if isinstance(key, int) and key < 0:
+            key = self._bits + key
         return self._bit_range(bits=1, start=key)
 
 
