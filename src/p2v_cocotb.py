@@ -22,7 +22,7 @@ import warnings
 
 import cocotb
 from cocotb.clock import Clock
-from cocotb.triggers import FallingEdge, RisingEdge, Combine, Join
+from cocotb.triggers import FallingEdge, RisingEdge, Combine, Join, Timer
 from cocotb.utils import get_sim_time
 
 def GetParam(name, default):
@@ -145,13 +145,16 @@ class p2v_cocotb:
 
     async def WaitDelay(self, clk, max_cycles=1, min_cycles=None):
         """Wait number of cycles."""
-        dut_clk = self.DutSignal(clk)
-        if min_cycles is None:
-            cycles = max_cycles
+        if isinstance(clk, int):
+            await Timer(clk, units='ns')
         else:
-            cycles = random.randint(min_cycles, max_cycles)
-        for _ in range(cycles):
-            await FallingEdge(dut_clk)
+            dut_clk = self.DutSignal(clk)
+            if min_cycles is None:
+                cycles = max_cycles
+            else:
+                cycles = random.randint(min_cycles, max_cycles)
+            for _ in range(cycles):
+                await FallingEdge(dut_clk)
 
     async def WaitValue(self, clk, signal, val=1):
         """Wait for signal to match value."""

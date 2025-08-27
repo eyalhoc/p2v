@@ -131,6 +131,8 @@ class p2v_connect():
         Returns:
             None
         """
+        if isinstance(wire, list):
+            wire = misc.concat(wire)
         if not _use_wire:
             wire = self._get_wire(pin, wire)
         self._connect(pin, wire, kind=p2v_kind.INPUT)
@@ -148,6 +150,8 @@ class p2v_connect():
         Returns:
             None
         """
+        if isinstance(wire, list):
+            wire = misc.concat(wire)
         if not _use_wire:
             wire = self._get_wire(pin, wire)
         self._connect(pin, wire, kind=p2v_kind.OUTPUT)
