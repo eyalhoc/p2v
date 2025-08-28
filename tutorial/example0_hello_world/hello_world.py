@@ -1,6 +1,7 @@
 from p2v import p2v
 
 class hello_world(p2v):
+    """ hello world """
     def module(self):
         self.set_modname()
 
@@ -11,4 +12,3 @@ class hello_world(p2v):
         self.assign(o, a | b)
 
         return self.write()
-

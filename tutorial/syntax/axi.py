@@ -50,4 +50,3 @@ def axi(id_bits=4, addr_bits=32, data_bits=512, burst_bits=2, len_bits=8, size_b
     fields["b"] = axi_b(id_bits=id_bits, resp_bits=resp_bits)
     fields["r"] = axi_r(id_bits=id_bits, resp_bits=resp_bits, data_bits=data_bits)
     return fields
-    

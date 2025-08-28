@@ -148,7 +148,7 @@ def pylint(srcfiles, outdir):
     current_dir = os.path.dirname(os.path.abspath(__file__))
     rcfile = os.path.join(current_dir, "..", ".pylintrc")
     cmd = f"pylint {' '.join(srcfiles)} --rcfile {rcfile}"
-    full_logfile = system(outdir, outdir, cmd, logfile, log_out=False, log_err=True)
+    full_logfile = system(outdir, outdir, cmd, logfile, log_out=True, log_err=True)
     success = misc._read_file(full_logfile) == ""
     return full_logfile, success
 

@@ -246,7 +246,11 @@ class p2v():
 
     def _pylint(self, srcfiles):
         if self._args.lint:
-            logfile, success = p2v_tools.pylint(srcfiles=srcfiles, outdir=self._args.outdir)
+            py_srcfiles = []
+            for srcfile in srcfiles:
+                if srcfile.endswith(".py"):
+                    py_srcfiles.append(srcfile)
+            logfile, success = p2v_tools.pylint(srcfiles=py_srcfiles, outdir=self._args.outdir)
             if self._assert(success, f"Python lint completed with errors:\n{misc._read_file(logfile)}"):
                 self._logger.info("Python lint completed successfully")
                 return True
@@ -1589,7 +1593,7 @@ class p2v():
                 self._assert(name == "", "port name should not use string type")
 
         self._assert_type(name, [str])
-        self._port(p2v_kind.INOUT, name, bits=1, used=True, driven=True)
+        return self._port(p2v_kind.INOUT, name, bits=1, used=True, driven=True)
 
     def logic(self, name="", bits=1, assign=None, initial=None, _allow_str=False):
         """

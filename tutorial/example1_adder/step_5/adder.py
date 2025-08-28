@@ -8,26 +8,27 @@
 from p2v import p2v, misc, clock, default_clk
 
 class adder(p2v):
+    """ fixed point adder """
     def module(self, clk=default_clk, bits=8, num=32):
         self.set_param(clk, clock)
         self.set_param(bits, int, bits > 0) # data width
         self.set_param(num, int, num > 0 and misc.is_pow2(num)) # number of inputs
         self.set_modname()
-        
+
         self.input(clk)
-        
+
         valid = self.input()
         data_in = {}
         for n in range(num):
             data_in[n] = self.input(bits)
         o = self.output(bits)
         valid_out = self.output()
-        
-        if num == 2:            
+
+        if num == 2:
             self.sample(clk, o, data_in[0] + data_in[1], valid=valid)
             self.sample(clk, valid_out, valid)
 
-        
+
         else:
             son_num = num // 2
             datas = [None] * 2
@@ -43,8 +44,8 @@ class adder(p2v):
                 son.connect_out(son.o, datas[i])
                 son.connect_out(son.valid_out, valids[i])
                 son.inst(suffix=i)
-        
-        
+
+
             # add the results
             son = adder(self).module(clk, bits=bits, num=2)
             son.connect_in(clk)
@@ -54,14 +55,14 @@ class adder(p2v):
             son.connect_out(o)
             son.connect_out(valid_out)
             son.inst(suffix="_out")
-            
-        
+
+
         return self.write()
 
 
     def gen(self):
+        """ random module parameters """
         args = {}
         args["bits"] = self.tb.rand_int(1, 128)
         args["num"] = 1 << self.tb.rand_int(1, 8)
         return args
-        

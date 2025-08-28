@@ -22,6 +22,7 @@ module ports #(
     output logic [7:0] fo__3,
     output logic [15:0] go,
     inout q,
+    output logic qo,
     input logic [7:0] s__ctrl,
     input logic [31:0] s__data,
     output logic [7:0] t__ctrl,
@@ -42,6 +43,7 @@ module ports #(
     assign fo__2 = f__2;
     assign fo__3 = f__3;
     assign go = g;
+    assign qo = q;
 
     assign t__ctrl = s__ctrl;
     assign t__data = s__data;
