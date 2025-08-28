@@ -133,6 +133,25 @@ def lint(tool_bin, dirname, outdir, filename):
     success = misc._read_file(full_logfile) == ""
     return full_logfile, success
 
+def pylint(srcfiles, outdir):
+    """
+    Run lint on Python sources.
+
+    Args:
+        srcfiles(list): list of Python sources
+        outdir(str): directory for log file
+
+    Returns:
+        full path of logfile and a boolean if lint completed successfully
+    """
+    logfile = "p2v_pylint.log"
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    rcfile = os.path.join(current_dir, "..", ".pylintrc")
+    cmd = f"pylint {' '.join(srcfiles)} --rcfile {rcfile}"
+    full_logfile = system(outdir, outdir, cmd, logfile, log_out=False, log_err=True)
+    success = misc._read_file(full_logfile) == ""
+    return full_logfile, success
+
 def _get_iverilog_flags(search=None):
     if search is None:
         search = []

@@ -239,9 +239,17 @@ class p2v():
                 else:
                     top_filename = self._get_filename()
                 logfile, success = p2v_tools.lint(self._args.lint_bin, dirname=self._get_rtldir(), outdir=self._args.outdir, filename=top_filename)
-                if self._assert(success, f"lint completed with errors:\n{misc._read_file(logfile)}"):
-                    self._logger.info("verilog lint completed successfully")
+                if self._assert(success, f"Verilog lint completed with errors:\n{misc._read_file(logfile)}"):
+                    self._logger.info("Verilog lint completed successfully")
                     return True
+        return False
+
+    def _pylint(self, srcfiles):
+        if self._args.lint:
+            logfile, success = p2v_tools.pylint(srcfiles=srcfiles, outdir=self._args.outdir)
+            if self._assert(success, f"Python lint completed with errors:\n{misc._read_file(logfile)}"):
+                self._logger.info("Python lint completed successfully")
+                return True
         return False
 
     def _comp(self):
@@ -372,6 +380,7 @@ class p2v():
     def _write_srcfiles(self):
         srcfiles = self._cache["src"] + list(self._cache["modules"].values())
         misc._write_file(os.path.join(self._args.outdir, "src.list"), "\n".join(srcfiles), append=True)
+        self._pylint(srcfiles)
 
         if not self._args.sim: # directories might be used for Verilog files
             dirnames = []

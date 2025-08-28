@@ -3,7 +3,6 @@ max-line-length=192
 good-names=c,s,l,n,m,x,y,z,i,j,q,e
 
 [DESIGN]
-class-naming-style=snake_case
 max-args=10
 max-attributes=25
 max-locals=25
@@ -13,4 +12,4 @@ max-module-lines=2000
 max-branches=30
 
 [MESSAGES CONTROL]
-disable=protected-access,too-many-positional-arguments
+disable=protected-access,too-many-positional-arguments,too-many-arguments,too-many-locals,too-many-branches,too-many-statements,invalid-name,wrong-import-order
