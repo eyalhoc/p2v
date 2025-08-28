@@ -4,14 +4,14 @@
 from p2v import p2v # all modules inherit the p2v class
 
 class adder(p2v):
+    """ fixed point adder """
     def module(self):
         self.set_modname()
-        
+
         a = self.input(8)
         b = self.input(8)
         o = self.output(8)
-        
-        self.assign(o, a + b)
-        
-        return self.write()
 
+        self.assign(o, a + b)
+
+        return self.write()

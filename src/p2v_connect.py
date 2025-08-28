@@ -187,7 +187,7 @@ class p2v_connect():
             signal = self._signals[name]
             if name not in self._pins:
                 wire = name + suffix
-                if not ports and wire not in self._parent._signals:
+                if not ports and signal.is_port() and wire not in self._parent._signals:
                     self._parent.logic(wire, signal._bits, _allow_str=True)
                 if signal._kind == p2v_kind.INPUT:
                     if ports:

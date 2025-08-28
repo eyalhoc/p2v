@@ -6,31 +6,32 @@ from p2v import p2v, misc, clock
 import adder
 
 class tb_adder(p2v):
+    """ test bench for fixed point adder """
     def module(self, async_reset=True, size=32):
         self.set_param(async_reset, bool) # sync reset or async reset
         self.set_param(size, int, size > 0) # number of inputs to test
         self.set_modname("tb") # explicitly set module name
-        
+
         if async_reset:
             clk = clock("clk", rst_n="resetn")
         else:
             clk = clock("clk", reset="reset")
-        
+
         self.logic(clk)
         self.tb.gen_clk(clk, cycle=self.tb.rand_int(2, 20))
-        
-        
+
+
         args = adder.adder(self).gen_rand_args(override={"float16":False})
         num = args["num"]
         bits = args["bits"]
-        
+
         valid = self.logic(initial=0)
         inputs = {}
         for n in range(num):
             inputs[n] = self.logic(bits, initial=0)
         o = self.logic(bits)
         valid_out = self.logic()
-            
+
         son = adder.adder(self).module(clk, **args)
         son.connect_in(clk)
         son.connect_in(valid)
@@ -39,30 +40,30 @@ class tb_adder(p2v):
         son.connect_out(o)
         son.connect_out(valid_out)
         son.inst()
-        
-        
+
+
         en = self.logic(initial=0)
-        data_in_q = self.tb.fifo(bits*num)
-        expected_q = self.tb.fifo(bits)
-        
-        self.line(f"""
+        data_in_q = self.tb.fifo(bits*num) # pylint: disable=unused-variable
+        expected_q = self.tb.fifo(bits) # pylint: disable=unused-variable
+
+        self.line("""
                     initial
                         begin
                    """)
-        for i in range(size):
+        for _ in range(size):
             input_vec = []
             input_sum = 0
-            for j in range(num):
+            for _ in range(num):
                 val = self.tb.rand_int(1<<bits)
                 input_sum += val
                 input_vec.append(misc.hex(int(val), bits))
             self.line(f"data_in_q.push_back({misc.concat(input_vec)});")
             self.line(f"expected_q.push_back({misc.hex(int(input_sum) & ((1 << bits) - 1), bits)});")
-        self.line(f"""
+        self.line("""
                         end
                    """)
-        
-        
+
+
         data_in = self.logic(bits*num, initial=0)
         expected = self.logic(bits, initial=0)
         fail_condition = o != expected
@@ -73,7 +74,7 @@ class tb_adder(p2v):
                             repeat (10) @(posedge {clk});
                             en = 1;
                         end
-                        
+
                         // drive inputs
                         always @(posedge {clk})
                             if (en && (data_in_q.size() > 0))
@@ -82,7 +83,7 @@ class tb_adder(p2v):
                                     {misc.concat(inputs)} <= data_in;
                                     valid <= 1;
                                 end
-                                
+
                         // check output
                         always @(posedge {clk})
                             if (valid_out)
@@ -93,11 +94,11 @@ class tb_adder(p2v):
                                         {self.tb.test_pass(message=f"successfully tested {size} additions")}
                                 end
                    """)
-        
-        
+
+
         self.allow_unused([valid_out, o, data_in, expected, en])
-        
-        
+
+
         self.tb.set_timeout(clk, size * 100)
         self.tb.dump()
 

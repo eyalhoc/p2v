@@ -13,6 +13,7 @@ TEST_LEN = GetParam("TEST_LEN", 32)
 
 
 async def check_data(dut, clk, expected):
+    """ check data """
     common = p2v_cocotb(dut)
     for i in range(TEST_LEN):
         await common.WaitValue(clk, dut.valid_out)
@@ -23,8 +24,9 @@ async def check_data(dut, clk, expected):
         expected = expected[1:]
         await common.WaitDelay(clk)
     test_flags["test_done"] = True
-    
+
 async def drive_data(dut, clk, datas):
+    """ drive data """
     common = p2v_cocotb(dut)
     cnt = 0
     while cnt < len(datas):
@@ -41,15 +43,15 @@ async def drive_data(dut, clk, datas):
         for i in range(delay_low):
             dut.valid.value = 0
             await common.WaitDelay(clk)
-        
+
 @cocotb.test()
 async def test(dut):
-    """Main test."""
+    """ main test """
 
     common = p2v_cocotb(dut)
     clk = pins.clk
     bits = pins.data_in[0].bits()
-    
+
     num = len(pins.data_in)
     datas = []
     expected = []
@@ -67,13 +69,12 @@ async def test(dut):
     dut.valid.value = 0
     for n in range(num):
         common.DutSignal(pins.data_in[n]).value = 0
-        
+
     await common.GenClkRst(clk, timeout=10000)
-        
+
     await common.WaitDelay(clk, 3)
     await cocotb.start(check_data(dut, clk, expected=expected))
     await cocotb.start(drive_data(dut, clk, datas=datas))
-    
+
     while not test_flags["test_done"]:
         await common.WaitDelay(clk)
-    

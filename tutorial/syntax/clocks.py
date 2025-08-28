@@ -2,10 +2,11 @@
 from p2v import p2v, clock, default_clk, clk_0rst, clk_arst, clk_srst, clk_2rst
 
 class clocks(p2v):
+    """ test clocks """
     def module(self, clk=default_clk):
         self.set_param(clk, clock) # verifies that clk if a p2v clock
         self.set_modname()
-        
+
         clks = [clk] # default clk with async reset
         clks.append(clock("clk0")) # clock without reset
         clks.append(clock("clk1", rst_n="clk1_rst_n")) # clk with async reset
@@ -17,7 +18,7 @@ class clocks(p2v):
         clks.append(clk_2rst("clk7")) # clk with async and sync resets
         clks.append(self.tb.rand_clock(prefix="clk8")) # clk with random resets
         clks.append(self.tb.rand_clock(prefix="clk9", must_have_reset=True)) # clk with random resets
-        
+
         i = {}
         o = {}
         num = len(clks)
@@ -25,8 +26,7 @@ class clocks(p2v):
             self.input(clks[n])
             i[n] = self.input(32)
             o[n] = self.output(32)
-           
-            self.sample(clks[n], o[n], i[n])
-        
-        return self.write()
 
+            self.sample(clks[n], o[n], i[n])
+
+        return self.write()

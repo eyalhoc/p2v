@@ -10,34 +10,35 @@
 from p2v import p2v, misc, clock, default_clk
 
 class adder(p2v):
+    """ fixed / float point adder """
     def module(self, clk=default_clk, bits=8, num=32, float16=False):
         self.set_param(clk, clock)
         self.set_param(bits, int, bits > 0) # data width
         self.set_param(num, int, num > 0 and misc.is_pow2(num)) # number of inputs
         self.set_param(float16, bool) # use a float16 adder
         self.set_modname()
-        
+
         if float16:
             self.assert_static(bits == 16, "float type only supports float16")
-            
-        
+
+
         self.input(clk)
-        
+
         valid = self.input()
         data_in = {}
         for n in range(num):
             data_in[n] = self.input(bits)
         o = self.output(bits)
         valid_out = self.output()
-        
-        if num == 2:                
+
+        if num == 2:
             o_pre = self.logic(bits)
             if float16:
                 overflow = self.logic()
                 zero = self.logic()
                 NaN = self.logic()
                 precisionLost = self.logic()
-                
+
                 son = self.verilog_module("float_adder")
                 son.connect_in(son.num1, data_in[0])
                 son.connect_in(son.num2, data_in[1])
@@ -47,14 +48,14 @@ class adder(p2v):
                 son.connect_out(NaN)
                 son.connect_out(precisionLost)
                 son.inst()
-                
-                self.assert_property(clk, ~overflow, f"received unexpected overflow")
-                self.assert_property(clk, ~zero, f"received unexpected zero")
-                self.assert_property(clk, ~NaN, f"received unexpected NaN")
+
+                self.assert_property(clk, ~overflow, "received unexpected overflow")
+                self.assert_property(clk, ~zero, "received unexpected zero")
+                self.assert_property(clk, ~NaN, "received unexpected NaN")
                 self.allow_unused(precisionLost)
             else:
                 self.assign(o_pre, data_in[0] + data_in[1])
-                
+
             self.sample(clk, o, o_pre, valid=valid)
             self.sample(clk, valid_out, valid)
 
@@ -73,8 +74,8 @@ class adder(p2v):
                 son.connect_out(son.o, datas[i])
                 son.connect_out(son.valid_out, valids[i])
                 son.inst(suffix=i)
-        
-        
+
+
             # add the results
             son = adder(self).module(clk, bits=bits, num=2)
             son.connect_in(clk)
@@ -84,12 +85,13 @@ class adder(p2v):
             son.connect_out(o)
             son.connect_out(valid_out)
             son.inst(suffix="_out")
-            
-        
+
+
         return self.write()
 
 
     def gen(self, float16=None):
+        """ random module parameters """
         args = {}
         args["clk"] = self.tb.rand_clock()
         if float16 is None:
@@ -102,4 +104,3 @@ class adder(p2v):
             args["bits"] = self.tb.rand_int(1, 128)
         args["num"] = 1 << self.tb.rand_int(1, 8)
         return args
-        
