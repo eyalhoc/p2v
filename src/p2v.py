@@ -244,8 +244,10 @@ class p2v():
                     return True
         return False
 
-    def _pylint(self, srcfiles):
-        if self._args.lint:
+    def _pylint(self, srcfiles=None):
+        if srcfiles is None:
+            srcfiles = self._get_srcfiles()
+        if self._args.pylint:
             py_srcfiles = []
             for srcfile in srcfiles:
                 if srcfile.endswith(".py"):
@@ -364,7 +366,8 @@ class p2v():
                 self._logger.info(f"verilog generation completed {misc.cond(self._err_num == 0, 'successfully', 'with errors')} ({misc.ceil(time.time() - _start_time)} sec)")
                 if self._err_num == 0:
                     self._lint()
-                    if top_connect:
+                    if top_connect: # only once
+                        self._pylint()
                         if not self._sim():
                             break
             else:
@@ -375,16 +378,19 @@ class p2v():
                     args = self._get_gen_args(top_class, params=self._args.params)
                 top_class.module(self, **args)
                 self._lint()
+                self._pylint()
 
         self._write_srcfiles()
         rtrn = int(self._err_num > 0)
         self._logger.info(f"completed {misc.cond(rtrn==0, 'successfully', 'with errors')}")
         return rtrn
 
+    def _get_srcfiles(self):
+        return self._cache["src"] + list(self._cache["modules"].values())
+
     def _write_srcfiles(self):
-        srcfiles = self._cache["src"] + list(self._cache["modules"].values())
+        srcfiles = self._get_srcfiles()
         misc._write_file(os.path.join(self._args.outdir, "src.list"), "\n".join(srcfiles), append=True)
-        self._pylint(srcfiles)
 
         if not self._args.sim: # directories might be used for Verilog files
             dirnames = []
@@ -439,8 +445,10 @@ class p2v():
         # external tools
         parser.add_argument("-indent", action="store_true", default=True, help="enable indent")
         parser.add_argument("--indent", action="store_false", default=False, help="supress indent")
-        parser.add_argument("-lint", action="store_true", default=True, help="enable lint")
-        parser.add_argument("--lint", action="store_false", default=False, help="supress lint")
+        parser.add_argument("-lint", action="store_true", default=True, help="enable verilog lint")
+        parser.add_argument("--lint", action="store_false", default=False, help="supress verilog lint")
+        parser.add_argument("-pylint", action="store_true", default=True, help="enable python lint")
+        parser.add_argument("--pylint", action="store_false", default=False, help="supress python lint")
         parser.add_argument("-sim", action="store_true", default=False, help="enable verilog simulation")
         parser.add_argument("--sim", action="store_false", default=True, help="supress verilog simulation")
 

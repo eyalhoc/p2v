@@ -12,7 +12,7 @@ max-module-lines=2000
 max-branches=30
 
 [MESSAGES CONTROL]
-disable=protected-access,too-many-positional-arguments,too-many-arguments,too-many-locals,too-many-branches,too-many-statements,invalid-name,wrong-import-order,missing-module-docstring,missing-function-docstring
+disable=protected-access,too-many-positional-arguments,too-many-arguments,too-many-locals,too-many-branches,too-many-statements,invalid-name,wrong-import-order,missing-module-docstring,missing-function-docstring,duplicate-code
 
 [REPORTS]
 score = no

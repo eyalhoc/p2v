@@ -243,7 +243,9 @@ def _write_file(filename, s, append=False):
     else:
         mode = "w"
     with open(filename, mode, encoding="utf-8") as file:
-        file.write(s + "\n")
+        if not s.endswith("\n"):
+            s += "\n"
+        file.write(s)
         file.close()
 
 def _compare_files(filename1, filename2):

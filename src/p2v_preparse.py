@@ -82,7 +82,7 @@ def _parse_file(filename, outdir=None, defines=None, header=None):
                 for n in range(line_num, endif_line_num+1):
                     remove_lines.append(n)
         else:
-            lines.append(line)
+            lines.append(line.rstrip())
 
     if outdir is None:
         outfile = None
