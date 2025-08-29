@@ -45,11 +45,11 @@ module tb ();
         .clk(clk),  // input
         .resetn(resetn),  // input
         .valid(valid),  // input
-        .data_in__0(inputs__0),  // input
-        .data_in__1(inputs__1),  // input
-        .data_in__2(inputs__2),  // input
-        .data_in__3(inputs__3),  // input
-        .o(o),  // output
+        .data_in__0(inputs__0),  // input[15:0]
+        .data_in__1(inputs__1),  // input[15:0]
+        .data_in__2(inputs__2),  // input[15:0]
+        .data_in__3(inputs__3),  // input[15:0]
+        .o(o),  // output[15:0]
         .valid_out(valid_out)  // output
     );
 

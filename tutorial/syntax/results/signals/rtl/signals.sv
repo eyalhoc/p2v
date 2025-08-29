@@ -12,7 +12,23 @@ module signals #(
     output logic [7:0] master__2__w,
     output logic [7:0] master__2__r,
     output logic [7:0] master__3__w,
-    output logic [7:0] master__3__r
+    output logic [7:0] master__3__r,
+    input logic i__0,
+    output logic o__0,
+    input logic i__1,
+    output logic o__1,
+    input logic i__2,
+    output logic o__2,
+    input logic i__3,
+    output logic o__3,
+    input logic i__4,
+    output logic o__4,
+    input logic i0,
+    input logic i1,
+    input logic i2,
+    output logic o0,
+    output logic o1,
+    output logic o2
 );
 
     // signals module parameters:
@@ -143,5 +159,7 @@ module signals #(
     logic [7:0] master_pre__3__r;
     assign master_pre__3__r = {2'd0, c[7:2]};
     assign master__3__r = (master_pre__3__r + 8'd1);
+    assign {o__0, o__1, o__2, o__3, o__4} = {i__0, i__1, i__2, i__3, i__4};
+    assign {o0, o1, o2} = {i0, i1, i2};
 
 endmodule  // signals

@@ -1675,14 +1675,14 @@ class p2v():
             self.line(signal.declare())
             rtrn = signal
         if assign is not None:
-            self.assign(signal, assign, keyword="assign", remark=remark, _allow_str=_allow_str)
+            self.assign(signal, assign, keyword="assign", _remark=remark, _allow_str=_allow_str)
             self.line()
         elif initial is not None:
-            self.assign(signal, initial, keyword="initial", remark=remark, _allow_str=_allow_str)
+            self.assign(signal, initial, keyword="initial", _remark=remark, _allow_str=_allow_str)
             self.line()
         return rtrn
 
-    def assign(self, tgt, src, keyword="assign", remark=None, _allow_str=False):
+    def assign(self, tgt, src, keyword="assign", _remark=None, _allow_str=False):
         """
         Signal assignment.
 
@@ -1694,13 +1694,17 @@ class p2v():
         Returns:
             None
         """
-        self._assert_type(tgt, [clock, p2v_signal])
-        self._assert_type(src, [clock, p2v_signal, int] + int(_allow_str) * [str])
+        self._assert_type(tgt, [clock, p2v_signal, list, dict])
+        self._assert_type(src, [clock, p2v_signal, list, dict, int] + int(_allow_str) * [str])
         self._assert_type(keyword, str)
         if self._exists():
             return
         if isinstance(tgt, clock) or isinstance(src, clock):
             self._assign_clocks(tgt, src)
+        elif isinstance(tgt, list) and isinstance(src, list):
+            self.assign(misc.concat(tgt), misc.concat(src), keyword=keyword, _remark=_remark, _allow_str=_allow_str)
+        elif isinstance(tgt, dict) and isinstance(src, dict):
+            self.assign(list(tgt.values()), list(src.values()), keyword=keyword, _remark=_remark, _allow_str=_allow_str)
         else:
             tgt_is_strct = isinstance(tgt, p2v_signal) and tgt._strct is not None
             if tgt_is_strct:
@@ -1716,9 +1720,9 @@ class p2v():
                         self._assert(bits > 0, f"illegal assignment to signal {tgt} of 0 bits")
                         src = misc.dec(src, bits)
                 self._set_used(src, drive=False)
-                if remark is None:
-                    remark = self._get_remark(depth=2)
-                self.line(f"{keyword} {tgt} = {src};", remark=remark)
+                if _remark is None:
+                    _remark = self._get_remark(depth=2)
+                self.line(f"{keyword} {tgt} = {src};", remark=_remark)
 
     def sample(self, clk, tgt, src, valid=None, reset=None, reset_val=0, bits=None, bypass=False, _allow_str=False):
         """
@@ -1854,6 +1858,7 @@ class p2v():
             params = {}
         self._assert_type(modname, str)
         self._assert_type(params, dict)
+        self._assert(modname != self._modname, f"verilog module name {modname} matches parent's module name", fatal=True)
         if self._exists():
             self._assert(modname not in self._outfiles, f"module previosuly created with verilog module name {modname}", fatal=True)
             self._cache["conn"][modname]._parent = self

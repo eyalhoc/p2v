@@ -32,6 +32,7 @@ class p2v_connect():
         self._modname = modname
         self._signals = signals
         self._pins = {}
+        self._remarks = {}
         self._params = params
         self._verilog = verilog
 
@@ -58,6 +59,10 @@ class p2v_connect():
             self._parent._assert(pin in self._signals, f"module {self._modname} does not have a pin named {pin}", fatal=True)
             signal = self._signals[pin]
             self._parent._assert(signal._kind == kind, f"trying to connect {signal._kind} {pin} to {kind}")
+
+            remark = self._parent._get_remark(depth=4)
+            if remark is not None:
+                self._remarks[pin] = remark.strip()
             if kind == p2v_kind.PARAMETER:
                 self._parent._assert(pin not in self._params, f"parameter {pin} was previosuly assigned")
                 self._params[pin] = wire
@@ -223,22 +228,30 @@ class p2v_connect():
         lines.append(f"{self._modname}")
         if len(self._params) > 0:
             lines.append("#(")
-            for name, val in self._params.items():
-                lines.append(f".{name}({self._params[name]}),")
+            for n, (name, val) in enumerate(self._params.items()):
+                last = (n + 1) == len(self._params)
+                line = f".{name}({self._params[name]})" + misc.cond(not last, ",")
+                if name in self._remarks:
+                    line += f" // {self._remarks[name]}"
+                lines.append(line)
                 if isinstance(val, p2v_signal):
                     self._parent._set_used(val)
-            lines[-1] = lines[-1].rstrip(",")
             lines.append(")")
         lines.append(f"{instname} (")
-        for name, val in self._pins.items():
-            lines.append(f".{name}({val}), // {self._signals[name]._kind}{misc.cond(self._signals[name]._ctrl, ' ctrl')}")
-        lines[-1] = lines[-1].replace(", //", " //", 1)
+        for n, (name, val) in enumerate(self._pins.items()):
+            last = (n + 1) == len(self._pins)
+            line = f".{name}({val})" + misc.cond(not last, ",")
+            line += f" // {self._signals[name]._kind}{misc.cond(self._signals[name]._ctrl, ' ctrl')}{self._signals[name]._declare_bits()}"
+            if name in self._remarks:
+                line += f" // {self._remarks[name]}"
+            lines.append(line)
         lines.append(");")
         lines.append("")
         self._parent.line("\n".join(lines))
         signal = p2v_signal(p2v_kind.INST, instname, bits=1, used=True, driven=True)
         self._parent._add_signal(signal)
         self._pins = {}
+        self._remarks = {}
         self._params = {}
 
         for _name, _signal in self._signals.items():
