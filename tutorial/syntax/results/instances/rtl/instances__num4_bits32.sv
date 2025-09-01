@@ -45,76 +45,76 @@ module instances__num4_bits32 (
     //  * bits = 32 (int) # None
 
     _or_gate__bits32 _or_gate0 (
-        .a(a0__0),  // input
-        .b(b0__0),  // input
-        .c(c0__0)   // output
+        .a(a0__0),  // input[31:0]
+        .b(b0__0),  // input[31:0]
+        .c(c0__0)   // output[31:0]
     );
 
     _or_gate__bits33 _or_gate1 (
-        .a(a0__1),  // input
-        .b(b0__1),  // input
-        .c(c0__1)   // output
+        .a(a0__1),  // input[32:0]
+        .b(b0__1),  // input[32:0]
+        .c(c0__1)   // output[32:0]
     );
 
     _or_gate__bits34 _or_gate2 (
-        .a(a0__2),  // input
-        .b(b0__2),  // input
-        .c(c0__2)   // output
+        .a(a0__2),  // input[33:0]
+        .b(b0__2),  // input[33:0]
+        .c(c0__2)   // output[33:0]
     );
 
     _or_gate__bits35 _or_gate3 (
-        .a(a0__3),  // input
-        .b(b0__3),  // input
-        .c(c0__3)   // output
+        .a(a0__3),  // input[34:0]
+        .b(b0__3),  // input[34:0]
+        .c(c0__3)   // output[34:0]
     );
 
     _or_gate_list__num4_bits32 _or_gate_list (
-        .i__0(al__0),  // input
-        .i__1(al__1),  // input
-        .i__2(al__2),  // input
-        .i__3(al__3),  // input
-        .c(cl)  // output
+        .i__0(al__0),  // input[31:0]
+        .i__1(al__1),  // input[31:0]
+        .i__2(al__2),  // input[31:0]
+        .i__3(al__3),  // input[31:0]
+        .c(cl)  // output[31:0]
     );
 
     _or_gate_dict__num4_bits32 _or_gate_dict (
-        .i__0__w(a2__0__w),  // input
-        .i__0__r(a2__0__r),  // input
-        .c__0(c2__0),  // output
-        .i__1__w(a2__1__w),  // input
-        .i__1__r(a2__1__r),  // input
-        .c__1(c2__1),  // output
-        .i__2__w(a2__2__w),  // input
-        .i__2__r(a2__2__r),  // input
-        .c__2(c2__2),  // output
-        .i__3__w(a2__3__w),  // input
-        .i__3__r(a2__3__r),  // input
-        .c__3(c2__3)  // output
+        .i__0__w(a2__0__w),  // input[31:0]
+        .i__0__r(a2__0__r),  // input[31:0]
+        .c__0(c2__0),  // output[31:0]
+        .i__1__w(a2__1__w),  // input[31:0]
+        .i__1__r(a2__1__r),  // input[31:0]
+        .c__1(c2__1),  // output[31:0]
+        .i__2__w(a2__2__w),  // input[31:0]
+        .i__2__r(a2__2__r),  // input[31:0]
+        .c__2(c2__2),  // output[31:0]
+        .i__3__w(a2__3__w),  // input[31:0]
+        .i__3__r(a2__3__r),  // input[31:0]
+        .c__3(c2__3)  // output[31:0]
     );
 
     _or_gate__bits16 my_or_gate (
-        .a(a),  // input
-        .b(b),  // input
-        .c(c)   // output
+        .a(a),  // input[15:0] // assumes wire name equals port name
+        .b(b),  // input[15:0] // assumes wire name equals port name
+        .c(c)   // output[15:0] // assumes wire name equals port name
     );
 
     _or_gate__bits16 my_auto_connect_or (
-        .c(ca),  // output
-        .a(a),   // input
-        .b(b)    // input
+        .c(ca),  // output[15:0]
+        .a(a),   // input[15:0]
+        .b(b)    // input[15:0]
     );
 
     _or_gate__bits16 my_auto_connect_ports_or (
-        .a(a_01),  // input
-        .b(b_01),  // input
-        .c(c_01)   // output
+        .a(a_01),  // input[15:0]
+        .b(b_01),  // input[15:0]
+        .c(c_01)   // output[15:0]
     );
 
     _and_gate #(
         .BITS(32)
     ) _and_gate (
-        .a(aa),  // input
-        .b(bb),  // input
-        .c(cc)   // output
+        .a(aa),  // input[7:0] // connecting Verilog is same as connecting a p2v instance
+        .b(bb),  // input[7:0] // connecting Verilog is same as connecting a p2v instance
+        .c(cc)   // output[7:0] // connecting Verilog is same as connecting a p2v instance
     );
 
 

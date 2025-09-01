@@ -134,4 +134,25 @@ class signals(p2v):
                 self.assign(master_pre[m][x], c >> 2)
                 self.assign(master[m][x], master_pre[m][x] + 1)
 
+        # concat assignment - dict
+        cnum = 5
+        i = {}
+        o = {}
+        for n in range(cnum):
+            i[n] = self.input()
+            o[n] = self.output()
+
+        self.assign(o, i)
+
+        # concat assignment - list
+        i0 = self.input()
+        i1 = self.input()
+        i2 = self.input()
+        o0 = self.output()
+        o1 = self.output()
+        o2 = self.output()
+
+        self.assign([o0, o1, o2], [i0, i1, i2])
+
+
         return self.write()

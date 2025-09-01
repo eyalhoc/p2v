@@ -33,16 +33,16 @@ module adder__bits17_num16_float16False (
     adder__bits17_num8_float16False adder0 (
         .clk(clk),  // input
         .rst_n(rst_n),  // input
-        .valid(valid),  // input
-        .data_in__0(data_in__0),  // input
-        .data_in__1(data_in__1),  // input
-        .data_in__2(data_in__2),  // input
-        .data_in__3(data_in__3),  // input
-        .data_in__4(data_in__4),  // input
-        .data_in__5(data_in__5),  // input
-        .data_in__6(data_in__6),  // input
-        .data_in__7(data_in__7),  // input
-        .o(datas__0),  // output
+        .valid(valid),  // input // assumes port name equals wire name
+        .data_in__0(data_in__0),  // input[16:0]
+        .data_in__1(data_in__1),  // input[16:0]
+        .data_in__2(data_in__2),  // input[16:0]
+        .data_in__3(data_in__3),  // input[16:0]
+        .data_in__4(data_in__4),  // input[16:0]
+        .data_in__5(data_in__5),  // input[16:0]
+        .data_in__6(data_in__6),  // input[16:0]
+        .data_in__7(data_in__7),  // input[16:0]
+        .o(datas__0),  // output[16:0]
         .valid_out(valids__0)  // output
     );
 
@@ -51,16 +51,16 @@ module adder__bits17_num16_float16False (
     adder__bits17_num8_float16False adder1 (
         .clk(clk),  // input
         .rst_n(rst_n),  // input
-        .valid(valid),  // input
-        .data_in__0(data_in__8),  // input
-        .data_in__1(data_in__9),  // input
-        .data_in__2(data_in__10),  // input
-        .data_in__3(data_in__11),  // input
-        .data_in__4(data_in__12),  // input
-        .data_in__5(data_in__13),  // input
-        .data_in__6(data_in__14),  // input
-        .data_in__7(data_in__15),  // input
-        .o(datas__1),  // output
+        .valid(valid),  // input // assumes port name equals wire name
+        .data_in__0(data_in__8),  // input[16:0]
+        .data_in__1(data_in__9),  // input[16:0]
+        .data_in__2(data_in__10),  // input[16:0]
+        .data_in__3(data_in__11),  // input[16:0]
+        .data_in__4(data_in__12),  // input[16:0]
+        .data_in__5(data_in__13),  // input[16:0]
+        .data_in__6(data_in__14),  // input[16:0]
+        .data_in__7(data_in__15),  // input[16:0]
+        .o(datas__1),  // output[16:0]
         .valid_out(valids__1)  // output
     );
 
@@ -68,9 +68,9 @@ module adder__bits17_num16_float16False (
         .clk(clk),  // input
         .rst_n(rst_n),  // input
         .valid((valids__0 & valids__1)),  // input
-        .data_in__0(datas__0),  // input
-        .data_in__1(datas__1),  // input
-        .o(o),  // output
+        .data_in__0(datas__0),  // input[16:0]
+        .data_in__1(datas__1),  // input[16:0]
+        .o(o),  // output[16:0]
         .valid_out(valid_out)  // output
     );
 
