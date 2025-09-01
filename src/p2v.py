@@ -52,6 +52,7 @@ MAX_BITS = 8 * 1024
 
 SIGNAL_TYPES = [clock, dict, int, float, list, str, tuple, p2v_enum]
 
+# pylint: disable=too-many-lines
 class p2v():
     """
     This is the main p2v class. All p2v modules inherit this class.
@@ -497,6 +498,13 @@ class p2v():
                 if value in fields: # field must be missing due to having 0 bits
                     setattr(signal, key, p2v_signal(None, value, bits=fields[value]))
 
+    def _dict_to_namespace(self, obj):
+        if isinstance(obj, dict):
+            return SimpleNamespace(**{k: self._dict_to_namespace(v) for k, v in obj.items()})
+        if isinstance(obj, list):
+            return [self._dict_to_namespace(v) for v in obj]
+        return obj
+
     def _add_signal(self, signal):
         if self._exists(): # is called from p2v_connect
             return self._signals[signal._name]
@@ -598,7 +606,7 @@ class p2v():
         pickle_file = os.path.abspath(os.path.join(self._args.outdir, "pins.pkl"))
         with open(pickle_file, 'wb') as f:
             data = SimpleNamespace()
-            setattr(data, "args", args)
+            setattr(data, "args", self._dict_to_namespace(args))
             setattr(data, "pins", pins)
             pickle.dump(data, f)
         s = "import pickle\n"

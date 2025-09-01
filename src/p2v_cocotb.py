@@ -121,7 +121,7 @@ class p2v_cocotb:
         """Wait for sync reset to be released."""
         if clk.reset is not None:
             reset = self.DutSignal(clk.reset)
-            await FallingEdge(reset)
+            await RisingEdge(reset)
 
     async def WaitASyncRstDone(self, clk):
         """Wait for async reset to be released."""
@@ -141,7 +141,7 @@ class p2v_cocotb:
                 Join(sync_task),
                 Join(async_task)
             )
-        await FallingEdge(dut_clk)
+        await RisingEdge(dut_clk)
 
     async def WaitDelay(self, clk, max_cycles=1, min_cycles=None):
         """Wait number of cycles."""
@@ -154,14 +154,14 @@ class p2v_cocotb:
             else:
                 cycles = random.randint(min_cycles, max_cycles)
             for _ in range(cycles):
-                await FallingEdge(dut_clk)
+                await RisingEdge(dut_clk)
 
     async def WaitValue(self, clk, signal, val=1):
         """Wait for signal to match value."""
         dut_clk = self.DutSignal(clk)
         while signal.value != val:
-            await FallingEdge(dut_clk)
+            await RisingEdge(dut_clk)
 
     async def WaitPosedge(self, signal):
         """Wait for signal positive edge."""
-        await FallingEdge(signal)
+        await RisingEdge(signal)
