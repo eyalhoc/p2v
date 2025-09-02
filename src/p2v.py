@@ -387,7 +387,16 @@ class p2v():
         return rtrn
 
     def _get_srcfiles(self):
-        return self._cache["src"] + list(self._cache["modules"].values())
+        srcfiles = self._cache["src"] + list(self._cache["modules"].values())
+        # add imports
+        for _, module in sys.modules.items():
+            if hasattr(module, '__file__') and module.__file__:
+                filename = module.__file__
+                if filename not in srcfiles:
+                    dirname = os.path.dirname(filename)
+                    if dirname in self._search:
+                        srcfiles.append(filename)
+        return srcfiles
 
     def _write_srcfiles(self):
         srcfiles = self._get_srcfiles()
@@ -859,6 +868,7 @@ class p2v():
         return None
 
     def _find_file(self, filename, allow_dir=False, allow=False):
+        filename = filename.strip()
         if filename in self._cache["files"]:
             return self._cache["files"][filename]
         found = None
@@ -1217,6 +1227,8 @@ class p2v():
             for var, val in caller_locals.items(): # variable keys
                 name = name.replace(f"[{var}]", f"{FIELD_SEP}{val}")
             name = name.replace('["', FIELD_SEP).replace('"]', "") # string keys
+        if "." in name:
+            name = name.split(".")[-1]
 
         self._assert(misc._is_legal_name(name), f"missing receive variable for {cmd}", fatal=True)
         return name
@@ -1444,13 +1456,15 @@ class p2v():
         Insert a Verilog remark.
 
         Args:
-            comment([str, dict, list]): string comment or one comment like per dictionary pair
+            comment([None, str, dict, list]): string comment or one comment like per dictionary pair
 
         Returns:
             None
         """
-        self._assert_type(comment, [str, dict, list])
-        if isinstance(comment, dict):
+        self._assert_type(comment, [None, str, dict, list])
+        if comment is None:
+            pass
+        elif isinstance(comment, dict):
             for key in comment:
                 self.remark(f"{key} = {comment[key]}")
             self.line()
