@@ -45,7 +45,8 @@ def axi_r(id_bits=4, resp_bits=2, data_bits=512):
 def axi(id_bits=4, addr_bits=32, data_bits=512, burst_bits=2, len_bits=8, size_bits=3, cache_bits=4, lock_bits=1, prot_bits=3, resp_bits=2):
     fields = {}
     for x in ["w", "r"]:
-        fields[f"a{x}"] = axi_a(id_bits=id_bits, addr_bits=addr_bits, burst_bits=burst_bits, len_bits=len_bits, size_bits=size_bits, cache_bits=cache_bits, lock_bits=lock_bits, prot_bits=prot_bits)
+        fields[f"a{x}"] = axi_a(id_bits=id_bits, addr_bits=addr_bits, burst_bits=burst_bits, len_bits=len_bits,
+                                size_bits=size_bits, cache_bits=cache_bits, lock_bits=lock_bits, prot_bits=prot_bits)
     fields["w"] = axi_w(data_bits=data_bits)
     fields["b"] = axi_b(id_bits=id_bits, resp_bits=resp_bits)
     fields["r"] = axi_r(id_bits=id_bits, resp_bits=resp_bits, data_bits=data_bits)

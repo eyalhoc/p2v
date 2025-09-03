@@ -20,6 +20,10 @@ from p2v_signal import p2v_signal, p2v_kind
 from p2v_clock import p2v_clock as clock
 from p2v_struct import p2v_struct
 
+from types import SimpleNamespace
+
+STRCT_NAME = "_NAME"
+
 class p2v_connect():
     """
     Class is the return value of a p2v module. It is used to connect the son instance to the parent module.
@@ -50,7 +54,7 @@ class p2v_connect():
             self._connect_clocks(pin, wire, kind)
         else:
             if isinstance(pin, dict):
-                pin = pin["_NAME"]
+                pin = pin[STRCT_NAME]
             elif isinstance(pin, p2v_signal):
                 pin = str(pin)
             if isinstance(wire, p2v_signal):
@@ -138,6 +142,8 @@ class p2v_connect():
         """
         if isinstance(wire, list):
             wire = misc.concat(wire)
+        if isinstance(pin, SimpleNamespace):
+            pin = vars(pin)
         if not _use_wire:
             wire = self._get_wire(pin, wire)
         self._connect(pin, wire, kind=p2v_kind.INPUT)
@@ -157,6 +163,8 @@ class p2v_connect():
         """
         if isinstance(wire, list):
             wire = misc.concat(wire)
+        if isinstance(pin, SimpleNamespace):
+            pin = vars(pin)
         if not _use_wire:
             wire = self._get_wire(pin, wire)
         self._connect(pin, wire, kind=p2v_kind.OUTPUT)
