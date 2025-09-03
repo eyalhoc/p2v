@@ -22,6 +22,8 @@ from p2v_struct import p2v_struct
 
 from types import SimpleNamespace
 
+STRCT_NAME = "_NAME"
+
 class p2v_connect():
     """
     Class is the return value of a p2v module. It is used to connect the son instance to the parent module.
@@ -52,7 +54,7 @@ class p2v_connect():
             self._connect_clocks(pin, wire, kind)
         else:
             if isinstance(pin, dict):
-                pin = pin["_NAME"]
+                pin = pin[STRCT_NAME]
             elif isinstance(pin, p2v_signal):
                 pin = str(pin)
             if isinstance(wire, p2v_signal):

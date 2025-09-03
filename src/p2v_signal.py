@@ -104,22 +104,22 @@ class p2v_signal:
         return self._create(other, "*")
 
     def __eq__(self, other):
-        return self._create(other, "==")
+        return self._create(other, "==", bits=1)
 
     def __ne__(self, other):
-        return self._create(other, "!=")
+        return self._create(other, "!=", bits=1)
 
     def __lt__(self, other):
-        return self._create(other, "<")
+        return self._create(other, "<", bits=1)
 
     def __le__(self, other):
-        return self._create(other, "<=")
+        return self._create(other, "<=", bits=1)
 
     def __gt__(self, other):
-        return self._create(other, ">")
+        return self._create(other, ">", bits=1)
 
     def __ge__(self, other):
-        return self._create(other, ">=")
+        return self._create(other, ">=", bits=1)
 
     def __and__(self, other):
         if isinstance(other, int) and other == 0:
@@ -173,17 +173,39 @@ class p2v_signal:
         # single bit access
         if isinstance(key, int) and key < 0:
             key = self._bits + key
-        return self._bit_range(bits=1, start=key)
+
+        if len(self._dim) > 1:
+            bits = self._dim[-1]
+        else:
+            bits = 1
+        return self._bit_range(bits=bits, start=key)
 
 
     def _signal(self, expr, bits):
         return p2v_signal(None, str(expr), bits=bits)
 
-    def _create(self, other, op):
+    def _auto_pad(self, other):
+        left, right = self, other
+        if isinstance(other, p2v_signal) and isinstance(self._bits, int) and isinstance(other._bits, int):
+            if abs(self._bits) > abs(other._bits):
+                left = self
+                right = other.pad(abs(self._bits) - abs(other._bits))
+            elif abs(self._bits) < abs(other._bits):
+                left = self.pad(abs(other._bits) - abs(self._bits))
+                right = other
+        return left, right
+
+    def _create(self, other, op, bits=None, auto_pad=True):
         if isinstance(other, int):
             other = misc.dec(other, self._bits)
-        expr = misc._remove_extra_paren(f"({self} {op} {other})")
-        return self._signal(expr, bits=self._bits)
+        if auto_pad:
+            left, right = self._auto_pad(other)
+        else:
+            left, right = self, other
+        expr = misc._remove_extra_paren(f"({left} {op} {right})")
+        if bits is None:
+            bits = self._bits
+        return self._signal(expr, bits=bits)
 
     def _declare_bits_dim(self, bits):
         assert isinstance(bits, (str, int)), bits
@@ -222,12 +244,15 @@ class p2v_signal:
         return undriven
 
     def _bit_range(self, bits, start=0):
-        end = start + bits - 1
-        assert end >= start, f"msb {end} is less than lsb {start}"
-        if start == end:
+        if isinstance(start, p2v_signal): # verilog array access like a[ptr]
             rtrn = f"{self._name}[{start}]"
         else:
-            rtrn = f"{self._name}[{end}:{start}]"
+            end = start + bits - 1
+            assert end >= start, f"msb {end} is less than lsb {start}"
+            if start == end:
+                rtrn = f"{self._name}[{start}]"
+            else:
+                rtrn = f"{self._name}[{end}:{start}]"
         return self._signal(rtrn, bits=bits)
 
 

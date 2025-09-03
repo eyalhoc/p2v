@@ -37,7 +37,7 @@ from p2v_clock import clk_0rst, clk_arst, clk_srst, clk_2rst # needed for clock 
 from p2v_clock import p2v_clock as clock
 from p2v_clock import default_clk
 from p2v_signal import p2v_signal, p2v_kind
-from p2v_connect import p2v_connect
+from p2v_connect import p2v_connect, STRCT_NAME
 from p2v_fsm import p2v_fsm
 from p2v_tb import p2v_tb, PASS_STATUS
 from p2v_struct import p2v_struct, FIELD_SEP
@@ -602,8 +602,8 @@ class p2v():
                     if isinstance(attr, p2v_signal):
                         if isinstance(attr._strct, clock):
                             clks.append(attr._strct)
-                    elif isinstance(attr, dict) and "_NAME" in attr:
-                        getattr(pins, name).pop("_NAME", None)
+                    elif isinstance(attr, dict) and STRCT_NAME in attr:
+                        getattr(pins, name).pop(STRCT_NAME, None)
         for clk in clks:
             for name in clk.get_nets():
                 if hasattr(pins, str(name)):
@@ -642,7 +642,7 @@ class p2v():
                     prev = getattr(connects, key)
                     if isinstance(prev, dict):
                         d[key] = misc._merge_dict(d[key], prev)
-                d[key]["_NAME"] = key
+                d[key][STRCT_NAME] = key
                 setattr(connects, key, d[key])
             else:
                 setattr(connects, name, val)
@@ -1705,7 +1705,7 @@ class p2v():
             signal = self._add_signal(p2v_signal(p2v_kind.LOGIC, name, bits, remark=remark))
             if enum is not None:
                 for _name, _val in enum.items():
-                    setattr(signal, _name, p2v_signal(None, f"({name} == {_val})", bits=bits))
+                    setattr(signal, _name, p2v_signal(None, f"({name} == {_val})", bits=1))
             self.line(signal.declare())
             rtrn = signal
         if assign is not None:
