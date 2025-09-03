@@ -631,9 +631,11 @@ class p2v():
     def _get_connects(self, parent, modname, signals, params, verilog=False):
         connects = p2v_connect(parent, modname, signals, params=params, verilog=verilog)
         for name, val in connects._signals.items():
-            setattr(connects, name, val)
-            # support access with dict
-            if FIELD_SEP in name:
+            if name.startswith("_"):
+                continue
+            if isinstance(val, p2v_signal) and val.is_parameter():
+                setattr(connects, name, val.bits())
+            elif FIELD_SEP in name: # support access with dict
                 d = misc._path_to_dict(name, value=val)
                 key = list(d.keys())[0]
                 if hasattr(connects, key):
@@ -642,6 +644,16 @@ class p2v():
                         d[key] = misc._merge_dict(d[key], prev)
                 d[key]["_NAME"] = key
                 setattr(connects, key, d[key])
+            else:
+                setattr(connects, name, val)
+        for key in dir(connects):
+            if key.startswith("_"):
+                continue
+            if isinstance(getattr(connects, key), dict):
+                try:
+                    setattr(connects, key, SimpleNamespace(**getattr(connects, key)))
+                except TypeError:
+                    pass
 
         self._cache["conn"][modname] = connects
         return connects
@@ -2009,6 +2021,18 @@ class p2v():
             reset_val = getattr(enum, first_key)
 
         return p2v_fsm(self, clk, enum, reset_val=reset_val)
+
+    def file_exists(self, filename) -> bool:
+        """
+        Returns True if the file name exists in path
+
+        Args:
+            filename(str): filename (absolute or relative to dir in search path)
+
+        Returns:
+            bool
+        """
+        return self._find_file(filename, allow=True) is not None
 
 # top constructor
 if __name__ != "__main__" and os.path.basename(sys.argv[0]) != "pydoc.py":
