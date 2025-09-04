@@ -40,7 +40,7 @@ from p2v_signal import p2v_signal, p2v_kind
 from p2v_connect import p2v_connect, STRCT_NAME
 from p2v_fsm import p2v_fsm
 from p2v_tb import p2v_tb, PASS_STATUS
-from p2v_struct import p2v_struct, FIELD_SEP
+from p2v_struct import p2v_struct, FIELD_SEP, get_field_name
 import p2v_tools
 
 MAX_MODNAME = 150
@@ -229,6 +229,7 @@ class p2v():
                     search.append(dirname)
         for path in search:
             sys.path.append(path)
+        sys.path.append(self._args.outdir)
         search.append(self._get_rtldir())
         return search
 
@@ -500,7 +501,7 @@ class p2v():
     def _add_strct_attr(self, signal, names, fields):
         for key, value in names.items():
             if isinstance(value, dict):
-                nested = SimpleNamespace()
+                nested = self._add_signal(p2v_signal(signal._kind, get_field_name(signal._name, key), bits=0, strct=value, used=signal._used, driven=signal._driven))
                 self._add_strct_attr(nested, value, fields=fields)
                 setattr(signal, key, nested)
             else:
@@ -768,12 +769,12 @@ class p2v():
                 self._set_driven(name, allow=allow)
         elif isinstance(wire, str) and wire in self._signals and self._signals[wire]._strct is not None:
             fields = self._signals[wire]._strct.fields
-            for field_name in fields:
-                bits = fields[field_name]
-                if bits > 0:
-                    self._set_driven(field_name, allow=allow)
-                else:
-                    self._set_used(field_name, allow=allow)
+            for field_name, bits in fields.items():
+                if isinstance(bits, (int, float)):
+                    if bits > 0:
+                        self._set_driven(field_name, allow=allow)
+                    elif bits < 0:
+                        self._set_used(field_name, allow=allow)
         else:
             self._assert(isinstance(wire, str), f"unknown type {type(wire)} for signal", fatal=True)
             self._set_driven_str(wire, allow=allow)
@@ -1057,19 +1058,6 @@ class p2v():
                 pass
             else:
                 self.assign(tgt.reset, src.reset)
-
-    def _get_strct_signals(self, strct, data_only=True, ctrl_only=False, fields=None):
-        signals = []
-        for name, signal in strct.items():
-            if fields is not None and name not in fields:
-                continue
-            signal = strct[name]
-            if signal._ctrl and data_only:
-                continue
-            if not signal._ctrl and ctrl_only:
-                continue
-            signals.append(signal)
-        return signals
 
     def _check_structs(self, tgt, src):
         self._assert_type(tgt, p2v_signal)
@@ -1399,21 +1387,27 @@ class p2v():
             self._assert(condition, f"{name} = {var_str} failed to pass its assertions", fatal=True)
         self._params[name] = (var, remark, loose, suffix)
 
-    def get_fields(self, strct, fields=None):
+    def get_fields(self, signal, fields=None):
         """
         Get struct fields.
 
         Args:
-            strct(dict): p2v struct
+            signal(p2v_signal): p2v struct
             fields(list): list of specific fields to extract
 
         Returns:
             list of field names (or other attribute)
         """
-        if isinstance(strct, p2v_enum):
-            strct = vars(strct)
-        self._assert_type(strct, dict)
-        return self._get_strct_signals(strct, fields=fields)
+        if isinstance(signal, p2v_enum):
+            signal = vars(signal)
+        self._assert_type(signal, p2v_signal)
+        fields = []
+        for field_name in dir(signal):
+            field = getattr(signal, field_name)
+            if isinstance(field, p2v_signal):
+                if not field._ctrl and field._bits != 0:
+                    fields.append(field)
+        return fields
 
     def gen_rand_args(self, override=None):
         """
