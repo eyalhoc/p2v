@@ -36,6 +36,7 @@ class p2v_connect():
         self._modname = modname
         self._signals = signals
         self._pins = {}
+        self._strct_pins = []
         self._remarks = {}
         self._params = params
         self._verilog = verilog
@@ -79,8 +80,12 @@ class p2v_connect():
                     self._pins[pin] = wire
                 if isinstance(signal._strct, p2v_struct):
                     strct = signal._strct
+                    self._strct_pins.append(wire)
                     for field_name in strct.fields:
-                        self._connect(field_name, strct.update_field_name(wire, field_name), self._signals[field_name]._kind)
+                        if field_name in self._pins: # struct assignment is soft to allow specific field assignments
+                            continue
+                        field_wire = strct.update_field_name(wire, field_name)
+                        self._connect(field_name, field_wire, self._signals[field_name]._kind)
 
     def _check_connected(self):
         for name in self._signals:
@@ -198,7 +203,7 @@ class p2v_connect():
         """
         for name in self._signals:
             signal = self._signals[name]
-            if name not in self._pins:
+            if name not in self._pins and name not in self._strct_pins and signal._bits != 0:
                 wire = name + suffix
                 if not ports and signal.is_port() and wire not in self._parent._signals:
                     self._parent.logic(wire, signal._bits, _allow_str=True)

@@ -480,7 +480,10 @@ def concat(vals, sep=None, nl_every=None, add_paren=True):
     for n, val in enumerate(vals):
         _assert_signal("concat", val)
         if isinstance(val, p2v_signal):
-            _bits += val._bits
+            if sep is None: # verilog concat
+                _bits += val._bits
+            else:
+                _bits = val._bits
         if val is not None:
             val = str(val)
             if nl_every is not None and ((n > 0) and (n%nl_every) == 0):

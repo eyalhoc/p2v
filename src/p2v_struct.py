@@ -45,7 +45,7 @@ class p2v_struct():
     def _name_fields(self, name, fields, data_only=False, ctrl_only=False):
         remove = []
         for key, value in fields.items():
-            field_name = self.get_field_name(name, key)
+            field_name = get_field_name(name, key)
             if isinstance(value, dict):
                 self._name_fields(field_name, value, data_only=data_only, ctrl_only=ctrl_only)
             elif isinstance(value, float) and data_only:
@@ -78,27 +78,6 @@ class p2v_struct():
             return list(self.ctrl_names.values())
         return []
 
-    def get_field_name(self, name, field_name):
-        """
-        Build full struct field name for Verilog signal.
-
-        Args:
-            name(str): struct name
-            field_name(str): field name
-
-        Returns:
-            str
-        """
-        name = str(name)
-        if FIELD_SEP in name:
-            if name[-1].isdigit():
-                sep = "_"
-            else:
-                sep = ""
-        else:
-            sep = FIELD_SEP
-        return f"{name}{sep}{field_name.strip('_')}"
-
     def update_field_name(self, name, field_name):
         """
         Takes a full field name and replaces the struct name prefix.
@@ -115,7 +94,7 @@ class p2v_struct():
         if field_name.startswith(name):
             field_name = field_name.replace(name, "", 1)
         field_name = field_name.rsplit(FIELD_SEP, 1)[-1]
-        return self.get_field_name(name, field_name)
+        return get_field_name(name, field_name)
 
     def prefix_fields(self, name, fields, data_only=False, ctrl_only=False):
         """
@@ -134,7 +113,7 @@ class p2v_struct():
         new_fields = {}
         for field_name in fields:
             bits = fields[field_name]
-            full_field_name = self.get_field_name(name, field_name)
+            full_field_name = get_field_name(name, field_name)
             if isinstance(bits, dict):
                 son_fields = self.prefix_fields(full_field_name, bits, data_only=data_only, ctrl_only=ctrl_only)
                 for son_name, val in son_fields.items():
@@ -150,8 +129,13 @@ class p2v_struct():
                     elif bits == -1.0:
                         assert ready is None, f"struct {name} has multiple ready signals (bits = -1.0)"
                         ready = full_field_name
-                elif bits != 0:
-                    new_fields[full_field_name] = bits
+                else:
+                    if ctrl_only:
+                        continue
+                    if isinstance(bits, str):
+                        new_fields[full_field_name] = 0
+                    elif bits != 0:
+                        new_fields[full_field_name] = bits
         if not data_only:
             if valid is not None:
                 new_fields[valid] = 1.0
@@ -173,3 +157,25 @@ class p2v_struct():
             dict
         """
         return self._name_fields(name, deepcopy(fields), data_only=data_only, ctrl_only=ctrl_only)
+
+
+def get_field_name(name, field_name):
+    """
+    Build full struct field name for Verilog signal.
+
+    Args:
+        name(str): struct name
+        field_name(str): field name
+
+    Returns:
+        str
+    """
+    name = str(name)
+    if FIELD_SEP in name:
+        if name[-1].isdigit():
+            sep = "_"
+        else:
+            sep = ""
+    else:
+        sep = FIELD_SEP
+    return f"{name}{sep}{field_name.strip('_')}"
