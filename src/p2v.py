@@ -366,7 +366,7 @@ class p2v():
                     process.wait()
 
                 self._logger.info(f"verilog generation completed {misc.cond(self._err_num == 0, 'successfully', 'with errors')} ({misc.ceil(time.time() - _start_time)} sec)")
-                if self._err_num == 0:
+                if self._err_num == 0 or self._args.stop_on == "CRITICAL":
                     self._lint()
                     if top_connect: # only once
                         self._pylint()
@@ -501,6 +501,11 @@ class p2v():
     def _add_strct_attr(self, signal, names, fields):
         for key, value in names.items():
             if isinstance(value, dict):
+                for k, v in value.items():
+                    try:
+                        value[k] = fields[v]
+                    except KeyError:
+                        value[k] = 0
                 nested = self._add_signal(p2v_signal(signal._kind, get_field_name(signal._name, key), bits=0, strct=value, used=signal._used, driven=signal._driven))
                 self._add_strct_attr(nested, value, fields=fields)
                 setattr(signal, key, nested)
@@ -635,7 +640,7 @@ class p2v():
             if name.startswith("_"):
                 continue
             if isinstance(val, p2v_signal) and val.is_parameter():
-                setattr(connects, name, val.bits())
+                setattr(connects, name, name)
             elif FIELD_SEP in name: # support access with dict
                 d = misc._path_to_dict(name, value=val)
                 key = list(d.keys())[0]
@@ -647,13 +652,16 @@ class p2v():
                 setattr(connects, key, d[key])
             else:
                 setattr(connects, name, val)
+
         for key in dir(connects):
             if key.startswith("_"):
                 continue
-            if isinstance(getattr(connects, key), dict):
+            son = getattr(connects, key)
+            if isinstance(son, dict):
                 try:
-                    setattr(connects, key, SimpleNamespace(**getattr(connects, key)))
-                except TypeError:
+                    son = self._dict_to_namespace(son)
+                    setattr(connects, key, self._dict_to_namespace(son))
+                except TypeError: # might be integer indexes (list)
                     pass
 
         self._cache["conn"][modname] = connects
