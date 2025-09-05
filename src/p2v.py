@@ -647,13 +647,16 @@ class p2v():
                 setattr(connects, key, d[key])
             else:
                 setattr(connects, name, val)
+        
         for key in dir(connects):
             if key.startswith("_"):
                 continue
-            if isinstance(getattr(connects, key), dict):
+            son = getattr(connects, key)
+            if isinstance(son, dict):
                 try:
-                    setattr(connects, key, SimpleNamespace(**getattr(connects, key)))
-                except TypeError:
+                    son = self._dict_to_namespace(son)
+                    setattr(connects, key, self._dict_to_namespace(son))
+                except TypeError: # might be integer indexes (list)
                     pass
 
         self._cache["conn"][modname] = connects
