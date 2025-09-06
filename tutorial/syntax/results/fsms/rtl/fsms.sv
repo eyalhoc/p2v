@@ -21,8 +21,8 @@ module fsms (
 
     always_comb begin
         case (fsm_my_fsm_ps)
-            START: fsm_my_fsm_ns = a ? WAIT : START;
-            WAIT:  fsm_my_fsm_ns = b ? STOP : WAIT;
+            START: fsm_my_fsm_ns = (a ? WAIT : START);
+            WAIT:  fsm_my_fsm_ns = (b ? STOP : WAIT);
             STOP:  fsm_my_fsm_ns = START;
 
             default: fsm_my_fsm_ns = 'x;

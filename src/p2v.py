@@ -1585,7 +1585,7 @@ class p2v():
         elif isinstance(name, str):
             if not _allow_str:
                 self._assert(name == "", "port name should not use string type")
-        if isinstance(bits, p2v_signal):
+        if isinstance(bits, p2v_signal) and bits.is_parameter():
             bits = str(bits)
 
         self._assert_type(name, [str, list ,clock])
@@ -1615,7 +1615,7 @@ class p2v():
         elif isinstance(name, str):
             if not _allow_str:
                 self._assert(name == "", "port name should not use string type")
-        if isinstance(bits, p2v_signal):
+        if isinstance(bits, p2v_signal) and bits.is_parameter():
             bits = str(bits)
 
         self._assert_type(name, [str, list, clock])
@@ -1665,7 +1665,7 @@ class p2v():
                 self._assert(name == "", "logic name should not use string type")
         if isinstance(name, str) and name == "":
             name = self._get_receive_name("logic")
-        if isinstance(bits, p2v_signal):
+        if isinstance(bits, p2v_signal) and bits.is_parameter():
             bits = str(bits)
 
         self._assert_type(name, [clock, p2v_signal, str, list])
@@ -1788,6 +1788,9 @@ class p2v():
                 valid = p2v_signal(None, valid, bits=1)
             if isinstance(reset, str):
                 reset = p2v_signal(None, reset, bits=1)
+
+        if isinstance(src, int):
+            src = misc.dec(src, tgt._bits)
 
         self._assert_type(clk, clock)
         self._assert_type(src, [p2v_signal])

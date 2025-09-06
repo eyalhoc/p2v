@@ -448,7 +448,7 @@ def cond(condition, true_var, false_var=""):
             true_var = dec(true_var, _bits)
         if isinstance(false_var, int) and _bits > 0:
             false_var = dec(false_var, _bits)
-        rtrn = f"{condition} ? {true_var} : {false_var}"
+        rtrn = f"({condition} ? {true_var} : {false_var})"
         return p2v_signal(None, str(rtrn), bits=_bits)
 
     if condition:
