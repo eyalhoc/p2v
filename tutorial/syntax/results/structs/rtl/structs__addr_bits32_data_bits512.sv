@@ -365,23 +365,23 @@ module structs__addr_bits32_data_bits512 (
 
     always_ff @(posedge clk or negedge rst_n)
         if (!rst_n) slave3__awid <= 4'd0;
-        else if (master3__awvalid & master3__awready) slave3__awid <= master3__awid;
+        else if ((master3__awvalid & master3__awready)) slave3__awid <= master3__awid;
 
     always_ff @(posedge clk or negedge rst_n)
         if (!rst_n) slave3__awaddr <= 32'd0;
-        else if (master3__awvalid & master3__awready) slave3__awaddr <= master3__awaddr;
+        else if ((master3__awvalid & master3__awready)) slave3__awaddr <= master3__awaddr;
 
     always_ff @(posedge clk or negedge rst_n)
         if (!rst_n) slave3__awburst <= 2'd0;
-        else if (master3__awvalid & master3__awready) slave3__awburst <= master3__awburst;
+        else if ((master3__awvalid & master3__awready)) slave3__awburst <= master3__awburst;
 
     always_ff @(posedge clk or negedge rst_n)
         if (!rst_n) slave3__awlen <= 8'd0;
-        else if (master3__awvalid & master3__awready) slave3__awlen <= master3__awlen;
+        else if ((master3__awvalid & master3__awready)) slave3__awlen <= master3__awlen;
 
     always_ff @(posedge clk or negedge rst_n)
         if (!rst_n) slave3__awsize <= 3'd0;
-        else if (master3__awvalid & master3__awready) slave3__awsize <= master3__awsize;
+        else if ((master3__awvalid & master3__awready)) slave3__awsize <= master3__awsize;
 
 
 
@@ -394,23 +394,23 @@ module structs__addr_bits32_data_bits512 (
 
     always_ff @(posedge clk or negedge rst_n)
         if (!rst_n) slave3__arid <= 4'd0;
-        else if (master3__arvalid & master3__arready) slave3__arid <= master3__arid;
+        else if ((master3__arvalid & master3__arready)) slave3__arid <= master3__arid;
 
     always_ff @(posedge clk or negedge rst_n)
         if (!rst_n) slave3__araddr <= 32'd0;
-        else if (master3__arvalid & master3__arready) slave3__araddr <= master3__araddr;
+        else if ((master3__arvalid & master3__arready)) slave3__araddr <= master3__araddr;
 
     always_ff @(posedge clk or negedge rst_n)
         if (!rst_n) slave3__arburst <= 2'd0;
-        else if (master3__arvalid & master3__arready) slave3__arburst <= master3__arburst;
+        else if ((master3__arvalid & master3__arready)) slave3__arburst <= master3__arburst;
 
     always_ff @(posedge clk or negedge rst_n)
         if (!rst_n) slave3__arlen <= 8'd0;
-        else if (master3__arvalid & master3__arready) slave3__arlen <= master3__arlen;
+        else if ((master3__arvalid & master3__arready)) slave3__arlen <= master3__arlen;
 
     always_ff @(posedge clk or negedge rst_n)
         if (!rst_n) slave3__arsize <= 3'd0;
-        else if (master3__arvalid & master3__arready) slave3__arsize <= master3__arsize;
+        else if ((master3__arvalid & master3__arready)) slave3__arsize <= master3__arsize;
 
 
 
@@ -423,15 +423,15 @@ module structs__addr_bits32_data_bits512 (
 
     always_ff @(posedge clk or negedge rst_n)
         if (!rst_n) slave3__wdata <= 512'd0;
-        else if (master3__wvalid & master3__wready) slave3__wdata <= master3__wdata;
+        else if ((master3__wvalid & master3__wready)) slave3__wdata <= master3__wdata;
 
     always_ff @(posedge clk or negedge rst_n)
         if (!rst_n) slave3__wstrb <= 64'd0;
-        else if (master3__wvalid & master3__wready) slave3__wstrb <= master3__wstrb;
+        else if ((master3__wvalid & master3__wready)) slave3__wstrb <= master3__wstrb;
 
     always_ff @(posedge clk or negedge rst_n)
         if (!rst_n) slave3__wlast <= 1'd0;
-        else if (master3__wvalid & master3__wready) slave3__wlast <= master3__wlast;
+        else if ((master3__wvalid & master3__wready)) slave3__wlast <= master3__wlast;
 
 
 
@@ -444,11 +444,11 @@ module structs__addr_bits32_data_bits512 (
 
     always_ff @(posedge clk or negedge rst_n)
         if (!rst_n) master3__bid <= 4'd0;
-        else if (master3__bvalid & master3__bready) master3__bid <= slave3__bid;
+        else if ((master3__bvalid & master3__bready)) master3__bid <= slave3__bid;
 
     always_ff @(posedge clk or negedge rst_n)
         if (!rst_n) master3__bresp <= 2'd0;
-        else if (master3__bvalid & master3__bready) master3__bresp <= slave3__bresp;
+        else if ((master3__bvalid & master3__bready)) master3__bresp <= slave3__bresp;
 
 
 
@@ -461,19 +461,19 @@ module structs__addr_bits32_data_bits512 (
 
     always_ff @(posedge clk or negedge rst_n)
         if (!rst_n) master3__rdata <= 512'd0;
-        else if (master3__rvalid & master3__rready) master3__rdata <= slave3__rdata;
+        else if ((master3__rvalid & master3__rready)) master3__rdata <= slave3__rdata;
 
     always_ff @(posedge clk or negedge rst_n)
         if (!rst_n) master3__rid <= 4'd0;
-        else if (master3__rvalid & master3__rready) master3__rid <= slave3__rid;
+        else if ((master3__rvalid & master3__rready)) master3__rid <= slave3__rid;
 
     always_ff @(posedge clk or negedge rst_n)
         if (!rst_n) master3__rresp <= 2'd0;
-        else if (master3__rvalid & master3__rready) master3__rresp <= slave3__rresp;
+        else if ((master3__rvalid & master3__rready)) master3__rresp <= slave3__rresp;
 
     always_ff @(posedge clk or negedge rst_n)
         if (!rst_n) master3__rlast <= 1'd0;
-        else if (master3__rvalid & master3__rready) master3__rlast <= slave3__rlast;
+        else if ((master3__rvalid & master3__rready)) master3__rlast <= slave3__rlast;
 
 
 

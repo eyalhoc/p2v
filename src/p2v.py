@@ -247,16 +247,17 @@ class p2v():
         return False
 
     def _pylint(self, srcfiles=None):
-        if srcfiles is None:
-            srcfiles = self._get_srcfiles()
         if self._args.pylint:
+            sim_start_time = time.time()
             py_srcfiles = []
+            if srcfiles is None:
+                srcfiles = self._get_srcfiles()
             for srcfile in srcfiles:
                 if srcfile.endswith(".py"):
                     py_srcfiles.append(srcfile)
-            logfile, success = p2v_tools.pylint(srcfiles=py_srcfiles, outdir=self._args.outdir)
+            logfile, success = p2v_tools.pylint(self._args.pylint_bin, srcfiles=py_srcfiles, outdir=self._args.outdir)
             if self._assert(success, f"Python lint completed with errors:\n{misc._read_file(logfile)}"):
-                self._logger.info("Python lint completed successfully")
+                self._logger.info("Python lint completed successfully (%d sec)", misc.ceil(time.time() - sim_start_time))
                 return True
         return False
 
@@ -465,6 +466,7 @@ class p2v():
 
         parser.add_argument("-indent_bin", default="verible-verilog-format", choices=["verible-verilog-format"], help="Verilog indentation")
         parser.add_argument("-lint_bin", default="verilator", choices=["verilator", "verible-verilog-lint"], help="Verilog lint")
+        parser.add_argument("-pylint_bin", default="pylint", choices=["pylint"], help="Python lint")
         parser.add_argument("-comp_bin", default="iverilog", choices=["iverilog"], help="Verilog compiler")
         parser.add_argument("-sim_bin", default="vvp", choices=["vvp"], help="Verilog simulator")
         parser.add_argument("-sim_args", type=ast.literal_eval, default={}, help="simulation override arguments")
@@ -1585,7 +1587,7 @@ class p2v():
         elif isinstance(name, str):
             if not _allow_str:
                 self._assert(name == "", "port name should not use string type")
-        if isinstance(bits, p2v_signal):
+        if isinstance(bits, p2v_signal) and bits.is_parameter():
             bits = str(bits)
 
         self._assert_type(name, [str, list ,clock])
@@ -1615,7 +1617,7 @@ class p2v():
         elif isinstance(name, str):
             if not _allow_str:
                 self._assert(name == "", "port name should not use string type")
-        if isinstance(bits, p2v_signal):
+        if isinstance(bits, p2v_signal) and bits.is_parameter():
             bits = str(bits)
 
         self._assert_type(name, [str, list, clock])
@@ -1665,7 +1667,7 @@ class p2v():
                 self._assert(name == "", "logic name should not use string type")
         if isinstance(name, str) and name == "":
             name = self._get_receive_name("logic")
-        if isinstance(bits, p2v_signal):
+        if isinstance(bits, p2v_signal) and bits.is_parameter():
             bits = str(bits)
 
         self._assert_type(name, [clock, p2v_signal, str, list])
@@ -1788,6 +1790,9 @@ class p2v():
                 valid = p2v_signal(None, valid, bits=1)
             if isinstance(reset, str):
                 reset = p2v_signal(None, reset, bits=1)
+
+        if isinstance(src, int):
+            src = misc.dec(src, tgt._bits)
 
         self._assert_type(clk, clock)
         self._assert_type(src, [p2v_signal])

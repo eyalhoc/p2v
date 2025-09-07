@@ -12,8 +12,8 @@ module exprs (
 
     // exprs module parameters:
 
-    assign bitwise = ((a + b) | (a - b) & (a * b) ^ (a - b) | ~a);
-    assign boolean = (a == b) | (a != b) | (a > b) | (a >= b) | (a < b) | (a <= b);
+    assign bitwise = (((a + b) | (((a - b) & (a * b)) ^ (a - b))) | ~a);
+    assign boolean = ((((((a == b) | (a != b)) | (a > b)) | (a >= b)) | (a < b)) | (a <= b));
     assign lshift = {a, 3'd0};
     assign rshift = {3'd0, b[7:3]};
     assign o0 = 8'd0;
