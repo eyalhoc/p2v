@@ -99,13 +99,19 @@ def _is_paren_balanced(line, open_char="(", close_char=")"):
     return _get_paren_depth(line, open_char=open_char, close_char=close_char) == 0
 
 def _is_in_paren(line, open_char="(", close_char=")"):
-    if len(line) < 4:
-        return False
-    line = line.strip()
-    if line[0] == open_char and line[-1] == close_char and _is_paren_balanced(line, open_char=open_char, close_char=close_char):
-        if line[1] == open_char and line[-2] == close_char:
-            return _is_in_paren(line[1:-1], open_char=open_char, close_char=close_char)
-        return True
+    """ check if the entire expression is in paren, for example:
+        '(a&b) | (c&d)' returns False
+        '((a&b) | (c&d))' returns True
+        '(a&b | c&d)' returns True
+    """
+    depth = 0
+    for n, c in enumerate(line):
+        if c == open_char:
+            depth += 1
+        elif c == close_char:
+            depth -= 1
+        if n > 0 and depth == 0:
+            return (n+1)==len(line)
     return False
 
 def _get_bit_range(wire):
@@ -271,6 +277,8 @@ def _remove_spaces(line):
     return line.replace(" ", "").replace("\t", "")
 
 def _remove_extra_paren(line, open_char="(", close_char=")"):
+    if "|" not in line:
+        return line
     if _is_in_paren(line, open_char=open_char, close_char=close_char):
         while _is_in_paren(line, open_char=open_char, close_char=close_char): # remove all paren
             line = line[1:-1]

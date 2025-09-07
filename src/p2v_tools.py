@@ -133,7 +133,7 @@ def lint(tool_bin, dirname, outdir, filename):
     success = misc._read_file(full_logfile) == ""
     return full_logfile, success
 
-def pylint(srcfiles, outdir):
+def pylint(tool_bin, srcfiles, outdir):
     """
     Run lint on Python sources.
 
@@ -146,8 +146,12 @@ def pylint(srcfiles, outdir):
     """
     logfile = "p2v_pylint.log"
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    rcfile = os.path.join(current_dir, "..", ".pylintrc")
-    cmd = f"pylint {' '.join(srcfiles)} --rcfile {rcfile}"
+    if tool_bin == "pylint":
+        rcfile = os.path.join(current_dir, "..", ".pylintrc")
+        cmd = f"{tool_bin} {' '.join(srcfiles)} --rcfile {rcfile}"
+    else:
+        raise RuntimeError(f"unknown Python lint tool {tool_bin}")
+
     full_logfile = system(outdir, outdir, cmd, logfile, log_out=True, log_err=True)
     success = misc._read_file(full_logfile) == ""
     return full_logfile, success

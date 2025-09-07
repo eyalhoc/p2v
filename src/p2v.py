@@ -247,16 +247,17 @@ class p2v():
         return False
 
     def _pylint(self, srcfiles=None):
-        if srcfiles is None:
-            srcfiles = self._get_srcfiles()
         if self._args.pylint:
+            sim_start_time = time.time()
             py_srcfiles = []
+            if srcfiles is None:
+                srcfiles = self._get_srcfiles()
             for srcfile in srcfiles:
                 if srcfile.endswith(".py"):
                     py_srcfiles.append(srcfile)
-            logfile, success = p2v_tools.pylint(srcfiles=py_srcfiles, outdir=self._args.outdir)
+            logfile, success = p2v_tools.pylint(self._args.pylint_bin, srcfiles=py_srcfiles, outdir=self._args.outdir)
             if self._assert(success, f"Python lint completed with errors:\n{misc._read_file(logfile)}"):
-                self._logger.info("Python lint completed successfully")
+                self._logger.info("Python lint completed successfully (%d sec)", misc.ceil(time.time() - sim_start_time))
                 return True
         return False
 
@@ -465,6 +466,7 @@ class p2v():
 
         parser.add_argument("-indent_bin", default="verible-verilog-format", choices=["verible-verilog-format"], help="Verilog indentation")
         parser.add_argument("-lint_bin", default="verilator", choices=["verilator", "verible-verilog-lint"], help="Verilog lint")
+        parser.add_argument("-pylint_bin", default="pylint", choices=["pylint"], help="Python lint")
         parser.add_argument("-comp_bin", default="iverilog", choices=["iverilog"], help="Verilog compiler")
         parser.add_argument("-sim_bin", default="vvp", choices=["vvp"], help="Verilog simulator")
         parser.add_argument("-sim_args", type=ast.literal_eval, default={}, help="simulation override arguments")

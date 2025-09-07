@@ -58,7 +58,7 @@ module samples (
 
     always_ff @(posedge clk1)
         if (clk1_reset) t__data <= 32'd0;
-        else if (s__valid & s__ready) t__data <= s__data;
+        else if ((s__valid & s__ready)) t__data <= s__data;
 
 
 
