@@ -298,6 +298,8 @@ class p2v():
             params = {}
         if hasattr(top_class, "gen") and isinstance(getattr(top_class, "gen"), FunctionType):
             args = top_class.gen(self)
+            if isinstance(args, SimpleNamespace):
+                args = vars(args)
             for name, val in params.items():
                 args[name] = val
             return args
@@ -1449,9 +1451,27 @@ class p2v():
                     gen_args[sig_name] = override[sig_name]
         args = self.gen(**gen_args) # pylint: disable=no-member
         for name in override:
-            if self._assert(name in args, f"trying to override unknown arg {name}, known: [{', '.join(args.keys())}]", fatal=True):
-                args[name] = override[name]
+            if self._assert(hasattr(args, name), f"trying to override unknown arg {name}", fatal=True):
+                setattr(args, name, override[name])
         return args
+
+    def gen_args(self):
+        """
+        Get module() parameters
+
+        Args:
+            NA
+
+        Returns:
+            struct
+        """
+        args = {}
+        if self._assert(hasattr(self, "module"), "cannot find main function module()", fatal=True):
+            sig = inspect.signature(self.module) # pylint: disable=no-member
+            for name, param in sig.parameters.items():
+                if param.default != inspect.Parameter.empty:
+                    args[name] = param.default
+        return SimpleNamespace(**args)
 
     def line(self, line="", remark=None):
         """

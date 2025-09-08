@@ -620,7 +620,7 @@ def bin(num, bits=None, add_sep=4, prefix="'b"): # pylint: disable=redefined-bui
         bits = log2(num)
     return p2v_signal(None, str(rtrn), bits=bits)
 
-def min(a, b):
+def min(a, b): # pylint: disable=redefined-builtin
     """
     Minimum between p2v signals
 
@@ -635,12 +635,11 @@ def min(a, b):
     assert isinstance(b, (p2v_signal, int)), b
     if isinstance(a, p2v_signal):
         return cond(a < b, a, b)
-    elif isinstance(b, p2v_signal):
+    if isinstance(b, p2v_signal):
         return cond(b > a, a, b)
-    else:
-        raise RuntimeError("min() arguments cannot be both int")
+    raise RuntimeError("min() arguments cannot be both int")
 
-def max(a, b):
+def max(a, b): # pylint: disable=redefined-builtin
     """
     Maximum between p2v signals
 
@@ -655,10 +654,9 @@ def max(a, b):
     assert isinstance(b, (p2v_signal, int)), b
     if isinstance(a, p2v_signal):
         return cond(a > b, a, b)
-    elif isinstance(b, p2v_signal):
+    if isinstance(b, p2v_signal):
         return cond(b < a, a, b)
-    else:
-        raise RuntimeError("min() arguments cannot be both int")
+    raise RuntimeError("min() arguments cannot be both int")
 
 def quote(s="", q='"'):
     """

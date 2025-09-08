@@ -92,14 +92,14 @@ class adder(p2v):
 
     def gen(self, float16=None):
         """ random module parameters """
-        args = {}
+        args = self.gen_args()
         if float16 is None:
-            args["float16"] = self.tb.rand_bool()
+            args.float16 = self.tb.rand_bool()
         else:
-            args["float16"] = float16
-        if args["float16"]:
-            args["bits"] = 16
+            args.float16 = float16
+        if args.float16:
+            args.bits = 16
         else:
-            args["bits"] = self.tb.rand_int(1, 128)
-        args["num"] = 1 << self.tb.rand_int(1, 8)
+            args.bits = self.tb.rand_int(1, 128)
+        args.num = 1 << self.tb.rand_int(1, 8)
         return args
