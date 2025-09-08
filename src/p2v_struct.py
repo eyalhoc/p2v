@@ -173,7 +173,7 @@ def get_field_name(name, field_name):
     name = str(name)
     if FIELD_SEP in name:
         if name[-1].isdigit():
-            sep = "_"
+            sep = FIELD_SEP
         else:
             sep = ""
     else:

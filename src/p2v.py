@@ -337,7 +337,7 @@ class p2v():
         except AttributeError:
             self.tb = p2v_tb(self, seed=self._args.seed, max_seed=MAX_SEED)
         misc._write_file(os.path.join(self._args.outdir, f"{__class__.__name__}.cmd"), self._get_cmd()) # write command line to file
-        if self._args.sim or self._args.gen_num is not None:
+        if self._args.sim or self._args.gen_num is not None or self.tb.seed != 1:
             self._logger.info(f"starting with seed {self.tb.seed}")
 
         params_is_csv_file = isinstance(self._args.params, list)
@@ -354,6 +354,8 @@ class p2v():
             iter_num = 1
 
         for i in range(iter_num):
+            if self._args.rerun_iter is not None and i != self._args.rerun_iter:
+                continue
             _start_time = time.time()
             if gen_loop:
                 self.tb._set_seed(gen_seeds[i])
@@ -449,6 +451,7 @@ class p2v():
         parser.add_argument("-log", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], help="logging level")
         parser.add_argument("-seed", type=int, default=1, help="simulation seed (0 is random)")
         parser.add_argument("-gen_num", type=int, help="generate random permutations")
+        parser.add_argument("-rerun_iter", type=int, default=None, help="rerun specific iteration from random permutations")
         parser.add_argument("-header", type=str, help="copyright header for generated files")
         parser.add_argument("-help", action="store_true", default=False, help="print module top parameters")
         parser.add_argument("-debug", action="store_true", default=False, help=argparse.SUPPRESS)
@@ -808,7 +811,7 @@ class p2v():
             else:
                 count[name] = 1
         for name, val in count.items():
-            self._assert(val < MAX_LOOP, f"{name} was created {val} times in module (performance loss)")
+            self._assert(val < MAX_LOOP, f"{name} was created {val} times in module (performance loss)", warning=True)
 
     def _check_line_balanced(self, line):
         line = str(line)
@@ -1243,17 +1246,20 @@ class p2v():
         self._assert(misc._is_legal_name(name), f"missing receive variable for {cmd}", fatal=True)
         return name
 
-    def _assert_property(self, clk, condition, message, name=None, fatal=True, property_type="assert"):
+    def _assert_property(self, clk, condition, message, name=None, valid=None, fatal=True, property_type="assert"):
         self._assert_type(clk, [clock, None])
         self._assert_type(condition, p2v_signal)
         self._assert_type(message, str)
         self._assert_type(name, [None, str])
+        self._assert_type(valid, [None, p2v_signal])
         self._assert_type(fatal, bool)
         self._assert_type(property_type, str)
         self._assert(property_type in ["assert", "assume", "cover"], f"unknown assertion property {property_type}")
         self._check_line_balanced(condition)
 
         if not self._exists():
+            if valid is not None:
+                condition = misc.cond(valid, condition, 1)
             if name is None:
                 name = misc._make_name_legal(message)
             else:
@@ -1909,7 +1915,7 @@ class p2v():
             self._write_empty_module(modname)
         return self._get_connects(parent=self, modname=modname, signals=ports, params=params, verilog=True)
 
-    def assert_property(self, clk=None, condition=None, message=None, name=None, fatal=True):
+    def assert_property(self, clk=None, condition=None, message=None, name=None, valid=None, fatal=True):
         """
         Assertion on Verilog signals with clock.
 
@@ -1918,14 +1924,15 @@ class p2v():
             condition(p2v_signal): Error occurs when condition is False
             message(str): Error message
             name([None, str]): Explicit assertion name
+            valid([None, p2v_signal]): check on this signal
             fatal(bool): stop on error
 
         Returns:
             NA
         """
-        self._assert_property(clk, condition, message, name=name, fatal=fatal, property_type="assert")
+        self._assert_property(clk, condition, message, name=name, valid=valid, fatal=fatal, property_type="assert")
 
-    def assume_property(self, clk, condition, message, name=None, fatal=True):
+    def assume_property(self, clk, condition, message, name=None, valid=None, fatal=True):
         """
         Assumptions on Verilog signals (constrain design).
 
@@ -1934,12 +1941,13 @@ class p2v():
             condition(p2v_signal): Error occurs when condition is False
             message(str): Error message
             name([None, str]): Explicit assertion name
+            valid([None, p2v_signal]): check on this signal
             fatal(bool): stop on error
 
         Returns:
             NA
         """
-        self._assert_property(clk, condition, message, name=name, fatal=fatal, property_type="assume")
+        self._assert_property(clk, condition, message, name=name, valid=valid, fatal=fatal, property_type="assume")
 
     def cover_property(self, clk, condition, message, name=None, fatal=True):
         """
