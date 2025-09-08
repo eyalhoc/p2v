@@ -557,7 +557,9 @@ def dec(num, bits=None): # pylint: disable=redefined-outer-name
     """
     assert isinstance(num, int), num
     if bits is None:
-        bits = max(1, num.bit_length())
+        bits = num.bit_length()
+        if bits == 0:
+            bits = 1
     assert isinstance(bits, int), bits
     _check_bits(num, bits)
 
@@ -591,7 +593,9 @@ def hex(num, bits=None, add_sep=4, prefix="'h"): # pylint: disable=redefined-bui
     assert isinstance(prefix, (type(None), str)), prefix
     rtrn = _base(16, num, bits, add_sep, prefix)
     if bits is None:
-        bits = max(1, num.bit_length())
+        bits = num.bit_length()
+        if bits == 0:
+            bits = 1
     return p2v_signal(None, str(rtrn), bits=bits)
 
 def bin(num, bits=None, add_sep=4, prefix="'b"): # pylint: disable=redefined-builtin,redefined-outer-name
@@ -615,6 +619,44 @@ def bin(num, bits=None, add_sep=4, prefix="'b"): # pylint: disable=redefined-bui
     if bits is None:
         bits = log2(num)
     return p2v_signal(None, str(rtrn), bits=bits)
+
+def min(a, b): # pylint: disable=redefined-builtin
+    """
+    Minimum between p2v signals
+
+    Args:
+        a(p2v_signal): signal
+        b(p2v_signal): signal
+
+    Returns:
+        Verilog code
+    """
+    assert isinstance(a, (p2v_signal, int)), a
+    assert isinstance(b, (p2v_signal, int)), b
+    if isinstance(a, p2v_signal):
+        return cond(a < b, a, b)
+    if isinstance(b, p2v_signal):
+        return cond(b > a, a, b)
+    raise RuntimeError("min() arguments cannot be both int")
+
+def max(a, b): # pylint: disable=redefined-builtin
+    """
+    Maximum between p2v signals
+
+    Args:
+        a(p2v_signal): signal
+        b(p2v_signal): signal
+
+    Returns:
+        Verilog code
+    """
+    assert isinstance(a, (p2v_signal, int)), a
+    assert isinstance(b, (p2v_signal, int)), b
+    if isinstance(a, p2v_signal):
+        return cond(a > b, a, b)
+    if isinstance(b, p2v_signal):
+        return cond(b < a, a, b)
+    raise RuntimeError("min() arguments cannot be both int")
 
 def quote(s="", q='"'):
     """

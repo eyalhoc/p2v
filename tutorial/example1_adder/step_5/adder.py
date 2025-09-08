@@ -62,7 +62,7 @@ class adder(p2v):
 
     def gen(self):
         """ random module parameters """
-        args = {}
-        args["bits"] = self.tb.rand_int(1, 128)
-        args["num"] = 1 << self.tb.rand_int(1, 8)
+        args = self.gen_args()
+        args.bits = self.tb.rand_int(1, 128)
+        args.num = 1 << self.tb.rand_int(1, 8)
         return args

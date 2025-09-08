@@ -21,9 +21,9 @@ class tb_adder(p2v):
         self.tb.gen_clk(clk, cycle=self.tb.rand_int(2, 20))
 
 
-        args = adder.adder(self).gen_rand_args(override={"float16":False})
-        num = args["num"]
-        bits = args["bits"]
+        args = adder.adder(self).gen_rand_args(override={"clk":clk, "float16":False})
+        num = args.num
+        bits = args.bits
 
         valid = self.logic(initial=0)
         inputs = {}
@@ -32,7 +32,7 @@ class tb_adder(p2v):
         o = self.logic(bits)
         valid_out = self.logic()
 
-        son = adder.adder(self).module(clk, **args)
+        son = adder.adder(self).module(**vars(args))
         son.connect_in(clk)
         son.connect_in(valid)
         for n in range(num):
