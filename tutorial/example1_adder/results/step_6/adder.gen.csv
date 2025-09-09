@@ -1,2 +1,2 @@
 clk                 , bits                , num                 , float16             
-clk_arst()          , 17                  , 32                  , False               
+clk_arst()          , 8                   , 32                  , False               
