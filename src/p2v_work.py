@@ -529,11 +529,6 @@ class p2v():
         return obj
 
     def _add_signal(self, signal):
-        if self._exists(): # is called from p2v_connect
-            try:
-                return self._signals[signal._name]
-            except KeyError:
-                pass
         self._assert(self._modname is not None, "module name was not set (set_modname() was not called)", fatal=True)
         self._assert(signal._name not in misc._systemverilog_keywords(), f"{signal._name} is a reserevd Verilog keyword", fatal=True)
         if self._assert(signal._name not in self._signals, f"{signal._name} was previously defined"):
