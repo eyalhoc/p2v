@@ -31,7 +31,6 @@ module signals #(
     output logic o2
 );
 
-    // signals module parameters:
 
     logic a;
     logic b;

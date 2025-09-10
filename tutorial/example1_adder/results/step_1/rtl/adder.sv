@@ -4,7 +4,6 @@ module adder (
     output logic [7:0] o
 );
 
-    // adder module parameters:
 
     assign o = (a + b);
 

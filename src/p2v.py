@@ -1188,7 +1188,7 @@ class p2v():
     def _get_module_params(self, module_locals, suffix=True):
         simple_types = (int, bool, str, clock)
 
-        comments = [f"{self._get_clsname()} module parameters:"]
+        comments = []
         suf = []
         if len(module_locals) > 0:
             for name in module_locals:
@@ -1218,6 +1218,8 @@ class p2v():
 
                 comments.append(f" * {name} = {val_str} ({type_str}){param_remark}")
 
+        if len(comments) > 0:
+            comments = [f"{self._get_clsname()} module parameters:"] + comments
         if self._args.help:
             for comment in comments:
                 print(comment)
