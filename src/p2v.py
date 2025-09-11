@@ -584,8 +584,12 @@ class p2v():
     def _get_rtldir(self):
         return os.path.join(self._args.outdir, "rtl")
 
-    def _get_outfile(self, ext="sv"):
-        filename = f"{self._modname}.{ext}"
+    def _get_outfile(self, modname=None, ext="sv"):
+        if not self._assert(not ext.startswith("."), f"outfile extension {ext} should be without dot"):
+            ext = ext.strip(".")
+        if modname is None:
+            modname = self._modname
+        filename = f"{modname}.{ext}"
         return os.path.join(self._get_rtldir(), filename)
 
     def _get_modlines(self, lint=True):
@@ -604,7 +608,7 @@ class p2v():
 
     def _write_lines(self, outfile, lines, indent=True):
         misc._write_file(outfile, "\n".join(lines))
-        if indent and self._args.indent:
+        if indent and self._args.indent and outfile.endswith("v"):
             if self._assert(p2v_tools.check(self._args.indent_bin), f"cannot perform verilog indentation, {self._args.indent_bin} is not installed", warning=True):
                 self._processes.append(p2v_tools.indent(self._args.indent_bin, outfile))
 

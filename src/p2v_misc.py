@@ -633,6 +633,11 @@ def min(a, b): # pylint: disable=redefined-builtin
     """
     assert isinstance(a, (p2v_signal, int)), a
     assert isinstance(b, (p2v_signal, int)), b
+    if isinstance(a, p2v_signal) and isinstance(b, p2v_signal):
+        if a._bits > b._bits:
+            b = b.pad(a._bits - b._bits)
+        elif a._bits < b._bits:
+            a = a.pad(b._bits - a._bits)
     if isinstance(a, p2v_signal):
         return cond(a < b, a, b)
     if isinstance(b, p2v_signal):
