@@ -145,15 +145,21 @@ class p2v_connect():
         Returns:
             None
         """
-        if isinstance(wire, list):
-            wire = misc.concat(wire)
-        if isinstance(pin, SimpleNamespace):
-            pin = vars(pin)
-        if not _use_wire:
-            wire = self._get_wire(pin, wire)
-        self._connect(pin, wire, kind=p2v_kind.INPUT)
-        if not isinstance(wire, int):
-            self._parent._set_used(wire, drive=drive)
+        if isinstance(pin, dict) or isinstance(wire, dict):
+            self._parent._assert(isinstance(pin, dict) and isinstance(wire, dict), "when dict type is used for connect both pin and wire must be of type dict", fatal=True)
+            for key in wire:
+                self.connect_in(pin[key], wire[key])
+        else:
+            if isinstance(wire, list):
+                wire = misc.concat(wire)
+            if isinstance(pin, SimpleNamespace):
+                pin = vars(pin)
+
+            if not _use_wire:
+                wire = self._get_wire(pin, wire)
+            self._connect(pin, wire, kind=p2v_kind.INPUT)
+            if not isinstance(wire, int):
+                self._parent._set_used(wire, drive=drive)
 
     def connect_out(self, pin, wire="", _use_wire=False):
         """
@@ -166,14 +172,19 @@ class p2v_connect():
         Returns:
             None
         """
-        if isinstance(wire, list):
-            wire = misc.concat(wire)
-        if isinstance(pin, SimpleNamespace):
-            pin = vars(pin)
-        if not _use_wire:
-            wire = self._get_wire(pin, wire)
-        self._connect(pin, wire, kind=p2v_kind.OUTPUT)
-        self._parent._set_driven(wire)
+        if isinstance(pin, dict) or isinstance(wire, dict):
+            self._parent._assert(isinstance(pin, dict) and isinstance(wire, dict), "when dict type is used for connect both pin and wire must be of type dict", fatal=True)
+            for key in wire:
+                self.connect_out(pin[key], wire[key])
+        else:
+            if isinstance(wire, list):
+                wire = misc.concat(wire)
+            if isinstance(pin, SimpleNamespace):
+                pin = vars(pin)
+            if not _use_wire:
+                wire = self._get_wire(pin, wire)
+            self._connect(pin, wire, kind=p2v_kind.OUTPUT)
+            self._parent._set_driven(wire)
 
     def connect_io(self, pin, wire="", _use_wire=False):
         """

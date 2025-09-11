@@ -21,7 +21,6 @@ module samples (
     input logic t__ready
 );
 
-    // samples module parameters:
 
     always_ff @(posedge clk0 or negedge clk0_rst_n)
         if (!clk0_rst_n) x0 <= 8'd0;

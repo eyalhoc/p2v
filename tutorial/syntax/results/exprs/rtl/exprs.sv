@@ -10,7 +10,6 @@ module exprs (
     output logic [7:0] o2
 );
 
-    // exprs module parameters:
 
     assign bitwise = (((a + b) | (((a - b) & (a * b)) ^ (a - b))) | ~a);
     assign boolean = ((((((a == b) | (a != b)) | (a > b)) | (a >= b)) | (a < b)) | (a <= b));

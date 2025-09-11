@@ -192,7 +192,7 @@ def comp(tool_bin, dirname, outdir, modname=None, search=None, libs=None):
         flags = _get_iverilog_flags(search)
         topmodule = misc.cond(modname is not None, f"-s {modname}")
         ofile = os.path.join(os.path.abspath(outdir), "iverilog.o")
-        cmd = f"{tool_bin} {flags} {topmodule} {' '.join(libs)} *.* -o {ofile} {flags}"
+        cmd = f"{tool_bin} {topmodule} {' '.join(libs)} *.* -o {ofile} {flags}"
     else:
         raise RuntimeError(f"unknown Verilog compilation tool {tool_bin}")
 

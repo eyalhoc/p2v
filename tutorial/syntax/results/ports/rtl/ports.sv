@@ -31,7 +31,6 @@ module ports #(
     output logic [BITS-1:0] zo
 );
 
-    // ports module parameters:
 
     assign ao = a;
     assign bo = b;

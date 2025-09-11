@@ -4,7 +4,6 @@ module hello_world (
     output logic o
 );
 
-    // hello_world module parameters:
 
     assign o = (a | b);
 

@@ -197,7 +197,7 @@ class p2v_signal:
 
     def _create(self, other, op, bits=None, auto_pad=True):
         if isinstance(other, int):
-            other = misc.dec(other, self._bits)
+            other = misc.dec(other, max(self._bits, other.bit_length()))
         if auto_pad:
             left, right = self._auto_pad(other)
         else:
