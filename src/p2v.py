@@ -213,6 +213,16 @@ class p2v():
         logger.addHandler(stdout_handler)
         return logger
 
+    def _get_subdirs(self, root_path):
+        all_dirs = []
+        for d in glob.glob(f"{root_path}/*"):
+            name = os.path.basename(d)
+            if name.startswith(".") or name.startswith("_") or not os.path.isdir(d):
+                continue
+            all_dirs.append(d)
+            all_dirs += self._get_subdirs(d)
+        return all_dirs
+
     def _build_seach_path(self):
         search = [os.getcwd()]
         if self._args.cocotb_filename is not None:
@@ -221,8 +231,9 @@ class p2v():
                 search.append(cocotb_dir)
         incdirs = [os.path.dirname(self._get_top_filename())] + self._args.I
         for incdir in self._args.Im:
-            if os.path.isdir(incdir):
-                incdirs.append(incdir)
+            for subdir in self._get_subdirs(incdir):
+                if subdir not in incdirs:
+                    incdirs.append(subdir)
         for incdir in incdirs:
             dirname = os.path.abspath(incdir)
             if self._assert(os.path.isdir(dirname), f"search directory {incdir} does not exist (included by -I argument)", fatal=True):
@@ -417,9 +428,6 @@ class p2v():
                     dirnames.append(dirname)
 
             incdirs = self._args.I
-            for incdir in self._args.Im:
-                if os.path.isdir(incdir):
-                    incdirs.append(incdir)
             for incdir in incdirs:
                 incdir = os.path.abspath(incdir)
                 self._assert(incdir in dirnames, f"include directory {incdir} never used", warning=True)
@@ -447,7 +455,7 @@ class p2v():
         parser.add_argument("-rm_outdir", action="store_true", default=True, help="remove outdir at start")
         parser.add_argument("--rm_outdir", action="store_false", default=False, help="supress outdir removal")
         parser.add_argument('-I', default=[], action="append", help="append search directory")
-        parser.add_argument('-Im', default=[], nargs='*', help="append multiple search directories (supports wildcard *)")
+        parser.add_argument('-Im', default=[], action="append", help="append all sub-directories under path to search")
         parser.add_argument("-prefix", type=str, default="", help="prefix all files")
         parser.add_argument("-params", type=self._param_type, default={}, help="top module parameters, dictionary or csv file")
         parser.add_argument("-stop_on", default="CRITICAL", choices=["WARNING", "ERROR", "CRITICAL"], help="stop after non critical errors")
@@ -619,6 +627,8 @@ class p2v():
             if not name.startswith("_"):
                 attr = getattr(connects, name)
                 if isinstance(attr, (p2v_signal, dict)):
+                    if isinstance(attr, p2v_signal) and (attr._kind == p2v_kind.TASK): # TBD - task function causes crash
+                        continue
                     setattr(pins, name, attr)
                     if isinstance(attr, p2v_signal):
                         if isinstance(attr._strct, clock):
@@ -1678,7 +1688,7 @@ class p2v():
         self._assert_type(name, [str])
         return self._port(p2v_kind.INOUT, name, bits=1, used=True, driven=True)
 
-    def logic(self, name="", bits=1, assign=None, initial=None, _allow_str=False):
+    def logic(self, name="", bits=1, assign=None, initial=None, _allow_str=False, _task=False):
         """
         Declare a Verilog signal.
 
@@ -1747,10 +1757,11 @@ class p2v():
             if enum is not None:
                 for _name, _val in enum.items():
                     setattr(signal, _name, p2v_signal(None, f"({name} == {_val})", bits=1))
-            self.line(signal.declare())
+            if not _task:
+                self.line(signal.declare())
             rtrn = signal
         if assign is not None:
-            self.assign(signal, assign, keyword="assign", _remark=remark, _allow_str=_allow_str)
+            self.assign(signal, assign, keyword=misc.cond(not _task, "assign"), _remark=remark, _allow_str=_allow_str)
             self.line()
         elif initial is not None:
             self.assign(signal, initial, keyword="initial", _remark=remark, _allow_str=_allow_str)
