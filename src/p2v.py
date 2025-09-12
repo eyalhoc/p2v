@@ -619,6 +619,8 @@ class p2v():
             if not name.startswith("_"):
                 attr = getattr(connects, name)
                 if isinstance(attr, (p2v_signal, dict)):
+                    if isinstance(attr, p2v_signal) and (attr._kind == p2v_kind.TASK): # TBD - task function causes crash
+                        continue
                     setattr(pins, name, attr)
                     if isinstance(attr, p2v_signal):
                         if isinstance(attr._strct, clock):
@@ -1678,7 +1680,7 @@ class p2v():
         self._assert_type(name, [str])
         return self._port(p2v_kind.INOUT, name, bits=1, used=True, driven=True)
 
-    def logic(self, name="", bits=1, assign=None, initial=None, _allow_str=False):
+    def logic(self, name="", bits=1, assign=None, initial=None, _allow_str=False, _task=False):
         """
         Declare a Verilog signal.
 
@@ -1747,10 +1749,11 @@ class p2v():
             if enum is not None:
                 for _name, _val in enum.items():
                     setattr(signal, _name, p2v_signal(None, f"({name} == {_val})", bits=1))
-            self.line(signal.declare())
+            if not _task:
+                self.line(signal.declare())
             rtrn = signal
         if assign is not None:
-            self.assign(signal, assign, keyword="assign", _remark=remark, _allow_str=_allow_str)
+            self.assign(signal, assign, keyword=misc.cond(not _task, "assign"), _remark=remark, _allow_str=_allow_str)
             self.line()
         elif initial is not None:
             self.assign(signal, initial, keyword="initial", _remark=remark, _allow_str=_allow_str)

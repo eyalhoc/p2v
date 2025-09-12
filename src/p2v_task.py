@@ -16,7 +16,7 @@ p2v_task module. Responsible for creating verilog tasks.
 """
 
 from p2v import p2v, misc
-from p2v_signal import p2v_kind
+from p2v_signal import p2v_signal, p2v_kind
 
 class p2v_task():
     """
@@ -28,24 +28,26 @@ class p2v_task():
         self._p2v = p2v(parent, modname=parent._modname, parse=False)
         self._p2v._base_depth += 1
 
-    def input(self, name="", bits=1, _allow_str=False):
-        return self._p2v.input(name=name, bits=bits, _allow_str=_allow_str)
+    def input(self, name="", bits=1):
+        return self._p2v.input(name=name, bits=bits)
 
-    def output(self, name="", bits=1, _allow_str=False):
-        return self._p2v.output(name=name, bits=bits, _allow_str=_allow_str)
+    def output(self, name="", bits=1):
+        return self._p2v.output(name=name, bits=bits)
 
-    def assign(self, tgt, src, _allow_str=False):
-        self._p2v.assign(tgt, src, keyword="", _allow_str=_allow_str)
+    def assign(self, tgt, src):
+        return self._p2v.assign(tgt, src, keyword="")
 
     def write(self, automatic=True):
         task_name = self.__class__.__name__
+        ports = []
         lines = []
         lines.append(f"task {misc.cond(automatic, 'automatic ')}{task_name};")
         for port in self._p2v._get_signals([p2v_kind.INPUT, p2v_kind.OUTPUT]):
             lines.append(f"{port._kind} {port._declare_bits()} {port._name};")
+            ports.append(port._name)
 
         lines.append("")
-        for port in self._p2v._get_signals([p2v_kind.OUTPUT]):
+        for port in self._p2v._get_signals([p2v_kind.OUTPUT, p2v_kind.LOGIC]):
             lines.append(f"reg {port._declare_bits()} {port._name};")
 
         lines.append("begin")
@@ -58,8 +60,33 @@ class p2v_task():
 
         self._parent._lines += lines
 
-    def line(self, line="", remark=None):
-        self._p2v.line(line, remark=remark)
+        func = self._make_task_function(task_name)
 
-    def display(self):
-        pass
+        self._parent._add_signal(p2v_signal(p2v_kind.TASK, task_name, bits=0, strct=func, used=True, driven=True))
+        return func
+
+    def line(self, line="", remark=None):
+        return self._p2v.line(line, remark=remark)
+
+    def logic(self, name="", bits=1, assign=None):
+        return self._p2v.logic(name=name, bits=bits, assign=assign, _task=True)
+
+    def call(self, func):
+        return self.line(str(func))
+
+    def display(self, s, *args):
+        params = ""
+        if len(args) > 0:
+            for arg in args:
+                params += ", " + str(arg)
+        self.line(f'$display("{s}"{params});')
+
+
+    def _make_task_function(self, task_name):
+        def task_func(*args):
+            args_str = []
+            for arg in args:
+                args_str.append(str(arg).strip())
+            return f"{task_name}({', '.join(args_str)});"
+        task_func.__name__ = task_name
+        return task_func

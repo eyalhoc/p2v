@@ -568,10 +568,11 @@ def dec(num, bits=None): # pylint: disable=redefined-outer-name
         num = int(num)
         bits=1
     if num == -1:
-        return "{" + str(bits) + "{1'b1}}"
-    if num < 0:
-        return bin(num + (1<<bits), bits)
-    rtrn = f"{bits}'d{num}"
+        rtrn = "{" + str(bits) + "{1'b1}}"
+    elif num < 0:
+        rtrn = bin(num + (1<<bits), bits)
+    else:
+        rtrn = f"{bits}'d{num}"
     return p2v_signal(None, str(rtrn), bits=bits)
 
 def hex(num, bits=None, add_sep=4, prefix="'h"): # pylint: disable=redefined-builtin,redefined-outer-name

@@ -35,6 +35,7 @@ class p2v_kind(Enum):
     ASYNC_RESET = auto()
     ENUM = auto()
     INST = auto()
+    TASK = auto()
 
     def __str__(self):
         return self.name.lower()
