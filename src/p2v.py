@@ -1258,11 +1258,18 @@ class p2v():
         line = current_line.replace(" ", "").split("#")[0]
         name = line.split(f"{cmd}(")[0].split("=")[0]
 
+        # look for varibale index
         if "[" in name:
             caller_locals = caller.f_locals
             for var, val in caller_locals.items(): # variable keys
                 name = name.replace(f"[{var}]", f"{FIELD_SEP}{val}")
             name = name.replace('["', FIELD_SEP).replace('"]', "") # string keys
+        # look for integer index
+        if "[" in name:
+            numbers = re.findall(r"\[(\d+)\]", name)
+            for number in numbers:
+                name = name.replace(f"[{number}]", f"{FIELD_SEP}{number}")
+
         if "." in name:
             name = name.split(".")[-1]
 
