@@ -63,6 +63,7 @@ class p2v():
         self._modname = modname
         self._register = register
         self._signals = {}
+        self._clocks = {}
         self._lines = []
         self._params = {}
         self._sons = []
@@ -622,25 +623,15 @@ class p2v():
 
     def _write_pins(self, connects):
         pins = SimpleNamespace()
-        clks = []
         for name in dir(connects):
             if not name.startswith("_"):
                 attr = getattr(connects, name)
-                if isinstance(attr, (p2v_signal, dict)):
+                if isinstance(attr, (p2v_signal, dict, clock)):
                     if isinstance(attr, p2v_signal) and (attr._kind == p2v_kind.TASK): # TBD - task function causes crash
                         continue
                     setattr(pins, name, attr)
-                    if isinstance(attr, p2v_signal):
-                        if isinstance(attr._strct, clock):
-                            clks.append(attr._strct)
-                    elif isinstance(attr, dict) and STRCT_NAME in attr:
+                    if isinstance(attr, dict) and STRCT_NAME in attr:
                         getattr(pins, name).pop(STRCT_NAME, None)
-        for clk in clks:
-            for name in clk.get_nets():
-                if hasattr(pins, str(name)):
-                    delattr(pins, str(name))
-            setattr(pins, str(clk), clk)
-
 
         args = self._modules[self._modname]
         pickle_file = os.path.abspath(os.path.join(self._args.outdir, "pins.pkl"))
@@ -661,9 +652,15 @@ class p2v():
 
     def _get_connects(self, parent, modname, signals, params, verilog=False):
         connects = p2v_connect(parent, modname, signals, params=params, verilog=verilog)
+        for name, val in self._clocks.items():
+            setattr(connects, name, val)
+
         for name, val in connects._signals.items():
             if name.startswith("_"):
                 continue
+            if isinstance(val._strct, clock):
+                continue # connects only contains clock class not the nets
+
             if isinstance(val, p2v_signal) and val.is_parameter():
                 setattr(connects, name, name)
             elif FIELD_SEP in name: # support access with dict
@@ -877,11 +874,13 @@ class p2v():
 
         if isinstance(name, clock):
             self._assert(bits == 1, f"{kind} clock {name} must be declared with bits = 1")
+            orig_name = self._get_clock_name(kind, depth=3)
+            self._clocks[orig_name] = name
             self._port(kind, str(name), used=used, driven=driven, strct=name)
             if name.reset is not None:
-                self._port(kind, str(name.reset), used=used, driven=driven)
+                self._port(kind, str(name.reset), used=used, driven=driven, strct=name)
             if name.rst_n is not None:
-                self._port(kind, str(name.rst_n), used=used, driven=driven)
+                self._port(kind, str(name.rst_n), used=used, driven=driven, strct=name)
         elif isinstance(name, list):
             signals = []
             for n in name:
@@ -1043,8 +1042,10 @@ class p2v():
         comp = pyslang.Compilation()
         comp.addSyntaxTree(tree)
         root = comp.getRoot()
+        found_module = False
         for inst in root.topInstances:
             if inst.name == modname:
+                found_module = True
                 for port in inst.body.portList:
                     if hasattr(port.type, "scalarKind"):
                         bits = 1
@@ -1063,6 +1064,7 @@ class p2v():
                 for param in inst.body.parameters:
                     bits = misc._to_int(str(param.value), allow=True)
                     signals[param.name] = p2v_signal(p2v_kind.PARAMETER, param.name, bits=bits)
+        self._assert(found_module, f"could not find module {modname} in {filename}", fatal=True)
         return signals
 
     def _get_verilog_ports(self, modname):
@@ -1275,6 +1277,12 @@ class p2v():
 
         self._assert(misc._is_legal_name(name), f"missing receive variable for {cmd}", fatal=True)
         return name
+
+    def _get_clock_name(self, cmd, depth=2):
+        cmd = str(cmd)
+        caller = self._get_caller(depth=depth)
+        current_line = self._get_current_line(caller=caller)
+        return current_line.split(f"{cmd}(")[1].split(")")[0].strip()
 
     def _assert_property(self, clk, condition, message, name=None, valid=None, fatal=True, property_type="assert"):
         self._assert_type(clk, [clock, None])
@@ -1742,6 +1750,8 @@ class p2v():
 
         rtrn = None
         if isinstance(name, clock):
+            orig_name = self._get_clock_name(p2v_kind.LOGIC, depth=2)
+            self._clocks[orig_name] = name
             for net in name.get_nets():
                 self.logic(net, _allow_str=True)
         elif isinstance(name, list):
