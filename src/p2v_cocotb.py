@@ -50,9 +50,13 @@ class p2v_cocotb:
         """Log info."""
         return self.dut._log.info(msg, *args)
 
-    def DutSignal(self, son):
+    def DutSignal(self, son:str, allow=False):
         """Get DUT signal."""
-        return getattr(self.dut, str(son))
+        if hasattr(self.dut, str(son)):
+            return getattr(self.dut, str(son))
+        if not allow:
+            raise RuntimeError(f"DUT does not have a siganl named {son}")
+        return None
 
     async def timeout(self, clk, timeout=10000):
         """Simulation timeout."""
