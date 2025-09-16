@@ -215,7 +215,7 @@ def sim(tool_bin, dirname, outdir, pass_str, err_str=None):
         full path of logfile and a boolean if simulation completed successfully
     """
     if err_str is None:
-        err_str = ["error", "failed"]
+        err_str = ["error", "failed", "fatal"]
     success = False
     logfile = "p2v_sim.log"
 

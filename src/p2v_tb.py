@@ -386,7 +386,7 @@ class p2v_tb():
         self._parent._assert_type(max_delay, int)
         self.gen_busy(clk, name, max_duration=max_duration, max_delay=max_delay, inverse=True)
 
-    def set_timeout(self, clk, timeout=100000):
+    def set_timeout(self, clk, timeout=100000, success=False):
         """
         Generate random behavior on signal, starts high.
 
@@ -407,6 +407,10 @@ class p2v_tb():
                              always @(posedge {clk}) { _count_timeout[name]} <= { _count_timeout[name] + 1};
                           """)
         self._parent.assert_property(clk, _count_timeout[name] < timeout, f"reached timeout after {timeout} cycles of {clk}")
+        if success:
+            self._parent.line(f"""
+                                 always @(posedge {clk}) {self.test_pass(_count_timeout[name] == (timeout-10), f"successfully completed {timeout} cycles of {clk}")}
+                              """)
         self._parent.allow_unused( _count_timeout[name])
 
 

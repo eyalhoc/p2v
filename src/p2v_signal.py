@@ -164,10 +164,14 @@ class p2v_signal:
         if isinstance(key, slice):
             if key.start is None:
                 start = 0
+            elif key.start < 0:
+                start = key.start + self._bits
             else:
                 start = key.start
             if key.stop is None:
                 stop = self._bits
+            elif key.stop < 0:
+                stop = key.stop + self._bits
             else:
                 stop = key.stop
             return self._bit_range(bits=stop-start, start=start)
@@ -434,6 +438,19 @@ class p2v_signal:
             p2v_signal
         """
         return misc.pad(left, self, right=right, val=val)
+
+    def resize(self, bits, val=0):
+        """
+        Verilog zero padding to total size.
+
+        Args:
+            bits(int): total number of bits with pad
+            val(int): value for padding
+
+        Returns:
+            p2v_signal
+        """
+        return misc.pad(bits-self._bits, self, val=val)
 
     def bits(self):
         """
