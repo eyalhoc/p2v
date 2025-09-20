@@ -1369,6 +1369,7 @@ class p2v():
         if self._modname is None:
             self._modname = self._args.prefix
             if modname:
+                self._assert(misc._is_legal_name(modname), f"module {modname} does not have a legal name", fatal=True)
                 self._modname += modname
             else:
                 self._modname += self._get_clsname()
@@ -1610,7 +1611,7 @@ class p2v():
         self._assert(len(enum_names) > 0, "enumerated type cannot be empty", fatal=True)
         max_val = 0
         for name, val in enum_names.items():
-            self._assert(misc._is_legal_name(name), f"enumerated type {name} does not use a legal name", fatal=True)
+            self._assert(misc._is_legal_name(name), f"enumerated type {name} does not have a legal name", fatal=True)
             self._assert(name not in ["NAME", "BITS"], f"enum cannot use reserevd name {name}", fatal=True)
             self._assert(isinstance(val, int), f"enumerated type {name} is of type {type(val)} while expecting type int", fatal=True)
             max_val = max(max_val, val)

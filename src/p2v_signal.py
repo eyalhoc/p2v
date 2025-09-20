@@ -104,6 +104,10 @@ class p2v_signal:
             return misc.concat(other * [self])
         return self._create(other, "*")
 
+    def __neg__(self):
+        zero = self._signal(misc.dec(0, self._bits), bits=self._bits)
+        return zero.__sub__(self)
+
     def __eq__(self, other):
         return self._create(other, "==", bits=1)
 
