@@ -7,7 +7,12 @@ module exprs (
     output logic [7:0] rshift,
     output logic [7:0] o0,
     output logic [7:0] o1,
-    output logic [7:0] o2
+    output logic [7:0] o2,
+    output logic [7:0] o3,
+    output logic [7:0] o4,
+    output logic [7:0] o5,
+    output logic [7:0] o6,
+    output logic [7:0] o7
 );
 
 
@@ -18,5 +23,9 @@ module exprs (
     assign o0 = 8'd0;
     assign o1 = a;
     assign o2 = a;
+    assign o3 = (8'd0 - a);
+    assign o4 = bitwise[0] ? a : bitwise[1] ? b : bitwise[2] ? o1 : 0;
+    assign o5 = bitwise[0] ? a : bitwise[1] ? b : o1;
+    assign {o6, o7} = bitwise[0] ? {a, b} : bitwise[1] ? {b, a} : bitwise[2] ? {2{o1}} : 0;
 
 endmodule  // exprs

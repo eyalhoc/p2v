@@ -1803,12 +1803,28 @@ class p2v():
         self._assert_type(keyword, str)
         if self._exists():
             return
-        if isinstance(tgt, clock) or isinstance(src, clock):
+        if isinstance(tgt, list):
+            tgt = misc.concat(tgt)
+        if isinstance(src, list):
+            src = misc.concat(src)
+        if isinstance(tgt, clock) or isinstance(src, clock): # clock assign
             self._assign_clocks(tgt, src)
-        elif isinstance(tgt, list) and isinstance(src, list):
-            self.assign(misc.concat(tgt), misc.concat(src), keyword=keyword, _remark=_remark, _allow_str=_allow_str)
-        elif isinstance(tgt, dict) and isinstance(src, dict):
+        elif isinstance(tgt, dict) and isinstance(src, dict): # struct assign
             self.assign(list(tgt.values()), list(src.values()), keyword=keyword, _remark=_remark, _allow_str=_allow_str)
+        elif isinstance(src, dict): # proirity mux
+            src_expr = ""
+            for n, (sel, val) in enumerate(src.items()):
+                if isinstance(val, list):
+                    val = misc.concat(val)
+                last = (n + 1) == len(src)
+                if last:
+                    if sel is True:
+                        src_expr += f"{val}"
+                    else:
+                        src_expr += f"{sel} ? {val} : 0"
+                else:
+                    src_expr += f"{sel} ? {val} : "
+            self.assign(tgt, src_expr, keyword=keyword, _remark=_remark, _allow_str=True)
         else:
             tgt_is_strct = isinstance(tgt, p2v_signal) and tgt._strct is not None
             if tgt_is_strct:
