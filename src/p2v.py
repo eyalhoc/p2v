@@ -2128,6 +2128,22 @@ class p2v():
         """
         return self._find_file(filename, allow=True) is not None
 
+    def bit_length(self, signal, bits=None):
+        """
+        Returns number of bits required to represent signal value
+        Args:
+            signal(p2v_signal): signal to check value
+            bits([None, int]): number of bits for return signal
+
+        Returns:
+            p2v_signal
+        """
+        try:
+            import g_firstset # pylint: disable=import-outside-toplevel
+        except ModuleNotFoundError:
+            self._assert(False, "bit_length() cannot run without p2v-gcells library", fatal=True)
+        return g_firstset.g_firstset(self).bit_length(signal, bits=bits)
+
 # top constructor
 if __name__ != "__main__":
     skip = False
