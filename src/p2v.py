@@ -1369,6 +1369,7 @@ class p2v():
         if self._modname is None:
             self._modname = self._args.prefix
             if modname:
+                self._assert(misc._is_legal_name(modname), f"module {modname} does not have a legal name", fatal=True)
                 self._modname += modname
             else:
                 self._modname += self._get_clsname()
@@ -1610,7 +1611,7 @@ class p2v():
         self._assert(len(enum_names) > 0, "enumerated type cannot be empty", fatal=True)
         max_val = 0
         for name, val in enum_names.items():
-            self._assert(misc._is_legal_name(name), f"enumerated type {name} does not use a legal name", fatal=True)
+            self._assert(misc._is_legal_name(name), f"enumerated type {name} does not have a legal name", fatal=True)
             self._assert(name not in ["NAME", "BITS"], f"enum cannot use reserevd name {name}", fatal=True)
             self._assert(isinstance(val, int), f"enumerated type {name} is of type {type(val)} while expecting type int", fatal=True)
             max_val = max(max_val, val)
@@ -1802,12 +1803,31 @@ class p2v():
         self._assert_type(keyword, str)
         if self._exists():
             return
-        if isinstance(tgt, clock) or isinstance(src, clock):
+        if isinstance(tgt, list):
+            tgt = misc.concat(tgt)
+        if isinstance(src, list):
+            src = misc.concat(src)
+        if isinstance(tgt, clock) or isinstance(src, clock): # clock assign
             self._assign_clocks(tgt, src)
-        elif isinstance(tgt, list) and isinstance(src, list):
-            self.assign(misc.concat(tgt), misc.concat(src), keyword=keyword, _remark=_remark, _allow_str=_allow_str)
-        elif isinstance(tgt, dict) and isinstance(src, dict):
+        elif isinstance(tgt, dict) and isinstance(src, dict): # struct assign
             self.assign(list(tgt.values()), list(src.values()), keyword=keyword, _remark=_remark, _allow_str=_allow_str)
+        elif isinstance(src, dict): # proirity mux
+            space_prefix = 16 * " "
+            src_expr = ""
+            for n, (sel, val) in enumerate(src.items()):
+                if isinstance(val, list):
+                    val = misc.concat(val)
+                elif isinstance(val, int):
+                    val = misc.dec(val, tgt._bits)
+                last = (n + 1) == len(src)
+                if last:
+                    if sel is True:
+                        src_expr += f"{val}"
+                    else:
+                        src_expr += f"{sel} ? {val} : {misc.dec(0, tgt._bits)}"
+                else:
+                    src_expr += f"{sel} ? {val} :\n{space_prefix}"
+            self.assign(tgt, src_expr, keyword=keyword, _remark=_remark, _allow_str=True)
         else:
             tgt_is_strct = isinstance(tgt, p2v_signal) and tgt._strct is not None
             if tgt_is_strct:

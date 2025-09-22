@@ -104,6 +104,10 @@ class p2v_signal:
             return misc.concat(other * [self])
         return self._create(other, "*")
 
+    def __neg__(self):
+        zero = self._signal(misc.dec(0, self._bits), bits=self._bits)
+        return zero.__sub__(self)
+
     def __eq__(self, other):
         return self._create(other, "==", bits=1)
 
@@ -123,18 +127,24 @@ class p2v_signal:
         return self._create(other, ">=", bits=1)
 
     def __and__(self, other):
-        if isinstance(other, int) and other == 0:
-            return 0
+        if isinstance(other, int):
+            if other == 0:
+                return 0
+            other = misc.dec(other, self._bits)
         return self._create(other, "&")
 
     def __or__(self, other):
-        if isinstance(other, int) and other == 0:
-            return self
+        if isinstance(other, int):
+            if other == 0:
+                return self
+            other = misc.dec(other, self._bits)
         return self._create(other, "|")
 
     def __xor__(self, other):
-        if isinstance(other, int) and other == 0:
-            return self
+        if isinstance(other, int):
+            if other == 0:
+                return self
+            other = misc.dec(other, self._bits)
         return self._create(other, "^")
 
     def __invert__(self):
