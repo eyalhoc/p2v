@@ -1811,22 +1811,31 @@ class p2v():
             self._assign_clocks(tgt, src)
         elif isinstance(tgt, dict) and isinstance(src, dict): # struct assign
             self.assign(list(tgt.values()), list(src.values()), keyword=keyword, _remark=_remark, _allow_str=_allow_str)
-        elif isinstance(src, dict): # proirity mux
+        elif isinstance(src, dict):
             space_prefix = 16 * " "
             src_expr = ""
-            for n, (sel, val) in enumerate(src.items()):
-                if isinstance(val, list):
-                    val = misc.concat(val)
-                elif isinstance(val, int):
-                    val = misc.dec(val, tgt._bits)
-                last = (n + 1) == len(src)
-                if last:
-                    if sel is True:
-                        src_expr += f"{val}"
+            if len(src) == 1: # balanced encoded sel mux
+                for sel, vals in src.items():
+                    self._assert(isinstance(vals, (list, dict)), f"assignment to mux must use type list or dict for mux inputs ({vals})", fatal=True)
+                    if isinstance(vals, dict):
+                        vals = list(vals.values())
+                    for n, val in enumerate(vals):
+                        last = (n + 1) == len(vals)
+                        src_expr += f"\n{space_prefix}({(sel == n)*tgt._bits}) & {val}" + misc.cond(not last, " |")
+            else: # proirity mux
+                for n, (sel, val) in enumerate(src.items()):
+                    if isinstance(val, list):
+                        val = misc.concat(val)
+                    elif isinstance(val, int):
+                        val = misc.dec(val, tgt._bits)
+                    last = (n + 1) == len(src)
+                    if last:
+                        if sel is True:
+                            src_expr += f"{val}"
+                        else:
+                            src_expr += f"{sel} ? {val} : {misc.dec(0, tgt._bits)}"
                     else:
-                        src_expr += f"{sel} ? {val} : {misc.dec(0, tgt._bits)}"
-                else:
-                    src_expr += f"{sel} ? {val} :\n{space_prefix}"
+                        src_expr += f"{sel} ? {val} :\n{space_prefix}"
             self.assign(tgt, src_expr, keyword=keyword, _remark=_remark, _allow_str=True)
         else:
             tgt_is_strct = isinstance(tgt, p2v_signal) and tgt._strct is not None
@@ -2128,21 +2137,6 @@ class p2v():
         """
         return self._find_file(filename, allow=True) is not None
 
-    def bit_length(self, signal, bits=None):
-        """
-        Returns number of bits required to represent signal value
-        Args:
-            signal(p2v_signal): signal to check value
-            bits([None, int]): number of bits for return signal
-
-        Returns:
-            p2v_signal
-        """
-        try:
-            import g_firstset # pylint: disable=import-outside-toplevel
-        except ModuleNotFoundError:
-            self._assert(False, "bit_length() cannot run without p2v-gcells library", fatal=True)
-        return g_firstset.g_firstset(self).bit_length(signal, bits=bits)
 
 # top constructor
 if __name__ != "__main__":
