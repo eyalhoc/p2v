@@ -107,10 +107,20 @@ class p2v():
             self._depth = parent._depth + 1
             self._search = parent._search
 
-        srcfile = __import__(self._get_clsname()).__file__
-        if srcfile not in self._cache["src"]:
-            self._cache["src"].append(srcfile)
+        if not self._is_nested():
+            import_name = self._get_clsname()
+            try:
+                srcfile = __import__(import_name).__file__
+            except ModuleNotFoundError:
+                self._raise(f"could not find import file {import_name} in path")
+
+            if srcfile not in self._cache["src"]:
+                self._cache["src"].append(srcfile)
+
         self._assert(self._depth < MAX_DEPTH, f"reached max instance depth of {MAX_DEPTH}", fatal=True)
+
+    def _is_nested(self):
+        return self._get_clsname() in dir(self._parent)
 
     def _get_stack(self):
         stack = []
@@ -858,7 +868,7 @@ class p2v():
         if modname in self._outfiles:
             if outhash != self._outfiles[modname]:
                 self._write_lines(f"{outfile}.diff", lines)
-                self._assert(False, f"files created with same name but different content: {outfile} {outfile}.diff", fatal=True)
+                self._raise(f"files created with same name but different content: {outfile} {outfile}.diff")
         else:
             self._outfiles[modname] = outhash
 
@@ -1389,7 +1399,7 @@ class p2v():
             self._assert(self._modname not in self._modules, f"module {self._modname} already exists", fatal=True)
             if not self._modname.startswith("_"):
                 clsname = self._get_clsname()
-                if clsname != "_test":
+                if clsname != "_test" and not self._is_nested():
                     self._find_file(f"{clsname}.py")
             self._modules[self._modname] = module_locals
         if self._parent is not None:
