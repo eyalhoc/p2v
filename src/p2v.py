@@ -1812,18 +1812,21 @@ class p2v():
         elif isinstance(tgt, dict) and isinstance(src, dict): # struct assign
             self.assign(list(tgt.values()), list(src.values()), keyword=keyword, _remark=_remark, _allow_str=_allow_str)
         elif isinstance(src, dict): # proirity mux
+            space_prefix = 16 * " "
             src_expr = ""
             for n, (sel, val) in enumerate(src.items()):
                 if isinstance(val, list):
                     val = misc.concat(val)
+                elif isinstance(val, int):
+                    val = misc.dec(val, tgt._bits)
                 last = (n + 1) == len(src)
                 if last:
                     if sel is True:
                         src_expr += f"{val}"
                     else:
-                        src_expr += f"{sel} ? {val} : 0"
+                        src_expr += f"{sel} ? {val} : {misc.dec(0, tgt._bits)}"
                 else:
-                    src_expr += f"{sel} ? {val} : "
+                    src_expr += f"{sel} ? {val} :\n{space_prefix}"
             self.assign(tgt, src_expr, keyword=keyword, _remark=_remark, _allow_str=True)
         else:
             tgt_is_strct = isinstance(tgt, p2v_signal) and tgt._strct is not None
