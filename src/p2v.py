@@ -36,7 +36,7 @@ import p2v_misc as misc
 from p2v_clock import clk_0rst, clk_arst, clk_srst, clk_2rst # needed for clock loading from gen csv file # pylint: disable=unused-import
 from p2v_clock import p2v_clock as clock
 from p2v_clock import default_clk
-from p2v_signal import p2v_signal, p2v_kind
+from p2v_signal import p2v_signal, p2v_kind, p2v_type
 from p2v_connect import p2v_connect, STRCT_NAME
 from p2v_fsm import p2v_fsm
 from p2v_tb import p2v_tb, PASS_STATUS
@@ -107,10 +107,20 @@ class p2v():
             self._depth = parent._depth + 1
             self._search = parent._search
 
-        srcfile = __import__(self._get_clsname()).__file__
-        if srcfile not in self._cache["src"]:
-            self._cache["src"].append(srcfile)
+        if not self._is_nested():
+            import_name = self._get_clsname()
+            try:
+                srcfile = __import__(import_name).__file__
+            except ModuleNotFoundError:
+                self._raise(f"could not find import file {import_name} in path")
+
+            if srcfile not in self._cache["src"]:
+                self._cache["src"].append(srcfile)
+
         self._assert(self._depth < MAX_DEPTH, f"reached max instance depth of {MAX_DEPTH}", fatal=True)
+
+    def _is_nested(self):
+        return self._get_clsname() in dir(self._parent)
 
     def _get_stack(self):
         stack = []
@@ -798,7 +808,7 @@ class p2v():
         elif isinstance(wire, list):
             for name in wire:
                 self._set_driven(name, allow=allow)
-        elif isinstance(wire, str) and wire in self._signals and self._signals[wire]._strct is not None:
+        elif isinstance(wire, str) and wire in self._signals and isinstance(self._signals[wire]._strct, p2v_struct):
             fields = self._signals[wire]._strct.fields
             for field_name, bits in fields.items():
                 if isinstance(bits, (int, float)):
@@ -858,7 +868,7 @@ class p2v():
         if modname in self._outfiles:
             if outhash != self._outfiles[modname]:
                 self._write_lines(f"{outfile}.diff", lines)
-                self._assert(False, f"files created with same name but different content: {outfile} {outfile}.diff", fatal=True)
+                self._raise(f"files created with same name but different content: {outfile} {outfile}.diff")
         else:
             self._outfiles[modname] = outhash
 
@@ -1101,8 +1111,8 @@ class p2v():
         self._check_declared(tgt._name)
         if not isinstance(src, int) and src is not None:
             self._check_declared(src._name)
-            self._assert(tgt._strct is not None, f"trying to assign struct {src} to a non struct signal {tgt}", fatal=True)
-            self._assert(src._strct is not None, f"trying to assign a non struct signal {src} to struct {tgt}", fatal=True)
+            self._assert(isinstance(tgt._strct, p2v_struct), f"trying to assign struct {src} to a non struct signal {tgt}", fatal=True)
+            self._assert(isinstance(src._strct, p2v_struct), f"trying to assign a non struct signal {src} to struct {tgt}", fatal=True)
 
     def _sample_structs(self, clk, tgt, src, ext_valid=None):
         self._assert_type(tgt, p2v_signal)
@@ -1164,7 +1174,7 @@ class p2v():
             self._assert(src == 0, "struct {src} can only be assigned to 0 when assigned to int", fatal=True)
         else:
             self._check_structs(tgt, src)
-            self._assert(src._strct is not None, f"trying to assign a non struct signal {src} to struct {tgt}", fatal=True)
+            self._assert(isinstance(src._strct, p2v_struct), f"trying to assign a non struct signal {src} to struct {tgt}", fatal=True)
         self.line()
         tgt_fields = tgt._strct.fields
         for tgt_field_name in tgt_fields:
@@ -1389,7 +1399,7 @@ class p2v():
             self._assert(self._modname not in self._modules, f"module {self._modname} already exists", fatal=True)
             if not self._modname.startswith("_"):
                 clsname = self._get_clsname()
-                if clsname != "_test":
+                if clsname != "_test" and not self._is_nested():
                     self._find_file(f"{clsname}.py")
             self._modules[self._modname] = module_locals
         if self._parent is not None:
@@ -1652,10 +1662,16 @@ class p2v():
                 self._assert(name == "", "port name should not use string type")
         if isinstance(bits, p2v_signal) and bits.is_parameter():
             bits = str(bits)
+        if issubclass(type(bits), p2v_type):
+            self._assert(hasattr(bits, "_bits"), f"p2v type {bits} must have ._bits attribute", fatal=True)
+            strct = bits
+            bits = bits._bits
+        else:
+            strct = None
 
         self._assert_type(name, [str, list ,clock])
         self._assert_type(bits, SIGNAL_TYPES)
-        return self._port(p2v_kind.INPUT, name, bits, driven=True, force_dir=force_dir)
+        return self._port(p2v_kind.INPUT, name, bits, strct=strct, driven=True, force_dir=force_dir)
 
     def output(self, name="", bits=1, force_dir=False, _allow_str=False):
         """
@@ -1682,10 +1698,16 @@ class p2v():
                 self._assert(name == "", "port name should not use string type")
         if isinstance(bits, p2v_signal) and bits.is_parameter():
             bits = str(bits)
+        if issubclass(type(bits), p2v_type):
+            self._assert(hasattr(bits, "_bits"), f"p2v type {bits} must have ._bits attribute", fatal=True)
+            strct = bits
+            bits = bits._bits
+        else:
+            strct = None
 
         self._assert_type(name, [str, list, clock])
         self._assert_type(bits, SIGNAL_TYPES)
-        return self._port(p2v_kind.OUTPUT, name, bits, used=True, force_dir=force_dir)
+        return self._port(p2v_kind.OUTPUT, name, bits, strct=strct, used=True, force_dir=force_dir)
 
     def inout(self, name="", _allow_str=False):
         """
@@ -1732,6 +1754,12 @@ class p2v():
             name = self._get_receive_name("logic")
         if isinstance(bits, p2v_signal) and bits.is_parameter():
             bits = str(bits)
+        if issubclass(type(bits), p2v_type):
+            self._assert(hasattr(bits, "_bits"), f"p2v type {bits} must have ._bits attribute", fatal=True)
+            strct = bits
+            bits = bits._bits
+        else:
+            strct = None
 
         self._assert_type(name, [clock, p2v_signal, str, list])
         self._assert_type(bits, SIGNAL_TYPES)
@@ -1771,7 +1799,7 @@ class p2v():
         else:
             for bits_str in self._get_names(str(bits)):
                 self._set_used(bits_str)
-            signal = self._add_signal(p2v_signal(p2v_kind.LOGIC, name, bits, remark=remark))
+            signal = self._add_signal(p2v_signal(p2v_kind.LOGIC, name, bits, strct=strct, remark=remark))
             if enum is not None:
                 for _name, _val in enum.items():
                     setattr(signal, _name, p2v_signal(None, f"({name} == {_val})", bits=1))
@@ -1811,25 +1839,34 @@ class p2v():
             self._assign_clocks(tgt, src)
         elif isinstance(tgt, dict) and isinstance(src, dict): # struct assign
             self.assign(list(tgt.values()), list(src.values()), keyword=keyword, _remark=_remark, _allow_str=_allow_str)
-        elif isinstance(src, dict): # proirity mux
+        elif isinstance(src, dict):
             space_prefix = 16 * " "
             src_expr = ""
-            for n, (sel, val) in enumerate(src.items()):
-                if isinstance(val, list):
-                    val = misc.concat(val)
-                elif isinstance(val, int):
-                    val = misc.dec(val, tgt._bits)
-                last = (n + 1) == len(src)
-                if last:
-                    if sel is True:
-                        src_expr += f"{val}"
+            if len(src) == 1: # balanced encoded sel mux
+                for sel, vals in src.items():
+                    self._assert(isinstance(vals, (list, dict)), f"assignment to mux must use type list or dict for mux inputs ({vals})", fatal=True)
+                    if isinstance(vals, dict):
+                        vals = list(vals.values())
+                    for n, val in enumerate(vals):
+                        last = (n + 1) == len(vals)
+                        src_expr += f"\n{space_prefix}({(sel == n)*tgt._bits}) & {val}" + misc.cond(not last, " |")
+            else: # proirity mux
+                for n, (sel, val) in enumerate(src.items()):
+                    if isinstance(val, list):
+                        val = misc.concat(val)
+                    elif isinstance(val, int):
+                        val = misc.dec(val, tgt._bits)
+                    last = (n + 1) == len(src)
+                    if last:
+                        if sel is True:
+                            src_expr += f"{val}"
+                        else:
+                            src_expr += f"{sel} ? {val} : {misc.dec(0, tgt._bits)}"
                     else:
-                        src_expr += f"{sel} ? {val} : {misc.dec(0, tgt._bits)}"
-                else:
-                    src_expr += f"{sel} ? {val} :\n{space_prefix}"
+                        src_expr += f"{sel} ? {val} :\n{space_prefix}"
             self.assign(tgt, src_expr, keyword=keyword, _remark=_remark, _allow_str=True)
         else:
-            tgt_is_strct = isinstance(tgt, p2v_signal) and tgt._strct is not None
+            tgt_is_strct = isinstance(tgt, p2v_signal) and isinstance(tgt._strct, p2v_struct)
             if tgt_is_strct:
                 self._assign_structs(tgt, src, keyword=keyword)
             else:
@@ -1900,7 +1937,7 @@ class p2v():
             self.assign(tgt, src)
             return
 
-        if (tgt._name in self._signals and (self._signals[tgt._name]._strct is not None)) or (src._name in self._signals and (self._signals[src._name]._strct is not None)):
+        if (tgt._name in self._signals and isinstance(self._signals[tgt._name]._strct, p2v_struct)) or (src._name in self._signals and isinstance(self._signals[src._name]._strct, p2v_struct)):
             self._sample_structs(clk, tgt, src, ext_valid=valid)
         else:
             self._set_driven(tgt)
@@ -2127,6 +2164,7 @@ class p2v():
             bool
         """
         return self._find_file(filename, allow=True) is not None
+
 
 # top constructor
 if __name__ != "__main__":

@@ -14,6 +14,7 @@
 """
 p2v_signal module. Responsible for p2v siganls.
 """
+import sys
 from enum import Enum, auto
 
 import p2v_misc as misc
@@ -40,6 +41,9 @@ class p2v_kind(Enum):
     def __str__(self):
         return self.name.lower()
 
+class p2v_type: # pylint: disable=too-few-public-methods
+    """ complex p2v signals inherit this class to mark it is a signal """
+    _bits = None
 
 class p2v_signal:
     """
@@ -105,6 +109,11 @@ class p2v_signal:
         return self._create(other, "*")
 
     def __neg__(self):
+        func_name = self._get_func_name()
+        if issubclass(type(self._strct), p2v_type):
+            if hasattr(self._strct, func_name):
+                func = getattr(self._strct, func_name)
+                return func(self)
         zero = self._signal(misc.dec(0, self._bits), bits=self._bits)
         return zero.__sub__(self)
 
@@ -152,6 +161,11 @@ class p2v_signal:
         return self._signal(expr, bits=self._bits)
 
     def __abs__(self):
+        func_name = self._get_func_name()
+        if issubclass(type(self._strct), p2v_type):
+            if hasattr(self._strct, func_name):
+                func = getattr(self._strct, func_name)
+                return func(self)
         return self._signal(f"$abs({self})", bits=self._bits)
 
     def __lshift__(self, other):
@@ -210,7 +224,15 @@ class p2v_signal:
                 right = other
         return left, right
 
+    def _get_func_name(self, depth=1):
+        return "_" + sys._getframe(depth).f_code.co_name.replace("_", "")
+
     def _create(self, other, op, bits=None, auto_pad=True):
+        func_name = self._get_func_name(2)
+        if issubclass(type(self._strct), p2v_type):
+            if hasattr(self._strct, func_name):
+                func = getattr(self._strct, func_name)
+                return func(self, other)
         if isinstance(other, int):
             other = misc.dec(other, max(self._bits, other.bit_length()))
         if auto_pad:
