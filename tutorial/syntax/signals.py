@@ -1,5 +1,5 @@
 
-from p2v import p2v, misc, clock, default_clk
+from p2v import p2v, clock, default_clk
 
 num = 4
 bits = 8
@@ -28,9 +28,9 @@ class signals(p2v):
         e = self.logic([bits]) # forces signal to be bus and not scalar even if 1 bit wide(range [0:0])
 
         ccc = self.output(10)
-        self.assign(ccc, misc.concat([a, b, c])) # verilog concatenation
+        self.assign(ccc, [a, b, c]) # verilog concatenation
         ccc2 = self.output(bits)
-        self.assign(ccc2, b * bits) # net duplication {BITS{b}}
+        self.assign(ccc2, b.concat(bits)) # net duplication {BITS{b}}
 
 
         f = {}
@@ -62,14 +62,14 @@ class signals(p2v):
 
         self.line() # insert empty line to Verilog file
         self.assign(b, 1) # assign to const
-        self.assign(e, misc.dec(3, bits)) # assign to const
+        self.assign(e, 3) # assign to const
         for n in range(num):
             self.assign(f[n], d | e) # assign expression
         self.assign(a, b) # trivial Verilog assign
         self.assign(c, 0) # assign to const
-        self.assign(d, e + misc.dec(1, bits)) # assign expression
+        self.assign(d, e + 1) # assign expression
         if var:
-            self.assign(g, misc.concat([f[1], f[0]])) # assign concatenation
+            self.assign(g, [f[1], f[0]]) # assign concatenation
             self.assign(h[0:bits], f[2]) # partial bits
             self.assign(h[bits:bits*2], f[3]) # partial bits
             for m in range(bits*2):
