@@ -1849,7 +1849,7 @@ class p2v():
                         vals = list(vals.values())
                     for n, val in enumerate(vals):
                         last = (n + 1) == len(vals)
-                        src_expr += f"\n{space_prefix}({(sel == n)*tgt._bits}) & {val}" + misc.cond(not last, " |")
+                        src_expr += f"\n{space_prefix}({misc.concat([sel == n]*tgt._bits)}) & {val}" + misc.cond(not last, " |")
             else: # proirity mux
                 for n, (sel, val) in enumerate(src.items()):
                     if isinstance(val, list):
