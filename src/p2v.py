@@ -1814,6 +1814,34 @@ class p2v():
             self.line()
         return rtrn
 
+    def _get_mux(self, src, bits=1):
+        space_prefix = 16 * " "
+        src_expr = ""
+        if len(src) == 1: # balanced encoded sel mux
+            for sel, vals in src.items():
+                self._assert(isinstance(vals, (list, dict)), f"assignment to mux must use type list or dict for mux inputs ({vals})", fatal=True)
+                if isinstance(vals, dict):
+                    vals = list(vals.values())
+                for n, val in enumerate(vals):
+                    last = (n + 1) == len(vals)
+                    src_expr += f"\n{space_prefix}({misc.concat([sel == n]*bits)}) & {val}" + misc.cond(not last, " |")
+        else: # proirity mux
+            for n, (sel, val) in enumerate(src.items()):
+                if isinstance(val, list):
+                    val = misc.concat(val)
+                elif isinstance(val, int):
+                    val = misc.dec(val, bits)
+                last = (n + 1) == len(src)
+                if last:
+                    if sel is True:
+                        src_expr += f"{val}"
+                    else:
+                        src_expr += f"{sel} ? {val} : {misc.dec(0, bits)}"
+                else:
+                    src_expr += f"{sel} ? {val} :\n{space_prefix}"
+        return src_expr
+
+
     def assign(self, tgt, src, keyword="assign", _remark=None, _allow_str=False):
         """
         Signal assignment.
@@ -1840,30 +1868,7 @@ class p2v():
         elif isinstance(tgt, dict) and isinstance(src, dict): # struct assign
             self.assign(list(tgt.values()), list(src.values()), keyword=keyword, _remark=_remark, _allow_str=_allow_str)
         elif isinstance(src, dict):
-            space_prefix = 16 * " "
-            src_expr = ""
-            if len(src) == 1: # balanced encoded sel mux
-                for sel, vals in src.items():
-                    self._assert(isinstance(vals, (list, dict)), f"assignment to mux must use type list or dict for mux inputs ({vals})", fatal=True)
-                    if isinstance(vals, dict):
-                        vals = list(vals.values())
-                    for n, val in enumerate(vals):
-                        last = (n + 1) == len(vals)
-                        src_expr += f"\n{space_prefix}({misc.concat([sel == n]*tgt._bits)}) & {val}" + misc.cond(not last, " |")
-            else: # proirity mux
-                for n, (sel, val) in enumerate(src.items()):
-                    if isinstance(val, list):
-                        val = misc.concat(val)
-                    elif isinstance(val, int):
-                        val = misc.dec(val, tgt._bits)
-                    last = (n + 1) == len(src)
-                    if last:
-                        if sel is True:
-                            src_expr += f"{val}"
-                        else:
-                            src_expr += f"{sel} ? {val} : {misc.dec(0, tgt._bits)}"
-                    else:
-                        src_expr += f"{sel} ? {val} :\n{space_prefix}"
+            src_expr = self._get_mux(src, bits=tgt._bits)
             self.assign(tgt, src_expr, keyword=keyword, _remark=_remark, _allow_str=True)
         else:
             tgt_is_strct = isinstance(tgt, p2v_signal) and isinstance(tgt._strct, p2v_struct)
@@ -1913,8 +1918,18 @@ class p2v():
             if isinstance(reset, str):
                 reset = p2v_signal(None, reset, bits=1)
 
+        if isinstance(tgt, list) and isinstance(src, list) and len(tgt) == len(src):
+            for n, tgt_n in enumerate(tgt):
+                self.sample(clk, tgt_n, src[n], valid=valid, reset=reset, reset_val=reset_val, bits=bits, bypass=bypass, _allow_str=_allow_str)
+            return
+
         if isinstance(src, int):
             src = misc.dec(src, tgt._bits)
+        elif isinstance(src, dict):
+            src_expr = self._get_mux(src, bits=tgt._bits)
+            src = p2v_signal(None, src_expr, bits=tgt._bits)
+        elif isinstance(src, list):
+            src = misc.concat(src)
 
         self._assert_type(clk, clock)
         self._assert_type(src, [p2v_signal])
