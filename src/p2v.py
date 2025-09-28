@@ -39,6 +39,7 @@ from p2v_clock import default_clk
 from p2v_signal import p2v_signal, p2v_kind, p2v_type
 from p2v_connect import p2v_connect, STRCT_NAME
 from p2v_fsm import p2v_fsm
+from p2v_pipe import p2v_pipe
 from p2v_tb import p2v_tb, PASS_STATUS
 from p2v_struct import p2v_struct, FIELD_SEP, get_field_name
 import p2v_tools
@@ -69,6 +70,7 @@ class p2v():
         self._sons = []
         self._parse = parse
         self._base_depth = 0
+        self._pipe_stage = 0
 
         if parent is None:
             self._outfiles = {}
@@ -561,6 +563,7 @@ class p2v():
             self._signals[signal._name] = signal
         if isinstance(signal._strct, p2v_struct):
             self._add_strct_attr(signal, names=signal._strct.names, fields=signal._strct.fields)
+        signal._initial_pipe_stage = signal._pipe_stage = self._pipe_stage
         return signal
 
     def _get_signals(self, kinds=None):
@@ -2180,6 +2183,8 @@ class p2v():
         """
         return self._find_file(filename, allow=True) is not None
 
+    def pipeline(self, clk, valid, bypass=False):
+        return p2v_pipe(parent=self, clk=clk, valid=valid, bypass=bypass)
 
 # top constructor
 if __name__ != "__main__":

@@ -86,6 +86,8 @@ class p2v_signal:
             self._driven_bits = None # don't check bit driven bits is a verilog parameter
         else:
             self._driven_bits = [False] * self._bits
+        self._initial_pipe_stage = 0
+        self._pipe_stage = 0
         self._remark = remark
 
     def __str__(self):
@@ -433,6 +435,11 @@ class p2v_signal:
         Returns:
             bool
         """
+        try:
+            if self._strct.name._kind in [p2v_kind.CLOCK, p2v_kind.SYNC_RESET, p2v_kind.ASYNC_RESET]:
+                return True
+        except AttributeError:
+            pass
         return self._kind in [p2v_kind.CLOCK, p2v_kind.SYNC_RESET, p2v_kind.ASYNC_RESET]
 
     def is_enum(self):
@@ -583,3 +590,33 @@ class p2v_signal:
             p2v_signal
         """
         return misc.concat([self] * num)
+
+    def pipe(self, pipeline):
+        """
+        sync signal to pipeline stage
+
+        Args:
+            pipeline(p2v_pipe): pipeline to sync to
+
+        Returns:
+            synched signal
+        """
+        signal = None
+        if pipeline.parent._pipe_stage == 0:
+            return self
+
+        if self._pipe_stage < pipeline.parent._pipe_stage:
+            if not pipeline._signal_exists(self._name, stage=self._initial_pipe_stage):
+                name_d_initial = pipeline._get_delay_name(self._name, stage=self._initial_pipe_stage)
+                initial_signal = pipeline.parent.logic(name_d_initial, bits=self._bits, assign=self, _allow_str=True)
+                initial_signal._strct = self._strct
+
+            for i in range(self._initial_pipe_stage, pipeline.parent._pipe_stage):
+                if not pipeline._signal_exists(self._name, stage=i+1):
+                    signal = pipeline._sample(self._name, bits=self._bits, stage=i)
+            self._pipe_stage = pipeline.parent._pipe_stage
+            return signal
+
+        if self._initial_pipe_stage > 0 and (self._initial_pipe_stage == self._pipe_stage): # never progressed
+            return self
+        return pipeline._get_signal(self._name, stage=self._pipe_stage)
