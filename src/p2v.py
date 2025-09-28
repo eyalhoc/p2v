@@ -1891,6 +1891,8 @@ class p2v():
                 if _remark is None:
                     _remark = self._get_remark(depth=2)
                 self.line(f"{keyword} {tgt} = {src};", remark=_remark)
+                if isinstance(tgt, p2v_signal) and isinstance(src, p2v_signal):
+                    tgt._pipe_stage = src._pipe_stage
 
     def sample(self, clk, tgt, src, valid=None, reset=None, reset_val=0, bits=None, bypass=False, _allow_str=False):
         """
@@ -2184,7 +2186,13 @@ class p2v():
         return self._find_file(filename, allow=True) is not None
 
     def pipeline(self, clk, valid, bypass=False):
-        return p2v_pipe(parent=self, clk=clk, valid=valid, bypass=bypass)
+        self._assert_type(clk, clock)
+        self._assert_type(valid, p2v_signal)
+        self._assert_type(bypass, bool)
+        pipe = p2v_pipe(parent=self, clk=clk, valid=valid, bypass=bypass)
+        for _ in range(valid._pipe_stage):
+            pipe.advance()
+        return pipe
 
 # top constructor
 if __name__ != "__main__":

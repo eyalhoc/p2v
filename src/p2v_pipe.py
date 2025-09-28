@@ -61,13 +61,15 @@ class p2v_pipe:
         if self.bypass:
             return src
 
-        if name == self.valid:
+        if name == str(self.valid):
             valid = None
         else:
-            valid = self.stage_valid
+            valid = self._get_delay_name(self.valid, stage=stage)
+
         tgt_name = self._get_delay_name(name, stage=stage+1)
         tgt = self.parent.logic(tgt_name, bits=bits, _allow_str=True)
         tgt._strct = src._strct
+        tgt._pipe_stage += 1
         self.parent._signals[tgt_name]._strct = tgt._strct
         self.parent.sample(self.clk, tgt_name, src._name, valid=valid, _allow_str=True)
         return tgt
