@@ -472,12 +472,7 @@ class p2v_tb():
 
         name = self._parent._get_receive_name("fifo")
 
-        if misc._is_int(bits):
-            msb = bits - 1
-        else:
-            msb = f"{bits}-1"
-        self._parent.line(f"reg [{msb}:0] {name}[$];")
-        return p2v_signal(None, name, bits=bits)
+        return self.p2v_tb_fifo(parent=self._parent, name=name, bits=bits)
 
     def syn_off(self):
         """
@@ -544,3 +539,33 @@ class p2v_tb():
             if self._parent._assert(self._ifdefs[-1] == name, f"endif {name} while expecting {self._ifdefs[-1]}"):
                 self._ifdefs = self._ifdefs[:-1]
         self._parent.line("`endif", remark=name)
+
+
+    class p2v_tb_fifo:
+        """ implements a SystemVerilog fifo """
+        def __init__(self, parent, name, bits):
+            self.parent = parent
+            self.name = name
+            self.bits = bits
+
+            if misc._is_int(bits):
+                msb = bits - 1
+            else:
+                msb = f"{bits}-1"
+            self.parent.line(f"reg [{msb}:0] {name}[$];")
+
+
+        def push(self, val):
+            """ push to fifo """
+            s = f"{self.name}.push_back({val});"
+            self.parent.line(s)
+
+        def pop(self):
+            """ pop from fifo """
+            s = f"{self.name}.pop_front();"
+            self.parent.line(s)
+
+        def size(self):
+            """ returns fifo fullness """
+            s = f"{self.name}.size();"
+            self.parent.line(s)

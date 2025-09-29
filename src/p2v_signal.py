@@ -88,6 +88,7 @@ class p2v_signal:
             self._driven_bits = [False] * self._bits
         self._initial_pipe_stage = 0
         self._pipe_stage = 0
+        self._initial = False
         self._remark = remark
 
     def __str__(self):
@@ -97,7 +98,7 @@ class p2v_signal:
         return id(self)  # or use something meaningful
 
     def __truediv__(self, other):
-        return self._signal(f"{self} {other}", bits=self._bits)
+        return self._create(other, "/")
 
     def __add__(self, other):
         return self._create(other, "+")

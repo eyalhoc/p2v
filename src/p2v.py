@@ -652,7 +652,10 @@ class p2v():
             data = SimpleNamespace()
             setattr(data, "args", self._dict_to_namespace(args))
             setattr(data, "pins", pins)
-            pickle.dump(data, f)
+            try:
+                pickle.dump(data, f)
+            except TypeError: # TBD - do not use pickle for this - think of something else
+                pass
         s = "import pickle\n"
         s += f"with open('{pickle_file}', 'rb') as f:\n"
         s += "    data = pickle.load(f)\n"
@@ -836,11 +839,13 @@ class p2v():
 
     def _check_mod_loop(self):
         count = {}
+        prev_name = ""
         for name in self._sons:
-            if name in count:
+            if name in count and name == prev_name:
                 count[name] = count[name] + 1
             else:
                 count[name] = 1
+                prev_name = name
         for name, val in count.items():
             self._assert(val < MAX_LOOP, f"{name} was created {val} times in module (performance loss)", warning=True)
 
@@ -1215,7 +1220,7 @@ class p2v():
         return val_str
 
     def _get_module_params(self, module_locals, suffix=True):
-        simple_types = (int, bool, str, clock)
+        simple_types = (float, int, bool, str, clock)
 
         comments = []
         suf = []
@@ -1240,8 +1245,8 @@ class p2v():
                 else:
                     if suffix and not param_loose:
                         self._assert(isinstance(val, simple_types), f"module name should be explicitly set when using parameter '{name}' of type {type_str}", fatal=True)
-                    if isinstance(val, str):
-                        val = misc._fix_legal_name(val)
+                    if isinstance(val, (str, float)):
+                        val = misc._fix_legal_name(str(val))
                     if isinstance(val, simple_types):
                         suf.append(f"{name}{val}")
 
@@ -1815,6 +1820,7 @@ class p2v():
         elif initial is not None:
             self.assign(signal, initial, keyword="initial", _remark=remark, _allow_str=_allow_str)
             self.line()
+            signal._initial = True
         return rtrn
 
     def _get_mux(self, src, bits=1):
@@ -1878,6 +1884,8 @@ class p2v():
             if tgt_is_strct:
                 self._assign_structs(tgt, src, keyword=keyword)
             else:
+                if tgt._initial:
+                    keyword = ""
                 if keyword != "":
                     self._set_driven(tgt)
                 if isinstance(src, int):
@@ -2196,11 +2204,13 @@ class p2v():
 
 # top constructor
 if __name__ != "__main__":
-    skip = False
-    if os.path.basename(sys.argv[0]) == "pydoc.py":
-        skip = True
-    if os.path.basename(inspect.stack()[-1].filename) == "p2v_task.py":
-        skip = True
+    # skip = False
+    # if os.path.basename(sys.argv[0]) == "pydoc.py":
+        # skip = True
+    # if os.path.basename(inspect.stack()[-1].filename) == "p2v_task.py":
+        # skip = True
 
-    if not skip:
+    try:
         p2v()
+    except ImportError:
+        pass
