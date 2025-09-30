@@ -17,22 +17,20 @@ class p2v_pipe:
     This class is a p2v pipline.
     """
 
-    def __init__(self, parent, clk, valid, bypass=False):
+    def __init__(self, parent, clk, valid, ready=None, bypass=False):
         self.parent = parent
         self.clk = clk
         self.valid = valid
+        self.ready = ready
         self.bypass = bypass
 
         self.stage_valid = valid
+        if ready is not None:
+            self.parent._set_used(ready)
 
-    #def end(self):
-    #    """ closes pipeline """
-    #    self.stage = None
 
     def advance(self, bypass=False):
         """ advance pipeline stage """
-        #self.parent.assert_static(self.stage is not None, "cannot advance closed pipeline")
-
         if not bypass:
             self.stage_valid = self._sample(self.valid, stage=self.parent._pipe_stage)
             self.parent._pipe_stage += 1
@@ -61,15 +59,23 @@ class p2v_pipe:
         if self.bypass:
             return src
 
-        if name == str(self.valid):
-            valid = None
-        else:
-            valid = self._get_delay_name(self.valid, stage=stage)
-
         tgt_name = self._get_delay_name(name, stage=stage+1)
+        src_name = src._name
         tgt = self.parent.logic(tgt_name, bits=bits, _allow_str=True)
         tgt._strct = src._strct
         tgt._pipe_stage += 1
         self.parent._signals[tgt_name]._strct = tgt._strct
-        self.parent.sample(self.clk, tgt_name, src._name, valid=valid, _allow_str=True)
+        
+        # valid signal
+        if name == str(self.valid):
+            if self.ready is not None:
+                valid = f"{self.ready} | ~{src_name}" # allow valid to go high when waiting on ready
+            else:
+                valid = None
+        else:
+            valid = self._get_delay_name(self.valid, stage=stage)
+            if self.ready is not None:
+                valid = f"{valid} & {self.ready}"
+
+        self.parent.sample(self.clk, tgt_name, src_name, valid=valid, _allow_str=True)
         return tgt

@@ -2195,11 +2195,12 @@ class p2v():
         """
         return self._find_file(filename, allow=True) is not None
 
-    def pipeline(self, clk, valid, bypass=False):
+    def pipeline(self, clk, valid, ready=None, bypass=False):
         self._assert_type(clk, clock)
         self._assert_type(valid, p2v_signal)
+        self._assert_type(ready, [None, p2v_signal])
         self._assert_type(bypass, bool)
-        pipe = p2v_pipe(parent=self, clk=clk, valid=valid, bypass=bypass)
+        pipe = p2v_pipe(parent=self, clk=clk, valid=valid, ready=ready, bypass=bypass)
         for _ in range(valid._pipe_stage):
             pipe.advance()
         return pipe
