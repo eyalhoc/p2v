@@ -2207,12 +2207,6 @@ class p2v():
 
 # top constructor
 if __name__ != "__main__":
-    # skip = False
-    # if os.path.basename(sys.argv[0]) == "pydoc.py":
-        # skip = True
-    # if os.path.basename(inspect.stack()[-1].filename) == "p2v_task.py":
-        # skip = True
-
     try:
         p2v()
     except ImportError:

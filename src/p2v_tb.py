@@ -38,6 +38,7 @@ class p2v_tb():
 
     def __init__(self, parent, seed, max_seed=1024, set_seed=True):
         self._parent = parent
+        self._max_seed = max_seed
         if seed == 0:
             self.seed = random.randint(1, max_seed)
         else:
@@ -84,7 +85,7 @@ class p2v_tb():
             actual_min_val, actual_max_val = min_val, max_val
         self._parent.assert_static(actual_max_val >= actual_min_val, f"random max value {actual_max_val} is less than min value {actual_min_val}", fatal=True)
         return random.randint(actual_min_val, actual_max_val)
-        
+
     def rand_float(self, min_val, max_val):
         """
         Random float value.
@@ -97,7 +98,7 @@ class p2v_tb():
             float
         """
         return random.uniform(min_val, max_val)
-        
+
     def rand_hex(self, bits):
         """
         Random hex value with set width.
@@ -353,7 +354,7 @@ class p2v_tb():
                               """)
             self._parent.allow_undriven(clk.reset)
 
-    def gen_busy(self, clk, name=None, max_duration=100, max_delay=100, inverse=False, en=None):
+    def gen_busy(self, clk, name=None, max_duration=20, max_delay=20, inverse=False, en=None):
         """
         Generate random behavior on signal, starts low.
 
@@ -363,17 +364,17 @@ class p2v_tb():
             max_duration(int): maximum number of clock cycles for signal to be high
             max_delay(int): maximum number of clock cycles for signal to be low
             inverse(bool): in inversed initial value is high
-            en([None, 
+            en([None,
 
         Returns:
             None
         """
         self._parent._assert_type(clk, clock)
-        self._parent._assert_type(name, [None, str, p2v_signal]) # TBD - remove str
+        self._parent._assert_type(name, [None, p2v_signal])
         self._parent._assert_type(max_duration, int)
         self._parent._assert_type(max_delay, int)
         self._parent._assert_type(inverse, bool)
-        self._parent._assert_type(en, [None, p2v_signal])
+        self._parent._assert_type(en, [None, bool, p2v_signal])
 
         if name is None:
             name = self._parent._get_receive_name("gen_busy")
@@ -381,17 +382,20 @@ class p2v_tb():
         else:
             signal = name
 
-        self._parent.line(f"""
-                            integer _gen_busy_{name}_seed = {self.seed};
-                            initial forever
-                                begin
-                                    {name} = {int(inverse)-0};
-                                    repeat ($urandom(_gen_busy_{name}_seed) % {max_delay}) @(posedge {clk});
-                                    {misc.cond(en is not None, f"if ({en}) ")}{name} = {int(inverse)-1};
-                                    repeat ($urandom(_gen_busy_{name}_seed) % {max_duration}) @(posedge {clk});
-                                end
-                          """)
-        self._parent.allow_undriven(name)
+        if en is False:
+            self._parent.assign(signal, int(inverse))
+        else:
+            self._parent.line(f"""
+                                integer _gen_busy_{name}_seed = {self.rand_int(self._max_seed)};
+                                initial forever
+                                    begin
+                                        {name} = {int(inverse)-0};
+                                        repeat ($urandom(_gen_busy_{name}_seed) % {max_delay}) @(posedge {clk});
+                                        {misc.cond(en not in [None, True], f"if ({en}) ")}{name} = {int(inverse)-1};
+                                        repeat ($urandom(_gen_busy_{name}_seed) % {max_duration}) @(posedge {clk});
+                                    end
+                              """)
+            self._parent.allow_undriven(name)
         return signal
 
     def gen_en(self, clk, name, max_duration=100, max_delay=100):

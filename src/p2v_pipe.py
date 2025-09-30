@@ -27,6 +27,7 @@ class p2v_pipe:
         self.stage_valid = valid
         if ready is not None:
             self.parent._set_used(ready)
+        self._stage_cnt()
 
 
     def advance(self, bypass=False):
@@ -34,8 +35,20 @@ class p2v_pipe:
         if not bypass:
             self.stage_valid = self._sample(self.valid, stage=self.parent._pipe_stage)
             self.parent._pipe_stage += 1
+            self._stage_cnt()
         return self.stage_valid
 
+    def _stage_cnt(self):
+        cnt_name = self._get_delay_name("stage_cnt", self.parent._pipe_stage)
+        self.parent.logic(cnt_name, 8, initial=0, _allow_str=True)
+        valid = self.stage_valid
+        if self.ready is not None:
+            valid = f"{valid} & {self.ready}"
+        self.parent.line(f"""always @(posedge {self.clk})
+                                 if ({valid})
+                                     {cnt_name} = {cnt_name} + 1;
+                          """)
+        self.parent._set_used(cnt_name)
 
     def _get_delay_name(self, name, stage):
         name = str(name)
@@ -65,13 +78,10 @@ class p2v_pipe:
         tgt._strct = src._strct
         tgt._pipe_stage += 1
         self.parent._signals[tgt_name]._strct = tgt._strct
-        
+
         # valid signal
         if name == str(self.valid):
-            if self.ready is not None:
-                valid = f"{self.ready} | ~{src_name}" # allow valid to go high when waiting on ready
-            else:
-                valid = None
+            valid = self.ready
         else:
             valid = self._get_delay_name(self.valid, stage=stage)
             if self.ready is not None:
