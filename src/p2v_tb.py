@@ -22,7 +22,7 @@ import numpy as np
 
 from p2v_clock import p2v_clock as clock, clk_0rst, clk_arst, clk_srst, clk_2rst
 import p2v_misc as misc
-from p2v_signal import p2v_signal
+from p2v_signal import p2v_signal, p2v_type
 import p2v_tools
 
 PASS_STATUS = "PASSED"
@@ -45,16 +45,20 @@ class p2v_tb():
         if set_seed:
             self._set_seed(self.seed)
         self._ifdefs = []
+        self._block = None
 
 
-    def _test_finish(self, condition=None, message="", stop=True):
+    def _test_finish(self, condition=None, message="", stop=True, _inline=False):
         self._parent._set_used(condition, allow=True)
-        return f""" {misc.cond(condition is not None, f"if ({condition})")}
-                    begin
-                        $display({message});
-                        {misc.cond(stop, "#10; $finish;")}
-                    end
-                """
+        line = f""" {misc.cond(condition is not None, f"if ({condition})")}
+                            begin
+                                $display({message});
+                                {misc.cond(stop, "#10; $finish;")}
+                            end
+                           """
+        if _inline:
+            return line
+        return self._parent.line(line)
 
     def _set_seed(self, seed):
         random.seed(seed)
@@ -223,7 +227,7 @@ class p2v_tb():
             full_message += f': {message[1:]}'
         return full_message
 
-    def test_pass(self, condition=None, message=""):
+    def test_pass(self, condition=None, message="", _inline=False):
         """
         Finish test successfully if condition is met.
 
@@ -237,9 +241,9 @@ class p2v_tb():
         self._parent._assert_type(condition, [None, str, p2v_signal])
         self._parent._assert_type(message, str)
         full_message = self._get_messgae(PASS_STATUS, message)
-        return self._test_finish(condition=condition, message=full_message)
+        return self._test_finish(condition=condition, message=full_message, _inline=_inline)
 
-    def test_fail(self, condition=None, message=""):
+    def test_fail(self, condition=None, message="", _inline=False):
         """
         Finish test with error if condition is met.
 
@@ -253,9 +257,9 @@ class p2v_tb():
         self._parent._assert_type(condition, [None, str, p2v_signal])
         self._parent._assert_type(message, str)
         full_message = self._get_messgae(FAIL_STATUS, message)
-        return self._test_finish(condition=condition, message=full_message)
+        return self._test_finish(condition=condition, message=full_message, _inline=_inline)
 
-    def test_finish(self, condition, pass_message="", fail_message=""):
+    def test_finish(self, condition, pass_message="", fail_message="", _inline=False):
         """
         Finish test if condition is met.
 
@@ -273,9 +277,9 @@ class p2v_tb():
         self._parent._set_used(condition, allow=True)
         return f"""
                 if {misc._add_paren(condition)}
-                    {self.test_pass(message=pass_message)}
+                    {self.test_pass(message=pass_message, _inline=_inline)}
                 else
-                    {self.test_fail(message=fail_message)}
+                    {self.test_fail(message=fail_message, _inline=_inline)}
                 """
 
     def gen_clk(self, clk, cycle=10, reset_cycles=20, pre_reset_cycles=5):
@@ -408,9 +412,9 @@ class p2v_tb():
                           """)
         self._parent.assert_property(clk, _count_timeout[name] < timeout, f"reached timeout after {timeout} cycles of {clk}")
         if success:
-            self._parent.line(f"""
-                                 always @(posedge {clk}) {self.test_pass(_count_timeout[name] == (timeout-10), f"successfully completed {timeout} cycles of {clk}")}
-                              """)
+            self.always(clk)
+            self.test_pass(_count_timeout[name] == (timeout-10), f"successfully completed {timeout} cycles of {clk}")
+            self.end()
         self._parent.allow_unused( _count_timeout[name])
 
 
@@ -468,6 +472,8 @@ class p2v_tb():
         Returns:
             None
         """
+        if issubclass(type(bits), p2v_type):
+            bits = bits._bits
         self._parent._assert_type(bits, int)
 
         name = self._parent._get_receive_name("fifo")
@@ -540,6 +546,52 @@ class p2v_tb():
                 self._ifdefs = self._ifdefs[:-1]
         self._parent.line("`endif", remark=name)
 
+    def initial(self):
+        """ initial block """
+        self._parent.assert_static(self._block is None, f"previous {self._block} block is still open", fatal=True)
+        self._parent.line("initial")
+        self._parent.line("    begin")
+        self._block = "initial"
+
+    def end(self):
+        """ clock block """
+        self._parent.assert_static(self._block is not None, "trying to end a block that was not openned", fatal=True)
+        self._parent.line("    end")
+        self._block = None
+
+    def always(self, clk=None, cond=None, posedge=True):
+        """ always block """
+        self._parent.assert_static(self._block is None, f"previous {self._block} block is still open", fatal=True)
+        line = "always"
+        if clk is not None:
+            line += f" @({misc.cond(posedge, 'posedge', 'negedge')} {clk})"
+        self._parent.line(line)
+        if cond is not None:
+            self._parent.line(f"    if ({cond})")
+            self._parent._set_used(cond)
+        self._parent.line("    begin")
+        self._block = "always"
+
+    def delay(self, signal, num=1, posedge=True):
+        """ wait for a number of clock cycles """
+        line = ""
+        if num > 1:
+            line += f"repeat ({num}) "
+        line += f"@({misc.cond(posedge, 'posedge', 'negedge')} {signal});"
+        self._parent.line(line)
+
+    def reset_released(self, clk):
+        """ return a signal that indicates when reset has been released """
+        self._parent._assert_type(clk, clock)
+        self._parent.assert_static(clk.reset is not None or clk.rst_n is not None, f"{clk} has no reset", fatal=True)
+        released = self._parent.logic(f"_{clk}_reset_released", initial=0, _allow_str=True)
+        if clk.rst_n is not None:
+            self._parent.line(f"always @(posedge {clk.rst_n})")
+            self._parent.assign(released, 1)
+        else:
+            self._parent.line(f"always @(negedge {clk.reset})")
+            self._parent.assign(released, 1)
+        return released
 
     class p2v_tb_fifo:
         """ implements a SystemVerilog fifo """
@@ -562,10 +614,14 @@ class p2v_tb():
 
         def pop(self):
             """ pop from fifo """
-            s = f"{self.name}.pop_front();"
-            self.parent.line(s)
+            s = f"{self.name}.pop_front()"
+            return p2v_signal(None, s, bits=self.bits)
 
         def size(self):
             """ returns fifo fullness """
-            s = f"{self.name}.size();"
-            self.parent.line(s)
+            s = f"{self.name}.size()"
+            return p2v_signal(None, s, bits=32)
+
+        def empty(self):
+            """ returns fifo empty """
+            return self.size() == 0

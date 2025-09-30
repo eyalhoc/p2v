@@ -19,6 +19,7 @@ class tb_adder(p2v):
 
         self.logic(clk)
         self.tb.gen_clk(clk, cycle=self.tb.rand_int(2, 20))
+        reset_released = self.tb.reset_released(clk)
 
 
         args = adder.adder(self).gen_rand_args(override={"clk":clk, "float16":False})
@@ -28,7 +29,7 @@ class tb_adder(p2v):
         valid = self.logic(initial=0)
         inputs = {}
         for n in range(num):
-            inputs[n] = self.logic(bits, initial=0)
+            inputs[n] = self.logic(bits)
         o = self.logic(bits)
         valid_out = self.logic()
 
@@ -42,14 +43,12 @@ class tb_adder(p2v):
         son.inst()
 
 
-        en = self.logic(initial=0)
         data_in_q = self.tb.fifo(bits*num) # pylint: disable=unused-variable
         expected_q = self.tb.fifo(bits) # pylint: disable=unused-variable
 
-        self.line("""
-                    initial
-                        begin
-                   """)
+
+        # INPUT AND OUTPUT DATA FIFOS
+        self.tb.initial()
         for _ in range(size):
             input_vec = []
             input_sum = 0
@@ -57,49 +56,41 @@ class tb_adder(p2v):
                 val = self.tb.rand_int(1<<bits)
                 input_sum += val
                 input_vec.append(misc.hex(int(val), bits))
-            self.line(f"data_in_q.push_back({misc.concat(input_vec)});")
-            self.line(f"expected_q.push_back({misc.hex(int(input_sum) & ((1 << bits) - 1), bits)});")
-        self.line("""
-                        end
-                   """)
+            data_in_q.push(misc.concat(input_vec))
+            expected_q.push(misc.hex(int(input_sum) & ((1 << bits) - 1), bits))
+        self.tb.end()
 
 
+        # PUSH INPUTS
         data_in = self.logic(bits*num, initial=0)
-        expected = self.logic(bits, initial=0)
-        fail_condition = o != expected
-        self.line(f"""
-                    initial
-                        begin
-                            {misc.cond(async_reset, f"@(posedge {clk.rst_n});")}
-                            repeat (10) @(posedge {clk});
-                            en = 1;
-                        end
-
-                        // drive inputs
-                        always @(posedge {clk})
-                            if (en && (data_in_q.size() > 0))
-                                begin
-                                    data_in = data_in_q.pop_front();
-                                    {misc.concat(inputs)} <= data_in;
-                                    valid <= 1;
-                                end
-
-                        // check output
-                        always @(posedge {clk})
-                            if (valid_out)
-                                begin
-                                    expected = expected_q.pop_front();
-                                    {self.tb.test_fail(condition=fail_condition, message=misc.format_str("mismatch expected: 0x%0h, actual: 0x%0h", [expected, o]))}
-                                    if (expected_q.size() == 0)
-                                        {self.tb.test_pass(message=f"successfully tested {size} additions")}
-                                end
-                   """)
+        self.tb.always(clk, cond=reset_released & ~data_in_q.empty(), posedge=False)
+        self.assign(data_in, data_in_q.pop())
+        self.assign(valid, ~data_in_q.empty())
+        self.tb.end()
+        self.assign(misc.concat(inputs), data_in)
 
 
-        self.allow_unused([valid_out, o, data_in, expected, en])
+        # POP EXPECTED
+        expected = self.logic(bits, initial=expected_q.pop())
+        self.tb.always(clk, cond=valid_out)
+        self.assign(expected, expected_q.pop())
+        self.tb.end()
 
 
-        self.tb.set_timeout(clk, size * 100)
+        # END TEST
+        self.tb.always(clk, cond=data_in_q.empty())
+        self.tb.test_pass()
+        self.tb.end()
+
+
+        # COMPARE OUTPUT TO EXPECTED
+        diff = self.logic(assign=valid_out & (o != expected))
+
+        self.assert_property(clk, ~diff, misc.format_str("mismatch: expected=0x%0h, actual=0x%0h", params=[expected, o]))
+
+
+        # TIMEOUT AND DUMP
+        self.tb.set_timeout(clk, size * 16)
         self.tb.dump()
 
         return self.write()

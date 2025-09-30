@@ -655,13 +655,14 @@ class p2v():
             try:
                 pickle.dump(data, f)
             except TypeError: # TBD - do not use pickle for this - think of something else
-                pass
+                return False
         s = "import pickle\n"
         s += f"with open('{pickle_file}', 'rb') as f:\n"
         s += "    data = pickle.load(f)\n"
         s += "    args = data.args\n"
         s += "    pins = data.pins\n"
         misc._write_file(os.path.join(self._args.outdir, "dut_module.py"), s)
+        return True
 
     def _exists(self):
         return self._modname in self._cache["conn"]
@@ -1345,14 +1346,15 @@ class p2v():
                           """)
 
                 if self._args.sim and self._args.sim_bin in ["vvp"] and property_type != "cover":
-                    self.remark(f"CODE ADDED TO SUPPORT LEGACY SIMULATOR {self._args.sim_bin} THAT DOES NOT SUPPORT CONCURRENT ASSERTIONS")
-                    assert_never = {}
-                    assert_never[name] = self.logic(assign=misc._invert(condition), _allow_str=True)
-                    self.allow_unused(assert_never[name])
-                    self.line(f"""always @(posedge {clk})
-                                      if ({misc.cond(clk.rst_n is not None, f'{clk.rst_n} & ')}{assert_never[name]})
-                                          {err_str};
-                                """)
+                    if "/" not in str(condition): # unsupported like |-> and |=>
+                        self.remark(f"CODE ADDED TO SUPPORT LEGACY SIMULATOR {self._args.sim_bin} THAT DOES NOT SUPPORT CONCURRENT ASSERTIONS")
+                        assert_never = {}
+                        assert_never[name] = self.logic(assign=misc._invert(condition), _allow_str=True)
+                        self.allow_unused(assert_never[name])
+                        self.line(f"""always @(posedge {clk})
+                                          if ({misc.cond(clk.rst_n is not None, f'{clk.rst_n} & ')}{assert_never[name]})
+                                              {err_str};
+                                    """)
 
 
     def set_modname(self, modname=None, suffix=True):
