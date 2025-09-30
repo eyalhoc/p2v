@@ -88,6 +88,7 @@ class p2v_signal:
             self._driven_bits = [False] * self._bits
         self._initial_pipe_stage = 0
         self._pipe_stage = 0
+        self._initial = False
         self._remark = remark
 
     def __str__(self):
@@ -97,7 +98,7 @@ class p2v_signal:
         return id(self)  # or use something meaningful
 
     def __truediv__(self, other):
-        return self._signal(f"{self} {other}", bits=self._bits)
+        return self._create(other, "/")
 
     def __add__(self, other):
         return self._create(other, "+")
@@ -608,8 +609,8 @@ class p2v_signal:
         if self._pipe_stage < pipeline.parent._pipe_stage:
             if not pipeline._signal_exists(self._name, stage=self._initial_pipe_stage):
                 name_d_initial = pipeline._get_delay_name(self._name, stage=self._initial_pipe_stage)
-                initial_signal = pipeline.parent.logic(name_d_initial, bits=self._bits, assign=self, _allow_str=True)
-                initial_signal._strct = self._strct
+                signal = pipeline.parent.logic(name_d_initial, bits=self._bits, assign=self, _allow_str=True)
+                signal._strct = self._strct
 
             for i in range(self._initial_pipe_stage, pipeline.parent._pipe_stage):
                 if not pipeline._signal_exists(self._name, stage=i+1):

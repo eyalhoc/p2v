@@ -198,4 +198,6 @@ cython_debug/
 *.o
 *.fst
 
-
+#coctb sim
+results.xml
+sim.vvp

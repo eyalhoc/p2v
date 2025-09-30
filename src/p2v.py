@@ -652,13 +652,17 @@ class p2v():
             data = SimpleNamespace()
             setattr(data, "args", self._dict_to_namespace(args))
             setattr(data, "pins", pins)
-            pickle.dump(data, f)
+            try:
+                pickle.dump(data, f)
+            except TypeError: # TBD - do not use pickle for this - think of something else
+                return False
         s = "import pickle\n"
         s += f"with open('{pickle_file}', 'rb') as f:\n"
         s += "    data = pickle.load(f)\n"
         s += "    args = data.args\n"
         s += "    pins = data.pins\n"
         misc._write_file(os.path.join(self._args.outdir, "dut_module.py"), s)
+        return True
 
     def _exists(self):
         return self._modname in self._cache["conn"]
@@ -836,11 +840,13 @@ class p2v():
 
     def _check_mod_loop(self):
         count = {}
+        prev_name = ""
         for name in self._sons:
-            if name in count:
+            if name in count and name == prev_name:
                 count[name] = count[name] + 1
             else:
                 count[name] = 1
+                prev_name = name
         for name, val in count.items():
             self._assert(val < MAX_LOOP, f"{name} was created {val} times in module (performance loss)", warning=True)
 
@@ -1215,7 +1221,7 @@ class p2v():
         return val_str
 
     def _get_module_params(self, module_locals, suffix=True):
-        simple_types = (int, bool, str, clock)
+        simple_types = (float, int, bool, str, clock)
 
         comments = []
         suf = []
@@ -1240,8 +1246,8 @@ class p2v():
                 else:
                     if suffix and not param_loose:
                         self._assert(isinstance(val, simple_types), f"module name should be explicitly set when using parameter '{name}' of type {type_str}", fatal=True)
-                    if isinstance(val, str):
-                        val = misc._fix_legal_name(val)
+                    if isinstance(val, (str, float)):
+                        val = misc._fix_legal_name(str(val))
                     if isinstance(val, simple_types):
                         suf.append(f"{name}{val}")
 
@@ -1340,14 +1346,15 @@ class p2v():
                           """)
 
                 if self._args.sim and self._args.sim_bin in ["vvp"] and property_type != "cover":
-                    self.remark(f"CODE ADDED TO SUPPORT LEGACY SIMULATOR {self._args.sim_bin} THAT DOES NOT SUPPORT CONCURRENT ASSERTIONS")
-                    assert_never = {}
-                    assert_never[name] = self.logic(assign=misc._invert(condition), _allow_str=True)
-                    self.allow_unused(assert_never[name])
-                    self.line(f"""always @(posedge {clk})
-                                      if ({misc.cond(clk.rst_n is not None, f'{clk.rst_n} & ')}{assert_never[name]})
-                                          {err_str};
-                                """)
+                    if "/" not in str(condition): # unsupported like |-> and |=>
+                        self.remark(f"CODE ADDED TO SUPPORT LEGACY SIMULATOR {self._args.sim_bin} THAT DOES NOT SUPPORT CONCURRENT ASSERTIONS")
+                        assert_never = {}
+                        assert_never[name] = self.logic(assign=misc._invert(condition), _allow_str=True)
+                        self.allow_unused(assert_never[name])
+                        self.line(f"""always @(posedge {clk})
+                                          if ({misc.cond(clk.rst_n is not None, f'{clk.rst_n} & ')}{assert_never[name]})
+                                              {err_str};
+                                    """)
 
 
     def set_modname(self, modname=None, suffix=True):
@@ -1815,6 +1822,7 @@ class p2v():
         elif initial is not None:
             self.assign(signal, initial, keyword="initial", _remark=remark, _allow_str=_allow_str)
             self.line()
+            signal._initial = True
         return rtrn
 
     def _get_mux(self, src, bits=1):
@@ -1878,6 +1886,8 @@ class p2v():
             if tgt_is_strct:
                 self._assign_structs(tgt, src, keyword=keyword)
             else:
+                if tgt._initial:
+                    keyword = ""
                 if keyword != "":
                     self._set_driven(tgt)
                 if isinstance(src, int):
@@ -1891,6 +1901,8 @@ class p2v():
                 if _remark is None:
                     _remark = self._get_remark(depth=2)
                 self.line(f"{keyword} {tgt} = {src};", remark=_remark)
+                if isinstance(tgt, p2v_signal) and isinstance(src, p2v_signal):
+                    tgt._pipe_stage = src._pipe_stage
 
     def sample(self, clk, tgt, src, valid=None, reset=None, reset_val=0, bits=None, bypass=False, _allow_str=False):
         """
@@ -2184,15 +2196,23 @@ class p2v():
         return self._find_file(filename, allow=True) is not None
 
     def pipeline(self, clk, valid, bypass=False):
-        return p2v_pipe(parent=self, clk=clk, valid=valid, bypass=bypass)
+        self._assert_type(clk, clock)
+        self._assert_type(valid, p2v_signal)
+        self._assert_type(bypass, bool)
+        pipe = p2v_pipe(parent=self, clk=clk, valid=valid, bypass=bypass)
+        for _ in range(valid._pipe_stage):
+            pipe.advance()
+        return pipe
 
 # top constructor
 if __name__ != "__main__":
-    skip = False
-    if os.path.basename(sys.argv[0]) == "pydoc.py":
-        skip = True
-    if os.path.basename(inspect.stack()[-1].filename) == "p2v_task.py":
-        skip = True
+    # skip = False
+    # if os.path.basename(sys.argv[0]) == "pydoc.py":
+        # skip = True
+    # if os.path.basename(inspect.stack()[-1].filename) == "p2v_task.py":
+        # skip = True
 
-    if not skip:
+    try:
         p2v()
+    except ImportError:
+        pass
