@@ -1683,7 +1683,7 @@ class p2v():
         self._assert_type(bits, SIGNAL_TYPES)
         return self._port(p2v_kind.INPUT, name, bits, strct=strct, driven=True, force_dir=force_dir)
 
-    def output(self, name="", bits=1, force_dir=False, _allow_str=False):
+    def output(self, name="", bits=1, initial=None, force_dir=False, _allow_str=False):
         """
         Create an output port.
 
@@ -1695,6 +1695,7 @@ class p2v():
                                              list is used to prevent a scalar signal (input x[0:0]; instead of input x;). \n\
                                              tuple is used for multi-dimentional Verilog arrays. \n\
                                              dict is used as a struct.
+            initial([int, str, dict, None]): assignment value to signal using an initial statement
             force_dir(bool): force bidirectionl struct fields to be output
 
         Returns:
@@ -1717,7 +1718,11 @@ class p2v():
 
         self._assert_type(name, [str, list, clock])
         self._assert_type(bits, SIGNAL_TYPES)
-        return self._port(p2v_kind.OUTPUT, name, bits, strct=strct, used=True, force_dir=force_dir)
+        signal = self._port(p2v_kind.OUTPUT, name, bits, strct=strct, used=True, force_dir=force_dir)
+        if initial is not None:
+            self.assign(signal, initial, keyword="initial")
+            signal._initial = True
+        return signal
 
     def inout(self, name="", _allow_str=False):
         """
@@ -2195,23 +2200,18 @@ class p2v():
         """
         return self._find_file(filename, allow=True) is not None
 
-    def pipeline(self, clk, valid, bypass=False):
+    def pipeline(self, clk, valid, ready=None, bypass=False):
         self._assert_type(clk, clock)
         self._assert_type(valid, p2v_signal)
+        self._assert_type(ready, [None, p2v_signal])
         self._assert_type(bypass, bool)
-        pipe = p2v_pipe(parent=self, clk=clk, valid=valid, bypass=bypass)
+        pipe = p2v_pipe(parent=self, clk=clk, valid=valid, ready=ready, bypass=bypass)
         for _ in range(valid._pipe_stage):
             pipe.advance()
         return pipe
 
 # top constructor
 if __name__ != "__main__":
-    # skip = False
-    # if os.path.basename(sys.argv[0]) == "pydoc.py":
-        # skip = True
-    # if os.path.basename(inspect.stack()[-1].filename) == "p2v_task.py":
-        # skip = True
-
     try:
         p2v()
     except ImportError:

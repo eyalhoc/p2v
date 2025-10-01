@@ -27,7 +27,7 @@ module tb ();
     logic _clk_reset_released;
     initial _clk_reset_released = 1'd0;
 
-    always @(posedge resetn) _clk_reset_released = 1'd1;
+    always @(posedge resetn) _clk_reset_released = $time > 0;
     logic valid;
     initial valid = 1'd0;
 
