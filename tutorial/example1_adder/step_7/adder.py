@@ -93,6 +93,7 @@ class adder(p2v):
     def gen(self, float16=None):
         """ random module parameters """
         args = self.gen_args()
+        args.clk = self.tb.rand_clock()
         if float16 is None:
             args.float16 = self.tb.rand_bool()
         else:
