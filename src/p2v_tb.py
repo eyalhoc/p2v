@@ -614,10 +614,10 @@ class p2v_tb():
         released = self._parent.logic(f"_{clk}_reset_released", initial=0, _allow_str=True)
         if clk.rst_n is not None:
             self._parent.line(f"always @(posedge {clk.rst_n})")
-            self._parent.assign(released, 1)
+            self._parent.assign(released, "$time > 0", _allow_str=True)
         else:
             self._parent.line(f"always @(negedge {clk.reset})")
-            self._parent.assign(released, 1)
+            self._parent.assign(released, "$time > 0", _allow_str=True)
         return released
 
     class p2v_tb_fifo:

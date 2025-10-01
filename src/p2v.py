@@ -1683,7 +1683,7 @@ class p2v():
         self._assert_type(bits, SIGNAL_TYPES)
         return self._port(p2v_kind.INPUT, name, bits, strct=strct, driven=True, force_dir=force_dir)
 
-    def output(self, name="", bits=1, force_dir=False, _allow_str=False):
+    def output(self, name="", bits=1, initial=None, force_dir=False, _allow_str=False):
         """
         Create an output port.
 
@@ -1695,6 +1695,7 @@ class p2v():
                                              list is used to prevent a scalar signal (input x[0:0]; instead of input x;). \n\
                                              tuple is used for multi-dimentional Verilog arrays. \n\
                                              dict is used as a struct.
+            initial([int, str, dict, None]): assignment value to signal using an initial statement
             force_dir(bool): force bidirectionl struct fields to be output
 
         Returns:
@@ -1717,7 +1718,11 @@ class p2v():
 
         self._assert_type(name, [str, list, clock])
         self._assert_type(bits, SIGNAL_TYPES)
-        return self._port(p2v_kind.OUTPUT, name, bits, strct=strct, used=True, force_dir=force_dir)
+        signal = self._port(p2v_kind.OUTPUT, name, bits, strct=strct, used=True, force_dir=force_dir)
+        if initial is not None:
+            self.assign(signal, initial, keyword="initial")
+            signal._initial = True
+        return signal
 
     def inout(self, name="", _allow_str=False):
         """
