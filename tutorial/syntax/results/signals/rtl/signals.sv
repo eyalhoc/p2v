@@ -32,28 +32,28 @@ module signals #(
 );
 
 
-    logic a;
-    logic b;
-    logic [7:0] c;
-    logic [7:0] d;
-    logic [7:0] e;
+    logic a;  //  default is single bit
+    logic b;  //  same as the above
+    logic [7:0] c;  //  multi bit bus
+    logic [7:0] d;  //  parametric width
+    logic [7:0] e;  //  forces signal to be bus and not scalar even if 1 bit wide(range [0:0])
     assign ccc  = {a, b, c};
     assign ccc2 = {8{b}};
-    logic [7:0] f__0;
-    logic [7:0] f__1;
-    logic [7:0] f__2;
-    logic [7:0] f__3;
-    logic [15:0] g;
-    logic [15:0] h;
-    logic [15:0] i;
+    logic [7:0] f__0;  //  port in loop with explicit name
+    logic [7:0] f__1;  //  port in loop with explicit name
+    logic [7:0] f__2;  //  port in loop with explicit name
+    logic [7:0] f__3;  //  port in loop with explicit name
+    logic [15:0] g;  //  conditional port
+    logic [15:0] h;  //  conditional port
+    logic [15:0] i;  //  conditional port
     logic clk;
     logic rst_n;
     logic clk2;
     logic clk2_rstn;
     assign clk   = ext_clk;
     assign rst_n = 1'd1;
-    logic [BITS-1:0] z;
-    assign z = '0;
+    logic [BITS-1:0] z;  //  Verilog parametric port
+    assign z = '0;  //  Verilog parametric port
 
     localparam logic [1:0] IDLE = 2'd0;
     logic [1:0] iii;
@@ -96,23 +96,27 @@ module signals #(
     assign clk2_rstn = 1'd1;
 
     assign clk2 = clk;
-    logic [7:0] aa;
-    assign aa = {8{1'b1}};
+    logic [7:0] aa;  //  inline assignment
+    assign aa = {8{1'b1}};  //  inline assignment
 
-    logic [7:0] bb;
-    initial bb = {8{1'b1}};
+    logic [7:0] bb;  //  inline initial assignment
+    initial bb = {8{1'b1}};  //  inline initial assignment
 
 
+    //  data struct as Python dictionary
     logic [ 7:0] s__ctrl;
     logic [31:0] s__data;
+    //  data struct as Python dictionary
     logic [ 7:0] t__ctrl;
     logic [31:0] t__data;
 
     assign t__ctrl = s__ctrl;
     assign t__data = s__data;
 
+    //  data struct as Python dictionary
     logic [ 7:0] s1__ctrl;
     logic [31:0] s1__data;
+    //  data struct as Python dictionary
     logic [ 7:0] t1__ctrl;
     logic [31:0] t1__data;
     assign t1__ctrl = d;
@@ -120,10 +124,12 @@ module signals #(
     assign t1__data = s1__data;
 
 
+    //  data struct as Python dictionary
     logic [7:0] s2__ctrl;
     logic [31:0] s2__data;
     logic s2__valid;
     logic s2__ready;
+    //  data struct as Python dictionary
     logic [7:0] t2__ctrl;
     logic [31:0] t2__data;
     logic t2__valid;

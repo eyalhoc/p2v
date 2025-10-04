@@ -94,6 +94,9 @@ class p2v_signal:
     def __str__(self):
         return self._name
 
+    def __int__(self):
+        raise RuntimeError("p2v_signal does not support int casting use class function .int() instead")
+
     def __hash__(self):
         return id(self)  # or use something meaningful
 
@@ -326,6 +329,10 @@ class p2v_signal:
         return "_" + sys._getframe(depth).f_code.co_name.replace("_", "")
 
     def _create(self, other, op, bits=None, auto_pad=True):
+        if isinstance(other, (float, int)) and hasattr(self._strct, "to_bits"):
+            if other != 0: # 0 has simplified operations since 0 int and 0 float are the same
+                self._remark = str(other)
+                other = self._strct.to_bits(other)
         func_name = self._get_func_name(2)
         if issubclass(type(self._strct), p2v_type):
             if hasattr(self._strct, func_name):
@@ -592,6 +599,14 @@ class p2v_signal:
         Returns signal bits
         """
         return self._bits
+
+    def int(self, int_bits=32):
+        """
+        Convert to int
+        """
+        if hasattr(self._strct, "to_int"):
+            return self._strct.to_int(self, int_bits=int_bits)
+        raise RuntimeError("undefined int function")
 
     def concat(self, num):
         """

@@ -1773,6 +1773,8 @@ class p2v():
             self._assert(hasattr(bits, "_bits"), f"p2v type {bits} must have ._bits attribute", fatal=True)
             strct = bits
             bits = bits._bits
+            if assign is not None and isinstance(assign, (float, int)) and hasattr(strct, "to_bits"):
+                assign = strct.to_bits(assign)
         else:
             strct = None
 
@@ -1790,7 +1792,7 @@ class p2v():
         else:
             enum = None
 
-        remark = self._get_remark(depth=2)
+        remark = self._get_remark(depth=3)
 
         rtrn = None
         if isinstance(name, clock):
@@ -1830,7 +1832,7 @@ class p2v():
             signal._initial = True
         return rtrn
 
-    def _get_mux(self, src, bits=1):
+    def _get_mux(self, src, bits=1, strct=None):
         space_prefix = 16 * " "
         src_expr = ""
         if len(src) == 1: # balanced encoded sel mux
@@ -1845,6 +1847,8 @@ class p2v():
             for n, (sel, val) in enumerate(src.items()):
                 if isinstance(val, list):
                     val = misc.concat(val)
+                elif isinstance(val, (float, int)) and hasattr(strct, "to_bits"):
+                    val = strct.to_bits(val)
                 elif isinstance(val, int):
                     val = misc.dec(val, bits)
                 last = (n + 1) == len(src)
@@ -1883,8 +1887,8 @@ class p2v():
             self._assign_clocks(tgt, src)
         elif isinstance(tgt, dict) and isinstance(src, dict): # struct assign
             self.assign(list(tgt.values()), list(src.values()), keyword=keyword, _remark=_remark, _allow_str=_allow_str)
-        elif isinstance(src, dict):
-            src_expr = self._get_mux(src, bits=tgt._bits)
+        elif isinstance(src, dict): # mux assign
+            src_expr = self._get_mux(src, bits=tgt._bits, strct=tgt._strct)
             self.assign(tgt, src_expr, keyword=keyword, _remark=_remark, _allow_str=True)
         else:
             tgt_is_strct = isinstance(tgt, p2v_signal) and isinstance(tgt._strct, p2v_struct)
@@ -1946,7 +1950,7 @@ class p2v():
         if isinstance(src, int):
             src = misc.dec(src, tgt._bits)
         elif isinstance(src, dict):
-            src_expr = self._get_mux(src, bits=tgt._bits)
+            src_expr = self._get_mux(src, bits=tgt._bits, strct=tgt._strct)
             src = p2v_signal(None, src_expr, bits=tgt._bits)
         elif isinstance(src, list):
             src = misc.concat(src)
