@@ -101,6 +101,9 @@ class p2v_signal:
         return self._create(other, "/")
 
     def __add__(self, other):
+        if isinstance(other, (int, float)):
+            if other == 0:
+                return self
         return self._create(other, "+")
 
     def __radd__(self, other):
@@ -110,6 +113,9 @@ class p2v_signal:
         raise RuntimeError(f"unsupported type {type(other)} with p2v signal")
 
     def __sub__(self, other):
+        if isinstance(other, (int, float)):
+            if other == 0:
+                return self
         return self._create(other, "-")
 
     def __rsub__(self, other):
@@ -119,6 +125,13 @@ class p2v_signal:
         raise RuntimeError(f"unsupported type {type(other)} with p2v signal")
 
     def __mul__(self, other):
+        if isinstance(other, (int, float)):
+            if other == 0:
+                return 0
+            if other == 1:
+                return self
+            if other == -1:
+                return -self
         return self._create(other, "*")
 
     def __rmul__(self, other):
@@ -191,7 +204,7 @@ class p2v_signal:
         raise RuntimeError(f"unsupported type {type(other)} with p2v signal")
 
     def __and__(self, other):
-        if isinstance(other, int):
+        if isinstance(other, (int, float)):
             if other == 0:
                 return 0
             other = misc.dec(other, self._bits)
@@ -204,7 +217,7 @@ class p2v_signal:
         raise RuntimeError(f"unsupported type {type(other)} with p2v signal")
 
     def __or__(self, other):
-        if isinstance(other, int):
+        if isinstance(other, (int, float)):
             if other == 0:
                 return self
             other = misc.dec(other, self._bits)
@@ -217,7 +230,7 @@ class p2v_signal:
         raise RuntimeError(f"unsupported type {type(other)} with p2v signal")
 
     def __xor__(self, other):
-        if isinstance(other, int):
+        if isinstance(other, (int, float)):
             if other == 0:
                 return self
             other = misc.dec(other, self._bits)
