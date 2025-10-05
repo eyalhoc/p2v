@@ -1872,13 +1872,13 @@ class p2v():
             keyword(str): prefix to assignment
 
         Returns:
-            None
+            tgt
         """
         self._assert_type(tgt, [clock, p2v_signal, list, dict])
         self._assert_type(src, [clock, p2v_signal, list, dict, int] + int(_allow_str) * [str])
         self._assert_type(keyword, str)
         if self._exists():
-            return
+            return tgt
         if isinstance(tgt, list):
             tgt = misc.concat(tgt)
         if isinstance(src, list):
@@ -1912,6 +1912,7 @@ class p2v():
                 self.line(f"{keyword} {tgt} = {src};", remark=_remark)
                 if isinstance(tgt, p2v_signal) and isinstance(src, p2v_signal):
                     tgt._pipe_stage = src._pipe_stage
+        return tgt
 
     def sample(self, clk, tgt, src, valid=None, reset=None, reset_val=0, bits=None, bypass=False, _allow_str=False):
         """

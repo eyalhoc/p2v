@@ -255,7 +255,7 @@ class p2v_signal:
             if hasattr(self._strct, func_name):
                 func = getattr(self._strct, func_name)
                 return func(self)
-        return self._signal(f"$abs({self})", bits=self._bits)
+        return self._signal(misc.cond(self[-1], misc.dec(0, self._bits) - self, self), bits=self._bits)
 
     def __lshift__(self, other):
         if isinstance(other, int):
@@ -600,12 +600,12 @@ class p2v_signal:
         """
         return self._bits
 
-    def int(self, int_bits=32):
+    def int(self, int_bits=16):
         """
         Convert to int
         """
-        if hasattr(self._strct, "to_int"):
-            return self._strct.to_int(self, int_bits=int_bits)
+        if hasattr(self._strct, "int"):
+            return self._strct.int(self, int_bits=int_bits)
         raise RuntimeError("undefined int function")
 
     def concat(self, num):
