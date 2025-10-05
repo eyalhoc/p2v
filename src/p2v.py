@@ -70,6 +70,7 @@ class p2v():
         self._sons = []
         self._parse = parse
         self._base_depth = 0
+        self._pipelines = {}
         self._pipe_stage = 0
 
         if parent is None:
@@ -837,6 +838,8 @@ class p2v():
                     self._assert(signal.check_driven(), f"{signal._kind} {name} is partially undriven, bits: {undriven_ranges}")
                 else:
                     self._assert(signal.check_driven(), f"{signal._kind} {name} is undriven")
+        for name, pipe in self._pipelines.items():
+            self._assert(pipe is None, f"pipeline {name} was not closed")
 
     def _check_mod_loop(self):
         count = {}
@@ -1353,7 +1356,10 @@ class p2v():
                         self.allow_unused(assert_never[name])
                         self.line(f"""always @(posedge {clk})
                                           if ({misc.cond(clk.rst_n is not None, f'{clk.rst_n} & ')}{assert_never[name]})
-                                              {err_str};
+                                              begin
+                                                  #100;
+                                                  {err_str};
+                                              end
                                     """)
 
 
@@ -1773,6 +1779,8 @@ class p2v():
             self._assert(hasattr(bits, "_bits"), f"p2v type {bits} must have ._bits attribute", fatal=True)
             strct = bits
             bits = bits._bits
+            if assign is not None and isinstance(assign, (float, int)) and hasattr(strct, "to_bits"):
+                assign = strct.to_bits(assign)
         else:
             strct = None
 
@@ -1790,7 +1798,7 @@ class p2v():
         else:
             enum = None
 
-        remark = self._get_remark(depth=2)
+        remark = self._get_remark(depth=3)
 
         rtrn = None
         if isinstance(name, clock):
@@ -1830,7 +1838,7 @@ class p2v():
             signal._initial = True
         return rtrn
 
-    def _get_mux(self, src, bits=1):
+    def _get_mux(self, src, bits=1, strct=None):
         space_prefix = 16 * " "
         src_expr = ""
         if len(src) == 1: # balanced encoded sel mux
@@ -1845,6 +1853,8 @@ class p2v():
             for n, (sel, val) in enumerate(src.items()):
                 if isinstance(val, list):
                     val = misc.concat(val)
+                elif isinstance(val, (float, int)) and hasattr(strct, "to_bits"):
+                    val = strct.to_bits(val)
                 elif isinstance(val, int):
                     val = misc.dec(val, bits)
                 last = (n + 1) == len(src)
@@ -1868,13 +1878,13 @@ class p2v():
             keyword(str): prefix to assignment
 
         Returns:
-            None
+            tgt
         """
         self._assert_type(tgt, [clock, p2v_signal, list, dict])
         self._assert_type(src, [clock, p2v_signal, list, dict, int] + int(_allow_str) * [str])
         self._assert_type(keyword, str)
         if self._exists():
-            return
+            return tgt
         if isinstance(tgt, list):
             tgt = misc.concat(tgt)
         if isinstance(src, list):
@@ -1883,8 +1893,8 @@ class p2v():
             self._assign_clocks(tgt, src)
         elif isinstance(tgt, dict) and isinstance(src, dict): # struct assign
             self.assign(list(tgt.values()), list(src.values()), keyword=keyword, _remark=_remark, _allow_str=_allow_str)
-        elif isinstance(src, dict):
-            src_expr = self._get_mux(src, bits=tgt._bits)
+        elif isinstance(src, dict): # mux assign
+            src_expr = self._get_mux(src, bits=tgt._bits, strct=tgt._strct)
             self.assign(tgt, src_expr, keyword=keyword, _remark=_remark, _allow_str=True)
         else:
             tgt_is_strct = isinstance(tgt, p2v_signal) and isinstance(tgt._strct, p2v_struct)
@@ -1906,8 +1916,11 @@ class p2v():
                 if _remark is None:
                     _remark = self._get_remark(depth=2)
                 self.line(f"{keyword} {tgt} = {src};", remark=_remark)
-                if isinstance(tgt, p2v_signal) and isinstance(src, p2v_signal):
-                    tgt._pipe_stage = src._pipe_stage
+                if isinstance(tgt, p2v_signal) and isinstance(src, p2v_signal) and src._pipe is not None:
+                    if tgt._kind == p2v_kind.OUTPUT:
+                        tgt._initial_pipe_stage = tgt._pipe_stage = self._pipe_stage
+                    tgt.pipe(src._pipe)
+        return tgt
 
     def sample(self, clk, tgt, src, valid=None, reset=None, reset_val=0, bits=None, bypass=False, _allow_str=False):
         """
@@ -1946,7 +1959,7 @@ class p2v():
         if isinstance(src, int):
             src = misc.dec(src, tgt._bits)
         elif isinstance(src, dict):
-            src_expr = self._get_mux(src, bits=tgt._bits)
+            src_expr = self._get_mux(src, bits=tgt._bits, strct=tgt._strct)
             src = p2v_signal(None, src_expr, bits=tgt._bits)
         elif isinstance(src, list):
             src = misc.concat(src)
@@ -2205,7 +2218,9 @@ class p2v():
         self._assert_type(valid, p2v_signal)
         self._assert_type(ready, [None, p2v_signal])
         self._assert_type(bypass, bool)
+        self.assert_static(valid not in self._pipelines or self._pipelines[valid] is None, f"open pipeline of {valid} already exists")
         pipe = p2v_pipe(parent=self, clk=clk, valid=valid, ready=ready, bypass=bypass)
+        self._pipelines[valid] = pipe
         for _ in range(valid._pipe_stage):
             pipe.advance()
         return pipe

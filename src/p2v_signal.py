@@ -88,11 +88,15 @@ class p2v_signal:
             self._driven_bits = [False] * self._bits
         self._initial_pipe_stage = 0
         self._pipe_stage = 0
+        self._pipe = None
         self._initial = False
         self._remark = remark
 
     def __str__(self):
         return self._name
+
+    def __int__(self):
+        raise RuntimeError("p2v_signal does not support int casting use class function .int() instead")
 
     def __hash__(self):
         return id(self)  # or use something meaningful
@@ -101,6 +105,9 @@ class p2v_signal:
         return self._create(other, "/")
 
     def __add__(self, other):
+        if isinstance(other, (int, float)):
+            if other == 0:
+                return self
         return self._create(other, "+")
 
     def __radd__(self, other):
@@ -110,6 +117,9 @@ class p2v_signal:
         raise RuntimeError(f"unsupported type {type(other)} with p2v signal")
 
     def __sub__(self, other):
+        if isinstance(other, (int, float)):
+            if other == 0:
+                return self
         return self._create(other, "-")
 
     def __rsub__(self, other):
@@ -119,6 +129,13 @@ class p2v_signal:
         raise RuntimeError(f"unsupported type {type(other)} with p2v signal")
 
     def __mul__(self, other):
+        if isinstance(other, (int, float)):
+            if other == 0:
+                return 0
+            if other == 1:
+                return self
+            if other == -1:
+                return -self
         return self._create(other, "*")
 
     def __rmul__(self, other):
@@ -191,7 +208,7 @@ class p2v_signal:
         raise RuntimeError(f"unsupported type {type(other)} with p2v signal")
 
     def __and__(self, other):
-        if isinstance(other, int):
+        if isinstance(other, (int, float)):
             if other == 0:
                 return 0
             other = misc.dec(other, self._bits)
@@ -204,7 +221,7 @@ class p2v_signal:
         raise RuntimeError(f"unsupported type {type(other)} with p2v signal")
 
     def __or__(self, other):
-        if isinstance(other, int):
+        if isinstance(other, (int, float)):
             if other == 0:
                 return self
             other = misc.dec(other, self._bits)
@@ -217,7 +234,7 @@ class p2v_signal:
         raise RuntimeError(f"unsupported type {type(other)} with p2v signal")
 
     def __xor__(self, other):
-        if isinstance(other, int):
+        if isinstance(other, (int, float)):
             if other == 0:
                 return self
             other = misc.dec(other, self._bits)
@@ -234,12 +251,7 @@ class p2v_signal:
         return self._signal(expr, bits=self._bits)
 
     def __abs__(self):
-        func_name = self._get_func_name()
-        if issubclass(type(self._strct), p2v_type):
-            if hasattr(self._strct, func_name):
-                func = getattr(self._strct, func_name)
-                return func(self)
-        return self._signal(f"$abs({self})", bits=self._bits)
+        return self.abs()
 
     def __lshift__(self, other):
         if isinstance(other, int):
@@ -313,6 +325,10 @@ class p2v_signal:
         return "_" + sys._getframe(depth).f_code.co_name.replace("_", "")
 
     def _create(self, other, op, bits=None, auto_pad=True):
+        if isinstance(other, (float, int)) and hasattr(self._strct, "to_bits"):
+            if other != 0: # 0 has simplified operations since 0 int and 0 float are the same
+                self._remark = str(other)
+                other = self._strct.to_bits(other)
         func_name = self._get_func_name(2)
         if issubclass(type(self._strct), p2v_type):
             if hasattr(self._strct, func_name):
@@ -580,6 +596,22 @@ class p2v_signal:
         """
         return self._bits
 
+    def int(self, int_bits=16):
+        """
+        Convert to int
+        """
+        if hasattr(self._strct, "int"):
+            return self._strct.int(self, int_bits=int_bits)
+        raise RuntimeError("undefined int function")
+
+    def abs(self):
+        """
+        Convert to int
+        """
+        if hasattr(self._strct, "abs"):
+            return self._strct.abs(self)
+        return self._signal(misc.cond(self[-1], misc.dec(0, self._bits) - self, self), bits=self._bits)
+
     def concat(self, num):
         """
         Verilog concatenation of signal like {NUM{x}}.
@@ -602,6 +634,9 @@ class p2v_signal:
         Returns:
             synched signal
         """
+        pipeline.parent.assert_static(self._pipe is None or self._pipe == pipeline, f"{self} used multiple pipelines at the same time")
+        self._pipe = pipeline
+
         signal = None
         if pipeline.parent._pipe_stage == 0:
             return self
