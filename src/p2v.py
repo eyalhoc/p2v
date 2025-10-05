@@ -70,6 +70,7 @@ class p2v():
         self._sons = []
         self._parse = parse
         self._base_depth = 0
+        self._pipelines = {}
         self._pipe_stage = 0
 
         if parent is None:
@@ -837,6 +838,8 @@ class p2v():
                     self._assert(signal.check_driven(), f"{signal._kind} {name} is partially undriven, bits: {undriven_ranges}")
                 else:
                     self._assert(signal.check_driven(), f"{signal._kind} {name} is undriven")
+        for name, pipe in self._pipelines.items():
+            self._assert(pipe is None, f"pipeline {name} was not closed")
 
     def _check_mod_loop(self):
         count = {}
@@ -1353,7 +1356,10 @@ class p2v():
                         self.allow_unused(assert_never[name])
                         self.line(f"""always @(posedge {clk})
                                           if ({misc.cond(clk.rst_n is not None, f'{clk.rst_n} & ')}{assert_never[name]})
-                                              {err_str};
+                                              begin
+                                                  #100;
+                                                  {err_str};
+                                              end
                                     """)
 
 
@@ -1910,8 +1916,10 @@ class p2v():
                 if _remark is None:
                     _remark = self._get_remark(depth=2)
                 self.line(f"{keyword} {tgt} = {src};", remark=_remark)
-                if isinstance(tgt, p2v_signal) and isinstance(src, p2v_signal):
-                    tgt._pipe_stage = src._pipe_stage
+                if isinstance(tgt, p2v_signal) and isinstance(src, p2v_signal) and src._pipe is not None:
+                    if tgt._kind == p2v_kind.OUTPUT:
+                        tgt._initial_pipe_stage = tgt._pipe_stage = self._pipe_stage
+                    tgt.pipe(src._pipe)
         return tgt
 
     def sample(self, clk, tgt, src, valid=None, reset=None, reset_val=0, bits=None, bypass=False, _allow_str=False):
@@ -2210,7 +2218,9 @@ class p2v():
         self._assert_type(valid, p2v_signal)
         self._assert_type(ready, [None, p2v_signal])
         self._assert_type(bypass, bool)
+        self.assert_static(valid not in self._pipelines or self._pipelines[valid] is None, f"open pipeline of {valid} already exists")
         pipe = p2v_pipe(parent=self, clk=clk, valid=valid, ready=ready, bypass=bypass)
+        self._pipelines[valid] = pipe
         for _ in range(valid._pipe_stage):
             pipe.advance()
         return pipe

@@ -30,6 +30,11 @@ class p2v_pipe:
         self._stage_cnt()
 
 
+    def end(self):
+        """ close pipeline """
+        self.parent._pipelines[self.valid] = None
+        return self.stage_valid
+
     def advance(self, bypass=False):
         """ advance pipeline stage """
         if not bypass:
@@ -39,6 +44,7 @@ class p2v_pipe:
         return self.stage_valid
 
     def _stage_cnt(self):
+        self.parent.tb.syn_off()
         cnt_name = self._get_delay_name("stage_cnt", self.parent._pipe_stage)
         self.parent.logic(cnt_name, 8, initial=0, _allow_str=True)
         valid = self.stage_valid
@@ -49,6 +55,7 @@ class p2v_pipe:
                                      {cnt_name} = {cnt_name} + 1;
                           """)
         self.parent._set_used(cnt_name)
+        self.parent.tb.syn_on()
 
     def _get_delay_name(self, name, stage):
         name = str(name)

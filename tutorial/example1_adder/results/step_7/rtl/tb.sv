@@ -99,8 +99,10 @@ module tb ();
     assign assert_never__mismatch_expected_0x_0h_actual_0x_0h_expected_o = ~(~diff);
 
     always @(posedge clk)
-        if (resetn & assert_never__mismatch_expected_0x_0h_actual_0x_0h_expected_o)
+        if (resetn & assert_never__mismatch_expected_0x_0h_actual_0x_0h_expected_o) begin
+            #100;
             $fatal(1, "mismatch: expected=0x%0h, actual=0x%0h", expected, o);
+        end
 
     logic [31:0] _count_timeout__clk;
     initial _count_timeout__clk = 32'd0;
@@ -117,8 +119,10 @@ module tb ();
     assign assert_never__reached_timeout_after_64_cycles_of_clk = ~((_count_timeout__clk < 32'd64));
 
     always @(posedge clk)
-        if (resetn & assert_never__reached_timeout_after_64_cycles_of_clk)
+        if (resetn & assert_never__reached_timeout_after_64_cycles_of_clk) begin
+            #100;
             $fatal(1, "reached timeout after 64 cycles of clk");
+        end
 
 
     initial begin

@@ -88,6 +88,7 @@ class p2v_signal:
             self._driven_bits = [False] * self._bits
         self._initial_pipe_stage = 0
         self._pipe_stage = 0
+        self._pipe = None
         self._initial = False
         self._remark = remark
 
@@ -250,12 +251,7 @@ class p2v_signal:
         return self._signal(expr, bits=self._bits)
 
     def __abs__(self):
-        func_name = self._get_func_name()
-        if issubclass(type(self._strct), p2v_type):
-            if hasattr(self._strct, func_name):
-                func = getattr(self._strct, func_name)
-                return func(self)
-        return self._signal(misc.cond(self[-1], misc.dec(0, self._bits) - self, self), bits=self._bits)
+        return self.abs()
 
     def __lshift__(self, other):
         if isinstance(other, int):
@@ -608,6 +604,14 @@ class p2v_signal:
             return self._strct.int(self, int_bits=int_bits)
         raise RuntimeError("undefined int function")
 
+    def abs(self):
+        """
+        Convert to int
+        """
+        if hasattr(self._strct, "abs"):
+            return self._strct.abs(self)
+        return self._signal(misc.cond(self[-1], misc.dec(0, self._bits) - self, self), bits=self._bits)
+
     def concat(self, num):
         """
         Verilog concatenation of signal like {NUM{x}}.
@@ -630,6 +634,9 @@ class p2v_signal:
         Returns:
             synched signal
         """
+        pipeline.parent.assert_static(self._pipe is None or self._pipe == pipeline, f"{self} used multiple pipelines at the same time")
+        self._pipe = pipeline
+
         signal = None
         if pipeline.parent._pipe_stage == 0:
             return self
