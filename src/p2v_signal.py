@@ -90,6 +90,7 @@ class p2v_signal:
         self._pipe_stage = 0
         self._pipe = None
         self._initial = False
+        self._const = False
         self._remark = remark
 
     def __str__(self):
@@ -634,7 +635,8 @@ class p2v_signal:
         Returns:
             synched signal
         """
-        pipeline.parent.assert_static(self._pipe is None or self._pipe == pipeline, f"{self} used multiple pipelines at the same time")
+        pipeline.parent._assert(not self._const, f"constant signal {self} should not be pipelined")
+        pipeline.parent._assert(self._pipe is None or self._pipe == pipeline, f"{self} used multiple pipelines at the same time", fatal=True)
         self._pipe = pipeline
 
         signal = None
@@ -643,8 +645,14 @@ class p2v_signal:
 
         if self._pipe_stage < pipeline.parent._pipe_stage:
             if not pipeline._signal_exists(self._name, stage=self._initial_pipe_stage):
+                if self._initial_pipe_stage > 0:
+                    name_d_initial = pipeline._get_delay_name(self._name, stage=0)
+                    src = pipeline.parent.logic(name_d_initial, bits=self._bits, assign=self, _allow_str=True)
+                else:
+                    src = self
+
                 name_d_initial = pipeline._get_delay_name(self._name, stage=self._initial_pipe_stage)
-                signal = pipeline.parent.logic(name_d_initial, bits=self._bits, assign=self, _allow_str=True)
+                signal = pipeline.parent.logic(name_d_initial, bits=self._bits, assign=src, _allow_str=True)
                 signal._strct = self._strct
 
             for i in range(self._initial_pipe_stage, pipeline.parent._pipe_stage):
