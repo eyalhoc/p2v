@@ -769,6 +769,10 @@ class p2v():
             for name in self._get_names(wire):
                 if self._check_declared(name, allow=allow):
                     self._signals[name]._used = True
+                    if self._signals[name]._pipe is not None:
+                        delay_name = self._signals[name]._pipe._get_delay_name(name, stage=1)
+                        delay_name_is_declared = self._check_declared(delay_name, allow=True) # means that signal stage is 0
+                        self._assert(not delay_name_is_declared, f"pipelined signal {name} is used without .pipe()", fatal=True)
 
     def _set_driven_str(self, wire, allow=False):
         arrays = []
@@ -1779,15 +1783,13 @@ class p2v():
             self._assert(hasattr(bits, "_bits"), f"p2v type {bits} must have ._bits attribute", fatal=True)
             strct = bits
             bits = bits._bits
-            if assign is not None and isinstance(assign, (float, int)) and hasattr(strct, "to_bits"):
-                assign = strct.to_bits(assign)
         else:
             strct = None
 
         self._assert_type(name, [clock, p2v_signal, str, list])
         self._assert_type(bits, SIGNAL_TYPES)
-        self._assert_type(assign, [p2v_signal, int, str, dict, None])
-        self._assert_type(initial, [p2v_signal, int, str, dict, None])
+        self._assert_type(assign, [p2v_signal, int, str, dict, None, float])
+        self._assert_type(initial, [p2v_signal, int, str, dict, None, float])
 
         if isinstance(name, p2v_signal):
             name = str(name)
@@ -1880,6 +1882,10 @@ class p2v():
         Returns:
             tgt
         """
+        if isinstance(tgt, p2v_signal) and isinstance(src, (float, int)) and hasattr(tgt._strct, "to_bits"): # assign to numeric const
+            src = tgt._strct.to_bits(src)
+            tgt._const = True
+
         self._assert_type(tgt, [clock, p2v_signal, list, dict])
         self._assert_type(src, [clock, p2v_signal, list, dict, int] + int(_allow_str) * [str])
         self._assert_type(keyword, str)
@@ -1906,6 +1912,7 @@ class p2v():
                 if keyword != "":
                     self._set_driven(tgt)
                 if isinstance(src, int):
+                    tgt._const = True
                     bits = self._get_signal_bits(tgt)
                     if isinstance(tgt._bits, str): # Verilog parameter width
                         src = f"'{src}"

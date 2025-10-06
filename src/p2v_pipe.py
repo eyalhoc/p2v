@@ -38,6 +38,9 @@ class p2v_pipe:
     def advance(self, bypass=False):
         """ advance pipeline stage """
         if not bypass:
+            if self.parent._pipe_stage == 0:
+                delay_name = self._get_delay_name(self.valid, self.parent._pipe_stage)
+                self.parent.logic(delay_name, assign=self.valid, _allow_str=True)
             self.stage_valid = self._sample(self.valid, stage=self.parent._pipe_stage)
             self.parent._pipe_stage += 1
             self._stage_cnt()
@@ -59,9 +62,6 @@ class p2v_pipe:
 
     def _get_delay_name(self, name, stage):
         name = str(name)
-        if stage == 0:
-            return name
-
         if not name.startswith("_"):
             name = f"_{name}"
         return f"{name}_d{stage}"
