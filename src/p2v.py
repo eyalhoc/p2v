@@ -1785,6 +1785,8 @@ class p2v():
             bits = bits._bits
         else:
             strct = None
+        if isinstance(assign, bool) and bits == 1:
+            assign = int(assign)
 
         self._assert_type(name, [clock, p2v_signal, str, list])
         self._assert_type(bits, SIGNAL_TYPES)
@@ -1885,6 +1887,8 @@ class p2v():
         if isinstance(tgt, p2v_signal) and isinstance(src, (float, int)) and hasattr(tgt._strct, "to_bits"): # assign to numeric const
             src = tgt._strct.to_bits(src)
             tgt._const = True
+        if isinstance(tgt, p2v_signal) and isinstance(src, bool) and tgt._bits == 1:
+            src = int(src)
 
         self._assert_type(tgt, [clock, p2v_signal, list, dict])
         self._assert_type(src, [clock, p2v_signal, list, dict, int] + int(_allow_str) * [str])
