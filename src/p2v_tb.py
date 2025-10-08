@@ -636,6 +636,8 @@ class p2v_tb():
 
         def push(self, val):
             """ push to fifo """
+            if isinstance(val, list):
+                val = misc.concat(val)
             s = f"{self.name}.push_back({val});"
             self.parent.line(s)
 

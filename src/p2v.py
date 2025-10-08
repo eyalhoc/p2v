@@ -655,7 +655,7 @@ class p2v():
             setattr(data, "pins", pins)
             try:
                 pickle.dump(data, f)
-            except TypeError: # TBD - do not use pickle for this - think of something else
+            except (TypeError, AttributeError): # TBD - do not use pickle for this - think of something else
                 return False
         s = "import pickle\n"
         s += f"with open('{pickle_file}', 'rb') as f:\n"
@@ -770,9 +770,10 @@ class p2v():
                 if self._check_declared(name, allow=allow):
                     self._signals[name]._used = True
                     if self._signals[name]._pipe is not None:
-                        delay_name = self._signals[name]._pipe._get_delay_name(name, stage=1)
-                        delay_name_is_declared = self._check_declared(delay_name, allow=True) # means that signal stage is 0
-                        self._assert(not delay_name_is_declared, f"pipelined signal {name} is used without .pipe()", fatal=True)
+                        for i in range(1, self._pipe_stage):
+                            delay_name = self._signals[name]._pipe._get_delay_name(name, stage=i)
+                            delay_name_is_declared = self._check_declared(delay_name, allow=True)
+                            self._assert(not delay_name_is_declared, f"pipelined signal {name} is used without .pipe()", fatal=True)
 
     def _set_driven_str(self, wire, allow=False):
         arrays = []
@@ -2238,7 +2239,7 @@ class p2v():
 
 # top constructor
 if __name__ != "__main__":
-    try:
-        p2v()
-    except ImportError:
-        pass
+    #try:
+    p2v()
+    #except ImportError:
+    #    pass
