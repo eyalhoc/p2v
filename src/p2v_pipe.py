@@ -73,6 +73,15 @@ class p2v_pipe:
             name = f"_{name}"
         return f"{name}_d{stage}"
 
+    def _get_orig_name(self, name):
+        if name.startswith("_"):
+            name = name.replace("_", "", 1)
+        if "_d" in name:
+            stage = name.split("_d")[-1]
+            if stage.isdigit():
+                name = name[:-len(f"_d{stage}")]
+        return name
+
     def _get_signal(self, name, stage=0):
         name_d = self._get_delay_name(name, stage=stage)
         return self.parent._signals[name_d]

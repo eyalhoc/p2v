@@ -743,6 +743,19 @@ class p2v():
             self._assert(name in self._signals, f"{name} was not declared", fatal=True)
         return True
 
+    def _check_pipe(self, name):
+        if self._signals[name]._pipe is not None:
+            orig_name = self._signals[name]._pipe._get_orig_name(name)
+            if name == orig_name:
+                delay_name = self._signals[name]._pipe._get_delay_name(name, stage=0)
+                delay0_name_is_declared = self._check_declared(delay_name, allow=True)
+                if self._pipe_stage > self._signals[name]._initial_pipe_stage: # was not just created
+                    self._assert(delay0_name_is_declared, f"pipelined signal {name} is used without .pipe()", fatal=True)
+            for i in range(1, self._pipe_stage):
+                delay_name = self._signals[name]._pipe._get_delay_name(name, stage=i)
+                delay_name_is_declared = self._check_declared(delay_name, allow=True)
+                self._assert(not delay_name_is_declared, f"pipelined signal {name} is used without .pipe()", fatal=True)
+
     def _set_used(self, wire, allow=False, drive=True):
         if wire is None:
             return
@@ -769,11 +782,7 @@ class p2v():
             for name in self._get_names(wire):
                 if self._check_declared(name, allow=allow):
                     self._signals[name]._used = True
-                    if self._signals[name]._pipe is not None:
-                        for i in range(1, self._pipe_stage):
-                            delay_name = self._signals[name]._pipe._get_delay_name(name, stage=i)
-                            delay_name_is_declared = self._check_declared(delay_name, allow=True)
-                            self._assert(not delay_name_is_declared, f"pipelined signal {name} is used without .pipe()", fatal=True)
+                    self._check_pipe(name)
 
     def _set_driven_str(self, wire, allow=False):
         arrays = []
@@ -1361,10 +1370,7 @@ class p2v():
                         self.allow_unused(assert_never[name])
                         self.line(f"""always @(posedge {clk})
                                           if ({misc.cond(clk.rst_n is not None, f'{clk.rst_n} & ')}{assert_never[name]})
-                                              begin
-                                                  #100;
-                                                  {err_str};
-                                              end
+                                              {err_str};
                                     """)
 
 

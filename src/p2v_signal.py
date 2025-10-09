@@ -332,6 +332,14 @@ class p2v_signal:
             bits = self._bits
         return self._signal(expr, bits=bits)
 
+    def _update_strct(self, other):
+        if isinstance(other, list):
+            for o in other:
+                self._update_strct(o)
+        elif isinstance(other, p2v_signal) and other._strct is not None:
+            self._strct = other._strct
+            self._pipe = other._pipe
+
     def _declare_bits_dim(self, bits):
         assert isinstance(bits, (str, int)), bits
         if isinstance(bits, int):
