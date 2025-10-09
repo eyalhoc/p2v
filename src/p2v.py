@@ -655,7 +655,7 @@ class p2v():
             setattr(data, "pins", pins)
             try:
                 pickle.dump(data, f)
-            except TypeError: # TBD - do not use pickle for this - think of something else
+            except (TypeError, AttributeError): # TBD - do not use pickle for this - think of something else
                 return False
         s = "import pickle\n"
         s += f"with open('{pickle_file}', 'rb') as f:\n"
@@ -743,6 +743,19 @@ class p2v():
             self._assert(name in self._signals, f"{name} was not declared", fatal=True)
         return True
 
+    def _check_pipe(self, name):
+        if self._signals[name]._pipe is not None:
+            orig_name = self._signals[name]._pipe._get_orig_name(name)
+            if name == orig_name:
+                delay_name = self._signals[name]._pipe._get_delay_name(name, stage=0)
+                delay0_name_is_declared = self._check_declared(delay_name, allow=True)
+                if self._pipe_stage > self._signals[name]._initial_pipe_stage: # was not just created
+                    self._assert(delay0_name_is_declared, f"pipelined signal {name} is used without .pipe()", fatal=True)
+            for i in range(1, self._pipe_stage):
+                delay_name = self._signals[name]._pipe._get_delay_name(name, stage=i)
+                delay_name_is_declared = self._check_declared(delay_name, allow=True)
+                self._assert(not delay_name_is_declared, f"pipelined signal {name} is used without .pipe()", fatal=True)
+
     def _set_used(self, wire, allow=False, drive=True):
         if wire is None:
             return
@@ -769,10 +782,7 @@ class p2v():
             for name in self._get_names(wire):
                 if self._check_declared(name, allow=allow):
                     self._signals[name]._used = True
-                    if self._signals[name]._pipe is not None:
-                        delay_name = self._signals[name]._pipe._get_delay_name(name, stage=1)
-                        delay_name_is_declared = self._check_declared(delay_name, allow=True) # means that signal stage is 0
-                        self._assert(not delay_name_is_declared, f"pipelined signal {name} is used without .pipe()", fatal=True)
+                    self._check_pipe(name)
 
     def _set_driven_str(self, wire, allow=False):
         arrays = []
@@ -1360,10 +1370,7 @@ class p2v():
                         self.allow_unused(assert_never[name])
                         self.line(f"""always @(posedge {clk})
                                           if ({misc.cond(clk.rst_n is not None, f'{clk.rst_n} & ')}{assert_never[name]})
-                                              begin
-                                                  #100;
-                                                  {err_str};
-                                              end
+                                              {err_str};
                                     """)
 
 
@@ -1785,6 +1792,8 @@ class p2v():
             bits = bits._bits
         else:
             strct = None
+        if isinstance(assign, bool) and bits == 1:
+            assign = int(assign)
 
         self._assert_type(name, [clock, p2v_signal, str, list])
         self._assert_type(bits, SIGNAL_TYPES)
@@ -1885,6 +1894,8 @@ class p2v():
         if isinstance(tgt, p2v_signal) and isinstance(src, (float, int)) and hasattr(tgt._strct, "to_bits"): # assign to numeric const
             src = tgt._strct.to_bits(src)
             tgt._const = True
+        if isinstance(tgt, p2v_signal) and isinstance(src, bool) and tgt._bits == 1:
+            src = int(src)
 
         self._assert_type(tgt, [clock, p2v_signal, list, dict])
         self._assert_type(src, [clock, p2v_signal, list, dict, int] + int(_allow_str) * [str])
@@ -2234,7 +2245,7 @@ class p2v():
 
 # top constructor
 if __name__ != "__main__":
-    try:
-        p2v()
-    except ImportError:
-        pass
+    #try:
+    p2v()
+    #except ImportError:
+    #    pass

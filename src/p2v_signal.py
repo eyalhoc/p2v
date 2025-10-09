@@ -112,9 +112,8 @@ class p2v_signal:
         return self._create(other, "+")
 
     def __radd__(self, other):
-        if isinstance(other, int):
-            other = misc.dec(other, self._bits)
-            return other.__add__(self)
+        if isinstance(other, (int, float)):
+            return self.__add__(other)
         raise RuntimeError(f"unsupported type {type(other)} with p2v signal")
 
     def __sub__(self, other):
@@ -124,9 +123,8 @@ class p2v_signal:
         return self._create(other, "-")
 
     def __rsub__(self, other):
-        if isinstance(other, int):
-            other = misc.dec(other, self._bits)
-            return other.__sub__(self)
+        if isinstance(other, (int, float)):
+            return self.__sub__(other)
         raise RuntimeError(f"unsupported type {type(other)} with p2v signal")
 
     def __mul__(self, other):
@@ -140,9 +138,8 @@ class p2v_signal:
         return self._create(other, "*")
 
     def __rmul__(self, other):
-        if isinstance(other, int):
-            other = misc.dec(other, self._bits)
-            return other.__mul__(self)
+        if isinstance(other, (int, float)):
+            return self.__mul__(other)
         raise RuntimeError(f"unsupported type {type(other)} with p2v signal")
 
     def __neg__(self):
@@ -158,54 +155,48 @@ class p2v_signal:
         return self._create(other, "==", bits=1)
 
     def __req__(self, other):
-        if isinstance(other, int):
-            other = misc.dec(other, self._bits)
-            return other.__eq__(other)
+        if isinstance(other, (int, float)):
+            return self.__eq__(other)
         raise RuntimeError(f"unsupported type {type(other)} with p2v signal")
 
     def __ne__(self, other):
         return self._create(other, "!=", bits=1)
 
     def __rne__(self, other):
-        if isinstance(other, int):
-            other = misc.dec(other, self._bits)
-            return other.__ne__(other)
+        if isinstance(other, (int, float)):
+            return self.__ne__(other)
         raise RuntimeError(f"unsupported type {type(other)} with p2v signal")
 
     def __lt__(self, other):
         return self._create(other, "<", bits=1)
 
     def __rlt__(self, other):
-        if isinstance(other, int):
-            other = misc.dec(other, self._bits)
-            return other.__lt__(other)
+        if isinstance(other, (int, float)):
+            return self.__lt__(other)
         raise RuntimeError(f"unsupported type {type(other)} with p2v signal")
 
     def __le__(self, other):
         return self._create(other, "<=", bits=1)
 
     def __rle__(self, other):
-        if isinstance(other, int):
-            other = misc.dec(other, self._bits)
-            return other.__le__(other)
+        if isinstance(other, (int, float)):
+            return self.__le__(other)
         raise RuntimeError(f"unsupported type {type(other)} with p2v signal")
 
     def __gt__(self, other):
         return self._create(other, ">", bits=1)
 
     def __rgt__(self, other):
-        if isinstance(other, int):
-            other = misc.dec(other, self._bits)
-            return other.__gt__(other)
+        if isinstance(other, (int, float)):
+            return self.__gt__(other)
         raise RuntimeError(f"unsupported type {type(other)} with p2v signal")
 
     def __ge__(self, other):
         return self._create(other, ">=", bits=1)
 
     def __rge__(self, other):
-        if isinstance(other, int):
-            other = misc.dec(other, self._bits)
-            return other.__ge__(other)
+        if isinstance(other, (int, float)):
+            return self.__ge__(other)
         raise RuntimeError(f"unsupported type {type(other)} with p2v signal")
 
     def __and__(self, other):
@@ -216,9 +207,8 @@ class p2v_signal:
         return self._create(other, "&")
 
     def __rand__(self, other):
-        if isinstance(other, int):
-            other = misc.dec(other, self._bits)
-            return other.__and__(other)
+        if isinstance(other, (int, float)):
+            return self.__and__(other)
         raise RuntimeError(f"unsupported type {type(other)} with p2v signal")
 
     def __or__(self, other):
@@ -229,9 +219,8 @@ class p2v_signal:
         return self._create(other, "|")
 
     def __ror__(self, other):
-        if isinstance(other, int):
-            other = misc.dec(other, self._bits)
-            return other.__or__(other)
+        if isinstance(other, (int, float)):
+            return self.__or__(other)
         raise RuntimeError(f"unsupported type {type(other)} with p2v signal")
 
     def __xor__(self, other):
@@ -242,9 +231,8 @@ class p2v_signal:
         return self._create(other, "^")
 
     def __rxor__(self, other):
-        if isinstance(other, int):
-            other = misc.dec(other, self._bits)
-            return other.__xor__(other)
+        if isinstance(other, (int, float)):
+            return self.__xor__(other)
         raise RuntimeError(f"unsupported type {type(other)} with p2v signal")
 
     def __invert__(self):
@@ -262,8 +250,7 @@ class p2v_signal:
 
     def __rlshift__(self, other):
         if isinstance(other, int):
-            other = misc.dec(other, self._bits)
-            return other.__lshift__(other)
+            return self.__lshift__(other)
         raise RuntimeError(f"unsupported type {type(other)} with p2v signal")
 
     def __rshift__(self, other):
@@ -278,8 +265,7 @@ class p2v_signal:
 
     def __rrshift__(self, other):
         if isinstance(other, int):
-            other = misc.dec(other, self._bits)
-            return other.__rshift__(other)
+            return self.__rshift__(other)
         raise RuntimeError(f"unsupported type {type(other)} with p2v signal")
 
     def __getitem__(self, key):
@@ -345,6 +331,14 @@ class p2v_signal:
         if bits is None:
             bits = self._bits
         return self._signal(expr, bits=bits)
+
+    def _update_strct(self, other):
+        if isinstance(other, list):
+            for o in other:
+                self._update_strct(o)
+        elif isinstance(other, p2v_signal) and other._strct is not None:
+            self._strct = other._strct
+            self._pipe = other._pipe
 
     def _declare_bits_dim(self, bits):
         assert isinstance(bits, (str, int)), bits
@@ -589,7 +583,9 @@ class p2v_signal:
         Returns:
             p2v_signal
         """
-        return misc.pad(bits-self._bits, self, val=val)
+        if bits >= self._bits:
+            return misc.pad(bits-self._bits, self, val=val)
+        return self[:bits]
 
     def bits(self):
         """
@@ -659,6 +655,7 @@ class p2v_signal:
                 if not pipeline._signal_exists(self._name, stage=i+1):
                     signal = pipeline._sample(self._name, bits=self._bits, stage=i)
             self._pipe_stage = pipeline.parent._pipe_stage
+            signal._pipe = self._pipe
             return signal
 
         if self._initial_pipe_stage > 0 and (self._initial_pipe_stage == self._pipe_stage): # never progressed

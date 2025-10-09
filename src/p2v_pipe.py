@@ -37,6 +37,8 @@ class p2v_pipe:
 
     def advance(self, bypass=False):
         """ advance pipeline stage """
+        self.parent._assert(self.valid in self.parent._pipelines, "trying to advance undeclared pipeline", fatal=True)
+        self.parent._assert(self.parent._pipelines[self.valid] is not None, "trying to advance a closed pipeline", fatal=True)
         if not bypass:
             if self.parent._pipe_stage == 0:
                 delay_name = self._get_delay_name(self.valid, self.parent._pipe_stage)
@@ -44,6 +46,11 @@ class p2v_pipe:
             self.stage_valid = self._sample(self.valid, stage=self.parent._pipe_stage)
             self.parent._pipe_stage += 1
             self._stage_cnt()
+            self.parent.line("")
+            self.parent.remark("=" * 32)
+            self.parent.remark(f" ==== PIPELINE STAGE {self.parent._pipe_stage}")
+            self.parent.remark("=" * 32)
+            self.parent.line("")
         return self.stage_valid
 
     def _stage_cnt(self):
@@ -65,6 +72,15 @@ class p2v_pipe:
         if not name.startswith("_"):
             name = f"_{name}"
         return f"{name}_d{stage}"
+
+    def _get_orig_name(self, name):
+        if name.startswith("_"):
+            name = name.replace("_", "", 1)
+        if "_d" in name:
+            stage = name.split("_d")[-1]
+            if stage.isdigit():
+                name = name[:-len(f"_d{stage}")]
+        return name
 
     def _get_signal(self, name, stage=0):
         name_d = self._get_delay_name(name, stage=stage)
