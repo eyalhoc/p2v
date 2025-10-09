@@ -142,6 +142,20 @@ class p2v_signal:
             return self.__mul__(other)
         raise RuntimeError(f"unsupported type {type(other)} with p2v signal")
 
+    def __pow__(self, other):
+        raise RuntimeError("operand pow is unsupported for p2v signal")
+
+    def __rpow__(self, other):
+        if isinstance(other, (int, float)):
+            assert int(other) == other, f"fractional float {other} is not supported with pow"
+            other = int(other)
+            if misc.is_pow2(other):
+                base = misc.dec(misc.log2(other), bits=self._bits)
+                base._update_strct(self)
+                return base << self
+            raise RuntimeError(f"pow of {other} must be a power of 2")
+        raise RuntimeError(f"unsupported type {type(other)} with p2v signal")
+
     def __neg__(self):
         func_name = self._get_func_name()
         if issubclass(type(self._strct), p2v_type):

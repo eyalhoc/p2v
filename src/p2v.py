@@ -1358,7 +1358,7 @@ class p2v():
             else:
                 self._set_used(clk)
                 disable_str = misc.cond(clk.rst_n is not None, f" disable iff (!{clk.rst_n})")
-                self.line(f"""{name}_{property_type}: {property_type} property (@(posedge {clk}){disable_str} {condition})
+                self.line(f"""_{name}_{property_type}: {property_type} property (@(posedge {clk}){disable_str} {condition})
                                          {misc.cond(property_type != "cover", "else")} {err_str};
                           """)
 
