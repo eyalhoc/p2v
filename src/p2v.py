@@ -1865,7 +1865,7 @@ class p2v():
                 if isinstance(val, list):
                     val = misc.concat(val)
                 elif isinstance(val, (float, int)) and hasattr(strct, "to_bits"):
-                    val = f"{strct.to_bits(val)} /*{val}*/"
+                    val = strct.to_bits(val)
                 elif isinstance(val, int):
                     val = misc.dec(val, bits)
                 last = (n + 1) == len(src)
