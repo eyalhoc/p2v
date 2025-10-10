@@ -90,7 +90,7 @@ module tb ();
     logic diff;
     assign diff = (valid_out & (o != expected));
 
-    mismatch_expected_0x_0h_actual_0x_0h_expected_o_assert :
+    _mismatch_expected_0x_0h_actual_0x_0h_expected_o_assert :
     assert property (@(posedge clk) disable iff (!resetn) ~diff)
     else $fatal(1, "mismatch: expected=0x%0h, actual=0x%0h", expected, o);
 
@@ -108,7 +108,7 @@ module tb ();
 
     always @(posedge clk) _count_timeout__clk <= (_count_timeout__clk + 32'd1);
 
-    reached_timeout_after_64_cycles_of_clk_assert :
+    _reached_timeout_after_64_cycles_of_clk_assert :
     assert property (@(posedge clk) disable iff (!resetn) (_count_timeout__clk < 32'd64))
     else $fatal(1, "reached timeout after 64 cycles of clk");
 

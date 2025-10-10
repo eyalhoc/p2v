@@ -22,6 +22,10 @@ class exprs(p2v):
         o6 = self.output(8)
         o7 = self.output(8)
 
+        o = {}
+        for i in range(12):
+            o[i] = self.output()
+
 
         self.assign(bitwise, \
                             (a + b) | \
@@ -63,5 +67,19 @@ class exprs(p2v):
                                bitwise[1]: [b, a],
                                bitwise[2]: [o1, o1]
                               })
+
+
+        self.assign(o[0], (a + 2) == (2 + a))
+        self.assign(o[1], (a * 2) == (2 * a))
+        self.assign(o[2], (a | 2) == (2 | a))
+        self.assign(o[3], (a & 2) == (2 & a))
+        self.assign(o[4], (a ^ 2) == (2 ^ a))
+        self.assign(o[5], (a == 2) == (2 == a))
+        self.assign(o[6], (a != 2) == (2 != a))
+        self.assign(o[7], (a > 2) == (2 < a))
+        self.assign(o[8], (a < 2) == (2 > a))
+        self.assign(o[9], (a >= 2) == (2 <= a))
+        self.assign(o[10], (a <= 2) == (2 >= a))
+        self.assign(o[11], (a - 2) == (-2 + a))
 
         return self.write()
