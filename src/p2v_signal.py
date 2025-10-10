@@ -113,6 +113,8 @@ class p2v_signal:
 
     def __radd__(self, other):
         if isinstance(other, (int, float)):
+            if other < 0:
+                return self.__sub__(-other)
             return self.__add__(other)
         raise RuntimeError(f"unsupported type {type(other)} with p2v signal")
 
@@ -143,17 +145,13 @@ class p2v_signal:
         raise RuntimeError(f"unsupported type {type(other)} with p2v signal")
 
     def __pow__(self, other):
+        if isinstance(other, (int, float)):
+            return self._create(other, "**", convert=False)
         raise RuntimeError("operand pow is unsupported for p2v signal")
 
     def __rpow__(self, other):
         if isinstance(other, (int, float)):
-            assert int(other) == other, f"fractional float {other} is not supported with pow"
-            other = int(other)
-            if misc.is_pow2(other):
-                base = misc.dec(misc.log2(other), bits=self._bits)
-                base._update_strct(self)
-                return base << self
-            raise RuntimeError(f"pow of {other} must be a power of 2")
+            return self.__pow__(other)
         raise RuntimeError(f"unsupported type {type(other)} with p2v signal")
 
     def __neg__(self):
@@ -325,8 +323,8 @@ class p2v_signal:
     def _get_func_name(self, depth=1):
         return "_" + sys._getframe(depth).f_code.co_name.replace("_", "")
 
-    def _create(self, other, op, bits=None, auto_pad=True):
-        if isinstance(other, (float, int)) and hasattr(self._strct, "to_bits"):
+    def _create(self, other, op, bits=None, auto_pad=True, convert=True):
+        if convert and isinstance(other, (float, int)) and hasattr(self._strct, "to_bits"):
             if other != 0: # 0 has simplified operations since 0 int and 0 float are the same
                 self._remark = str(other)
                 other = self._strct.to_bits(other)

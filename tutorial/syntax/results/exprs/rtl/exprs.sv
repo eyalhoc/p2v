@@ -12,7 +12,19 @@ module exprs (
     output logic [7:0] o4,
     output logic [7:0] o5,
     output logic [7:0] o6,
-    output logic [7:0] o7
+    output logic [7:0] o7,
+    output logic o__0,
+    output logic o__1,
+    output logic o__2,
+    output logic o__3,
+    output logic o__4,
+    output logic o__5,
+    output logic o__6,
+    output logic o__7,
+    output logic o__8,
+    output logic o__9,
+    output logic o__10,
+    output logic o__11
 );
 
 
@@ -27,5 +39,17 @@ module exprs (
     assign o4 = bitwise[0] ? a : bitwise[1] ? b : bitwise[2] ? o1 : 8'd0;
     assign o5 = bitwise[0] ? a : bitwise[1] ? b : o1;
     assign {o6, o7} = bitwise[0] ? {a, b} : bitwise[1] ? {b, a} : bitwise[2] ? {2{o1}} : 16'd0;
+    assign o__0 = ((a + 8'd2) == (a + 8'd2));
+    assign o__1 = ((a * 8'd2) == (a * 8'd2));
+    assign o__2 = ((a | 8'd2) == (a | 8'd2));
+    assign o__3 = ((a & 8'd2) == (a & 8'd2));
+    assign o__4 = ((a ^ 8'd2) == (a ^ 8'd2));
+    assign o__5 = ((a == 8'd2) == (a == 8'd2));
+    assign o__6 = ((a != 8'd2) == (a != 8'd2));
+    assign o__7 = ((a > 8'd2) == (a > 8'd2));
+    assign o__8 = ((a < 8'd2) == (a < 8'd2));
+    assign o__9 = ((a >= 8'd2) == (a >= 8'd2));
+    assign o__10 = ((a <= 8'd2) == (a <= 8'd2));
+    assign o__11 = ((a - 8'd2) == (a - 8'd2));
 
 endmodule  // exprs
