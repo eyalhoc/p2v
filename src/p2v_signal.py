@@ -75,7 +75,12 @@ class p2v_signal:
         elif isinstance(bits, tuple):
             self._bits = bits[0]
             self._bus = True
-            self._dim = list(bits)
+            self._dim = []
+            for b in bits:
+                if hasattr(b, "bits"):
+                    self._dim.append(b.bits())
+                else:
+                    self._dim.append(b)
         else:
             self._bits = bits
             self._bus = not (isinstance(bits, int) and bits == 1)
@@ -353,6 +358,8 @@ class p2v_signal:
             self._pipe = other._pipe
 
     def _declare_bits_dim(self, bits):
+        if hasattr(bits, "bits"):
+            bits = bits.bits()
         assert isinstance(bits, (str, int)), bits
         if isinstance(bits, int):
             assert bits >= 1, f"{self._kind} {self._name} has 0 bits"
@@ -603,7 +610,10 @@ class p2v_signal:
         """
         Returns signal bits
         """
-        return self._bits
+        _bits = 1
+        for x in self._dim:
+            _bits *= x
+        return _bits
 
     def int(self, int_bits=16):
         """

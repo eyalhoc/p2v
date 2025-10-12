@@ -478,10 +478,14 @@ def concat(vals, sep=None, nl_every=None, add_paren=True):
     """
     if isinstance(vals, dict):
         vals = list(vals.values())
+    elif isinstance(vals, tuple):
+        vals = list(vals)
     assert isinstance(vals, list), f"variable {vals} expected to be of type list"
     assert isinstance(sep, (type(None), str)), sep
     assert isinstance(nl_every, (type(None), int)), nl_every
     assert len(vals) >= 0, vals
+
+    vals = flatten(vals) # support multi-dim lists
 
     _bits = 0
     new_vals = []
@@ -702,6 +706,46 @@ def format_str(s, params=None):
     for param in params:
         full_s += f", {param}"
     return full_s
+
+def list_func(lst, func):
+    """ perform function on all elements of a list (recursive) """
+    assert isinstance(lst, list), lst
+    for n, item in enumerate(lst):
+        if isinstance(item, list):
+            list_func(item, func)
+        else:
+            lst[n] = func(item)
+    return lst
+
+def get_dimensions(lst):
+    """ get dimensions of a list """
+    dims = []
+    while isinstance(lst, (tuple, list)):
+        dims.append(len(lst))
+        if len(lst) == 0:
+            break
+        lst = lst[0]
+    return tuple(dims)
+
+def flatten(obj):
+    """
+    Flatten a nested sequence of lists/tuples of unknown depth into a flat list.
+    - Preserves left-to-right order.
+    - Treats list and tuple as containers to be flattened.
+    - Leaves other types (including strings) as atomic elements.
+    """
+    out = []
+    stack = [obj]  # start with the top-level object
+    while stack:
+        cur = stack.pop()
+        if isinstance(cur, (list, tuple)):
+            # push children in reverse so we process them in original order
+            for item in reversed(cur):
+                stack.append(item)
+        else:
+            out.append(cur)
+    return out
+
 
 ### SYSTEM VERILOG ASSERTION FUNCTIONS
 def onehot(expression):
