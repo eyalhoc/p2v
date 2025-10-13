@@ -90,7 +90,7 @@ class p2v_signal:
         if isinstance(bits, str):
             self._driven_bits = None # don't check bit driven bits is a verilog parameter
         else:
-            self._driven_bits = [False] * self._bits
+            self._driven_bits = [False] * self.bits()
         self._initial_pipe_stage = 0
         self._pipe_stage = 0
         self._pipe = None
@@ -304,12 +304,11 @@ class p2v_signal:
         if isinstance(key, int) and key < 0:
             key = self._bits + key
 
-        if len(self._dim) > 1:
+        if len(self._dim) > 1: # TBD - I think it should be removed
             bits = self._dim[-1]
         else:
             bits = 1
         return self._bit_range(bits=bits, start=key)
-
 
     def _signal(self, expr, bits):
         return p2v_signal(None, str(expr), bits=bits)
