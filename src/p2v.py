@@ -811,7 +811,9 @@ class p2v():
                     self._signals[name]._driven = True
             else:
                 msb, lsb = misc._get_bit_range(wire)
-                if self._assert(msb < self._signals[name]._bits, f"trying to drive {wire} when {name} has only {self._signals[name]._bits} bits"):
+                if msb is None:
+                    self._signals[name]._driven = True
+                elif self._assert(msb < self._signals[name].bits(), f"trying to drive {wire} when {name} has only {self._signals[name].bits()} bits"):
                     for i in range(lsb, msb+1):
                         if self._assert(not self._signals[name]._driven_bits[i] or allow, f"{name}[{i}] was previously driven"):
                             self._signals[name]._driven_bits[i] = True
@@ -1831,8 +1833,9 @@ class p2v():
                 self.logic(field_name, abs(fields[field_name]), _allow_str=True)
             rtrn = signal
         else:
-            for bits_str in self._get_names(str(bits)):
-                self._set_used(bits_str)
+            if not isinstance(bits, tuple):
+                for bits_str in self._get_names(str(bits)):
+                    self._set_used(bits_str)
             signal = self._add_signal(p2v_signal(p2v_kind.LOGIC, name, bits, strct=strct, remark=remark))
             if enum is not None:
                 for _name, _val in enum.items():

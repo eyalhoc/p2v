@@ -17,17 +17,19 @@ class p2v_pipe:
     This class is a p2v pipline.
     """
 
-    def __init__(self, parent, clk, valid, ready=None, bypass=False):
+    def __init__(self, parent, clk, valid, ready=None, bypass=False, debug=False):
         self.parent = parent
         self.clk = clk
         self.valid = valid
         self.ready = ready
         self.bypass = bypass
+        self.debug = debug
 
         self.stage_valid = valid
         if ready is not None:
             self.parent._set_used(ready)
-        self._stage_cnt()
+        if debug:
+            self._stage_cnt()
 
 
     def end(self):
@@ -45,7 +47,8 @@ class p2v_pipe:
                 self.parent.logic(delay_name, assign=self.valid, _allow_str=True)
             self.stage_valid = self._sample(self.valid, stage=self.parent._pipe_stage)
             self.parent._pipe_stage += 1
-            self._stage_cnt()
+            if self.debug:
+                self._stage_cnt()
             self.parent.line("")
             self.parent.remark("=" * 32)
             self.parent.remark(f" ==== PIPELINE STAGE {self.parent._pipe_stage}")

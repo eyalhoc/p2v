@@ -476,12 +476,12 @@ def concat(vals, sep=None, nl_every=None, add_paren=True):
     Returns:
         Verilog code
     """
-    if isinstance(vals, dict):
-        vals = list(vals.values())
-    assert isinstance(vals, list), f"variable {vals} expected to be of type list"
+    assert isinstance(vals, (list, dict, tuple)), f"variable {vals} expected to be of type list"
     assert isinstance(sep, (type(None), str)), sep
     assert isinstance(nl_every, (type(None), int)), nl_every
     assert len(vals) >= 0, vals
+
+    vals = flatten(vals) # support multi-dim lists
 
     _bits = 0
     new_vals = []
@@ -702,6 +702,88 @@ def format_str(s, params=None):
     for param in params:
         full_s += f", {param}"
     return full_s
+
+def list_func(lst, func):
+    """ perform function on all elements of a list (recursive) """
+    assert isinstance(lst, list), lst
+    for n, item in enumerate(lst):
+        if isinstance(item, list):
+            list_func(item, func)
+        else:
+            lst[n] = func(item)
+    return lst
+
+def get_dimensions(lst):
+    """ get dimensions of a list """
+    dims = []
+    while isinstance(lst, (tuple, list)):
+        dims.append(len(lst))
+        if len(lst) == 0:
+            break
+        lst = lst[0]
+    return tuple(dims)
+
+def _dict_to_list(d, *, include_paths=False, path_sep='.', preserve_order=True):
+    """
+    Flatten a nested dictionary of arbitrary depth into a list.
+
+    Args:
+        d: dict-like object (may contain nested dicts as values).
+        include_paths: if False, returns list of terminal values.
+                       if True, returns list of (path, value) tuples where path is a string.
+        path_sep: separator used to join keys when include_paths is True.
+        preserve_order: if True, iterate dicts in their natural order (Python 3.7+ preserves insertion order).
+                        If False, iteration order is unspecified.
+
+    Returns:
+        list of values (if include_paths is False) or list of (path, value).
+    """
+    out = []
+    stack = [((), d)]  # stack holds tuples (path_tuple, current_obj)
+
+    while stack:
+        path, cur = stack.pop()
+        if isinstance(cur, dict):
+            # iterate children in forward order by pushing reversed sequence (to preserve original order)
+            items = list(cur.items())
+            if preserve_order:
+                iterable = reversed(items)
+            else:
+                iterable = items  # order unspecified
+            for k, v in iterable:
+                new_path = path + (str(k),)
+                stack.append((new_path, v))
+        else:
+            if include_paths:
+                out.append((path_sep.join(path), cur))
+            else:
+                out.append(cur)
+
+    # stack-based traversal appends leaves in depth-first pre-order; reverse to restore left-to-right order
+    #out.reverse()
+    return out
+
+def flatten(obj):
+    """
+    Flatten a nested sequence of lists/tuples of unknown depth into a flat list.
+    - Preserves left-to-right order.
+    - Treats list and tuple as containers to be flattened.
+    - Leaves other types (including strings) as atomic elements.
+    """
+    if isinstance(obj, dict):
+        obj = _dict_to_list(obj)
+    out = []
+    stack = [obj]  # start with the top-level object
+    while stack:
+        cur = stack.pop()
+        if isinstance(cur, (list, tuple)):
+            # push children in reverse so we process them in original order
+            for item in reversed(cur):
+                stack.append(item)
+        else:
+            out.append(cur)
+    return out
+
 
 ### SYSTEM VERILOG ASSERTION FUNCTIONS
 def onehot(expression):
