@@ -304,7 +304,7 @@ class p2v_signal:
         if isinstance(key, int) and key < 0:
             key = self._bits + key
 
-        if len(self._dim) > 1: # TBD - I think it should be removed
+        if len(self._dim) > 1:
             bits = self._dim[-1]
         else:
             bits = 1
