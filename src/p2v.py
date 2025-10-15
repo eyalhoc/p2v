@@ -2245,6 +2245,7 @@ class p2v():
         self._assert_type(ready, [None, p2v_signal])
         self._assert_type(bypass, bool)
         self.assert_static(valid not in self._pipelines or self._pipelines[valid] is None, f"open pipeline of {valid} already exists")
+        self._set_used(clk)
         pipe = p2v_pipe(parent=self, clk=clk, valid=valid, ready=ready, bypass=bypass)
         self._pipelines[valid] = pipe
         for _ in range(valid._pipe_stage):
