@@ -68,7 +68,7 @@ class p2v():
         self._lines = []
         self._params = {}
         self._sons = []
-        self._parse = parse
+        self._parse = parse and not modname is not None
         self._base_depth = 0
         self._pipelines = {}
         self._pipe_stage = 0
@@ -867,7 +867,8 @@ class p2v():
                 count[name] = 1
                 prev_name = name
         for name, val in count.items():
-            self._assert(val < MAX_LOOP, f"{name} was created {val} times in module (performance loss)", warning=True)
+            if not name.startswith("_"):
+                self._assert(val < MAX_LOOP, f"{name} was created {val} times in module (performance loss)", warning=True)
 
     def _check_line_balanced(self, line):
         line = str(line)
@@ -1313,7 +1314,11 @@ class p2v():
         if "." in name:
             name = name.split(".")[-1]
 
-        self._assert(misc._is_legal_name(name), f"missing receive variable for {cmd}", fatal=True)
+        is_legal = misc._is_legal_name(name)
+        if not is_legal:
+            for op in misc.get_python_op():
+                self._assert(op not in name, f"receive variable cannot use expressions (uses {op})", fatal=True)
+            self._raise(f"missing receive variable for {cmd}")
         return name
 
     def _get_clock_name(self, cmd, depth=2):
