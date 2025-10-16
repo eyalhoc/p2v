@@ -1919,7 +1919,7 @@ class p2v():
         elif isinstance(tgt, dict) and isinstance(src, dict): # struct assign
             self.assign(list(tgt.values()), list(src.values()), keyword=keyword, _remark=_remark, _allow_str=_allow_str)
         elif isinstance(src, dict): # mux assign
-            src_expr = self._get_mux(src, bits=tgt._bits, strct=tgt._strct)
+            src_expr = self._get_mux(src, bits=tgt.bits(), strct=tgt._strct)
             self.assign(tgt, src_expr, keyword=keyword, _remark=_remark, _allow_str=True)
         else:
             tgt_is_strct = isinstance(tgt, p2v_signal) and isinstance(tgt._strct, p2v_struct)
@@ -1985,7 +1985,7 @@ class p2v():
         if isinstance(src, int):
             src = misc.dec(src, tgt._bits)
         elif isinstance(src, dict):
-            src_expr = self._get_mux(src, bits=tgt._bits, strct=tgt._strct)
+            src_expr = self._get_mux(src, bits=tgt.bits(), strct=tgt._strct)
             src = p2v_signal(None, src_expr, bits=tgt._bits)
         elif isinstance(src, list):
             src = misc.concat(src)
