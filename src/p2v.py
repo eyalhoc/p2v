@@ -68,7 +68,7 @@ class p2v():
         self._lines = []
         self._params = {}
         self._sons = []
-        self._parse = parse
+        self._parse = parse and not modname is not None
         self._base_depth = 0
         self._pipelines = {}
         self._pipe_stage = 0
@@ -867,7 +867,8 @@ class p2v():
                 count[name] = 1
                 prev_name = name
         for name, val in count.items():
-            self._assert(val < MAX_LOOP, f"{name} was created {val} times in module (performance loss)", warning=True)
+            if not name.startswith("_"):
+                self._assert(val < MAX_LOOP, f"{name} was created {val} times in module (performance loss)", warning=True)
 
     def _check_line_balanced(self, line):
         line = str(line)
@@ -1313,7 +1314,11 @@ class p2v():
         if "." in name:
             name = name.split(".")[-1]
 
-        self._assert(misc._is_legal_name(name), f"missing receive variable for {cmd}", fatal=True)
+        is_legal = misc._is_legal_name(name)
+        if not is_legal:
+            for op in misc.get_python_op():
+                self._assert(op not in name, f"receive variable cannot use expressions (uses {op})", fatal=True)
+            self._raise(f"missing receive variable for {cmd}")
         return name
 
     def _get_clock_name(self, cmd, depth=2):
@@ -1914,7 +1919,7 @@ class p2v():
         elif isinstance(tgt, dict) and isinstance(src, dict): # struct assign
             self.assign(list(tgt.values()), list(src.values()), keyword=keyword, _remark=_remark, _allow_str=_allow_str)
         elif isinstance(src, dict): # mux assign
-            src_expr = self._get_mux(src, bits=tgt._bits, strct=tgt._strct)
+            src_expr = self._get_mux(src, bits=tgt.bits(), strct=tgt._strct)
             self.assign(tgt, src_expr, keyword=keyword, _remark=_remark, _allow_str=True)
         else:
             tgt_is_strct = isinstance(tgt, p2v_signal) and isinstance(tgt._strct, p2v_struct)
@@ -1980,7 +1985,7 @@ class p2v():
         if isinstance(src, int):
             src = misc.dec(src, tgt._bits)
         elif isinstance(src, dict):
-            src_expr = self._get_mux(src, bits=tgt._bits, strct=tgt._strct)
+            src_expr = self._get_mux(src, bits=tgt.bits(), strct=tgt._strct)
             src = p2v_signal(None, src_expr, bits=tgt._bits)
         elif isinstance(src, list):
             src = misc.concat(src)
@@ -2240,6 +2245,7 @@ class p2v():
         self._assert_type(ready, [None, p2v_signal])
         self._assert_type(bypass, bool)
         self.assert_static(valid not in self._pipelines or self._pipelines[valid] is None, f"open pipeline of {valid} already exists")
+        self._set_used(clk)
         pipe = p2v_pipe(parent=self, clk=clk, valid=valid, ready=ready, bypass=bypass)
         self._pipelines[valid] = pipe
         for _ in range(valid._pipe_stage):

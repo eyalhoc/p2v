@@ -296,7 +296,7 @@ def _assert_signal(name, var):
 
 def _check_bits(num, _bits):
     if num > 0:
-        assert _bits >= log2(num), f"cannot represent the number {num} with {_bits} bits"
+        assert _bits >= log2(num+1), f"cannot represent the number {num} with {_bits} bits"
 
 def _invert(var, not_op="~"):
     var = str(var)
@@ -311,6 +311,62 @@ def _invert(var, not_op="~"):
 
 def _add_paren(expr, open_char="(", close_char=")"):
     return _remove_extra_paren(open_char + str(expr) + close_char)
+
+def _dict_to_list(d, *, include_paths=False, path_sep='.', preserve_order=True):
+    """
+    Flatten a nested dictionary of arbitrary depth into a list.
+
+    Args:
+        d: dict-like object (may contain nested dicts as values).
+        include_paths: if False, returns list of terminal values.
+                       if True, returns list of (path, value) tuples where path is a string.
+        path_sep: separator used to join keys when include_paths is True.
+        preserve_order: if True, iterate dicts in their natural order (Python 3.7+ preserves insertion order).
+                        If False, iteration order is unspecified.
+
+    Returns:
+        list of values (if include_paths is False) or list of (path, value).
+    """
+    out = []
+    stack = [((), d)]  # stack holds tuples (path_tuple, current_obj)
+
+    while stack:
+        path, cur = stack.pop()
+        if isinstance(cur, dict):
+            # iterate children in forward order by pushing reversed sequence (to preserve original order)
+            items = list(cur.items())
+            if preserve_order:
+                iterable = reversed(items)
+            else:
+                iterable = items  # order unspecified
+            for k, v in iterable:
+                new_path = path + (str(k),)
+                stack.append((new_path, v))
+        else:
+            if include_paths:
+                out.append((path_sep.join(path), cur))
+            else:
+                out.append(cur)
+
+    # stack-based traversal appends leaves in depth-first pre-order; reverse to restore left-to-right order
+    #out.reverse()
+    return out
+
+def get_python_op():
+    return [
+        # Arithmetic
+        '+', '-', '*', '/', '//', '%', '**',
+
+        # Comparison
+        '==', '!=', '>', '<', '>=', '<=',
+
+        # Bitwise
+        '&', '|', '^', '~', '<<', '>>',
+
+        # Assignment
+        '=', '+=', '-=', '*=', '/=', '//=', '%=', '**=',
+        '&=', '|=', '^=', '<<=', '>>='
+    ]
 
 def _verilog_keywords():
     return [
@@ -715,53 +771,16 @@ def list_func(lst, func):
 
 def get_dimensions(lst):
     """ get dimensions of a list """
-    dims = []
-    while isinstance(lst, (tuple, list)):
-        dims.append(len(lst))
-        if len(lst) == 0:
-            break
-        lst = lst[0]
+    if isinstance(lst, (int, float)):
+        dims = [1]
+    else:
+        dims = []
+        while isinstance(lst, (tuple, list)):
+            dims.append(len(lst))
+            if len(lst) == 0:
+                break
+            lst = lst[0]
     return tuple(dims)
-
-def _dict_to_list(d, *, include_paths=False, path_sep='.', preserve_order=True):
-    """
-    Flatten a nested dictionary of arbitrary depth into a list.
-
-    Args:
-        d: dict-like object (may contain nested dicts as values).
-        include_paths: if False, returns list of terminal values.
-                       if True, returns list of (path, value) tuples where path is a string.
-        path_sep: separator used to join keys when include_paths is True.
-        preserve_order: if True, iterate dicts in their natural order (Python 3.7+ preserves insertion order).
-                        If False, iteration order is unspecified.
-
-    Returns:
-        list of values (if include_paths is False) or list of (path, value).
-    """
-    out = []
-    stack = [((), d)]  # stack holds tuples (path_tuple, current_obj)
-
-    while stack:
-        path, cur = stack.pop()
-        if isinstance(cur, dict):
-            # iterate children in forward order by pushing reversed sequence (to preserve original order)
-            items = list(cur.items())
-            if preserve_order:
-                iterable = reversed(items)
-            else:
-                iterable = items  # order unspecified
-            for k, v in iterable:
-                new_path = path + (str(k),)
-                stack.append((new_path, v))
-        else:
-            if include_paths:
-                out.append((path_sep.join(path), cur))
-            else:
-                out.append(cur)
-
-    # stack-based traversal appends leaves in depth-first pre-order; reverse to restore left-to-right order
-    #out.reverse()
-    return out
 
 def flatten(obj):
     """
