@@ -771,12 +771,15 @@ def list_func(lst, func):
 
 def get_dimensions(lst):
     """ get dimensions of a list """
-    dims = []
-    while isinstance(lst, (tuple, list)):
-        dims.append(len(lst))
-        if len(lst) == 0:
-            break
-        lst = lst[0]
+    if isinstance(lst, (int, float)):
+        dims = [1]
+    else:
+        dims = []
+        while isinstance(lst, (tuple, list)):
+            dims.append(len(lst))
+            if len(lst) == 0:
+                break
+            lst = lst[0]
     return tuple(dims)
 
 def flatten(obj):
