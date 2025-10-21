@@ -1922,7 +1922,8 @@ class p2v():
             src_expr = self._get_mux(src, bits=tgt.bits(), strct=tgt._strct)
             self.assign(tgt, src_expr, keyword=keyword, _remark=_remark, _allow_str=True)
         else:
-            tgt_is_strct = isinstance(tgt, p2v_signal) and isinstance(tgt._strct, p2v_struct)
+            tgt_is_signal = isinstance(tgt, p2v_signal)
+            tgt_is_strct = tgt_is_signal and isinstance(tgt._strct, p2v_struct)
             if tgt_is_strct:
                 self._assign_structs(tgt, src, keyword=keyword)
             else:
@@ -1932,10 +1933,13 @@ class p2v():
                     self._set_driven(tgt)
                 if isinstance(src, int):
                     tgt._const = True
-                    bits = self._get_signal_bits(tgt)
                     if isinstance(tgt._bits, str): # Verilog parameter width
                         src = f"'{src}"
                     else:
+                        if tgt_is_signal:
+                            bits = abs(tgt.bits())
+                        else:
+                            bits = self._get_signal_bits(tgt)
                         self._assert(bits > 0, f"illegal assignment to signal {tgt} of 0 bits")
                         src = misc.dec(src, bits)
                 self._set_used(src, drive=False)
