@@ -2256,6 +2256,7 @@ class p2v():
         return self._find_file(filename, allow=True) is not None
 
     def pipeline(self, clk, valid, ready=None, bypass=False):
+        """ create pipeline for auto pipelining"""
         self._assert_type(clk, clock)
         self._assert_type(valid, p2v_signal)
         self._assert_type(ready, [None, p2v_signal])
@@ -2267,6 +2268,14 @@ class p2v():
         for _ in range(valid._pipe_stage):
             pipe.advance()
         return pipe
+
+    def exec(self, func):
+        """ execute external function """
+        if isinstance(func, list):
+            for elem in func:
+                self.exec(elem)
+            return None
+        return self.line(str(func))
 
 # top constructor
 if __name__ != "__main__":
