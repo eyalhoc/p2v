@@ -74,15 +74,22 @@ class p2v_task():
     def call(self, func):
         return self.line(str(func))
 
-    def display(self, s, *args):
-        params = ""
-        if len(args) > 0:
-            for arg in args:
-                params += ", " + str(arg)
-        self.line(f'$display("{s}"{params});')
+    def display(self, s, params=None, cond=None):
+        formatted = misc.format_str(s, params=params)
+        line = ""
+        if cond is not None:
+            line += f"if ({cond}) "
+        line += f"$display({formatted});"
+        self.line(line)
 
     def delay(self, signal, num=1, posedge=True, wait_for=None):
         return self._p2v.tb.delay(signal, num=num, posedge=posedge, wait_for=wait_for)
+
+    def extern(self, func):
+        def task_func(*args, **kwargs):
+            return self.line(func(*args, **kwargs))
+        return task_func
+
 
     def _make_task_function(self, task_name):
         def task_func(*args):

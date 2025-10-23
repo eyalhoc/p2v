@@ -1920,6 +1920,8 @@ class p2v():
         self._assert_type(keyword, str)
         if self._exists():
             return tgt
+        if self.tb._block is not None: # inside initial or always block
+            keyword = ""
         if isinstance(tgt, list):
             tgt = misc.concat(tgt)
         if isinstance(src, list):
