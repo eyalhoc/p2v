@@ -471,6 +471,18 @@ class p2v_signal:
         """
         return self._kind in [p2v_kind.VAR]
 
+    def is_task(self):
+        """
+        Checks if signal is a Verilog task.
+
+        Args:
+            NA
+
+        Returns:
+            bool
+        """
+        return self._kind in [p2v_kind.TASK]
+
     def is_clock(self):
         """
         Checks if signal is a clock.

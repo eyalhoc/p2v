@@ -683,7 +683,7 @@ class p2v():
             if isinstance(val, p2v_signal) and val.is_parameter():
                 setattr(connects, name, name)
             elif isinstance(val, p2v_signal) and val.is_var():
-                setattr(connects, name, val.strct)
+                setattr(connects, name, val._strct)
             elif FIELD_SEP in name: # support access with dict
                 d = misc._path_to_dict(name, value=val)
                 key = list(d.keys())[0]
@@ -1639,7 +1639,7 @@ class p2v():
     def var(self, name, val):
         """ Deckare a variable that could be accessed by parent """
         signal = self._add_signal(p2v_signal(p2v_kind.VAR, name.upper(), 0, used=True, driven=True))
-        signal.strct = val
+        signal._strct = val
         return signal
 
     def enum(self, names):

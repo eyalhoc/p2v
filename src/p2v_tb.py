@@ -603,9 +603,11 @@ class p2v_tb():
         self._parent.line("    begin")
         self._block = "always"
 
-    def delay(self, signal, num=1, posedge=True):
+    def delay(self, signal, num=1, posedge=True, wait_for=None):
         """ wait for a number of clock cycles """
         line = ""
+        if wait_for is not None:
+            line += f"while ({~wait_for})"
         if num > 1:
             line += f"repeat ({num}) "
         line += f"@({misc.cond(posedge, 'posedge', 'negedge')} {signal});"

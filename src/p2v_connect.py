@@ -88,7 +88,7 @@ class p2v_connect():
                 continue
             if wire == "":
                 if self._signals[field_name]._kind == p2v_kind.INPUT:
-                    field_wire = 0
+                    field_wire = misc.cond(self._signals[field_name]._ctrl, 1, 0)
                 else:
                     field_wire = ""
             else:
@@ -287,5 +287,15 @@ class p2v_connect():
         self._params = {}
 
         for _name, _signal in self._signals.items():
-            setattr(signal, _name, p2v_signal(None, f"{instname}.{_name}", bits=0))
+            if _signal.is_task():
+                new_f = self.wrap_task(_signal, instname)
+                new_f.__name__ = f"{instname}.{_name}"
+                setattr(signal, _name, new_f)
+            else:
+                setattr(signal, _name, p2v_signal(None, f"{instname}.{_name}", bits=0))
         return signal
+
+    def wrap_task(self, sig, instname):
+        def fn(*args, **kwargs):
+            return f"{instname}.{sig._strct(*args, **kwargs)}"
+        return fn
