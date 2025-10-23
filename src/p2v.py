@@ -256,6 +256,7 @@ class p2v():
         for path in search:
             sys.path.append(path)
         sys.path.append(self._args.outdir)
+        search.append(self._args.outdir)
         search.append(self._get_rtldir())
         return search
 
@@ -681,6 +682,8 @@ class p2v():
 
             if isinstance(val, p2v_signal) and val.is_parameter():
                 setattr(connects, name, name)
+            elif isinstance(val, p2v_signal) and val.is_var():
+                setattr(connects, name, val.strct)
             elif FIELD_SEP in name: # support access with dict
                 d = misc._path_to_dict(name, value=val)
                 key = list(d.keys())[0]
@@ -1474,12 +1477,13 @@ class p2v():
                 suffix = str(var)
             else:
                 suffix = None
-        if not isinstance(kind, list):
-            kind = [kind]
-        for n, next_kind in enumerate(kind):
-            if next_kind is None:
-                kind[n] = type(None)
-        self._assert(isinstance(var, tuple(kind)), f"{name} is of type {misc._type2str(type(var))} while expecting it to be in {misc._type2str(kind)}", fatal=True)
+        if kind is not None:
+            if not isinstance(kind, list):
+                kind = [kind]
+            for n, next_kind in enumerate(kind):
+                if next_kind is None:
+                    kind[n] = type(None)
+            self._assert(isinstance(var, tuple(kind)), f"{name} is of type {misc._type2str(type(var))} while expecting it to be in {misc._type2str(kind)}", fatal=True)
         loose = condition is None
         if not loose:
             var_str = misc.cond(isinstance(var, str), f'"{var}"', var)
@@ -1630,6 +1634,12 @@ class p2v():
         signal = self._add_signal(p2v_signal(misc.cond(local, p2v_kind.LOCALPARAM, p2v_kind.PARAMETER), name.upper(), val, driven=True))
         if local:
             self.line(signal.declare())
+        return signal
+
+    def var(self, name, val):
+        """ Deckare a variable that could be accessed by parent """
+        signal = self._add_signal(p2v_signal(p2v_kind.VAR, name.upper(), 0, used=True, driven=True))
+        signal.strct = val
         return signal
 
     def enum(self, names):

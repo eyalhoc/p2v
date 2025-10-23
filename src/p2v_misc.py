@@ -41,7 +41,7 @@ def _is_legal_name(name):
     return (name[0].isalpha() or name[0] == "_") and name.replace("_", "").isalnum()
 
 def _fix_legal_name(name):
-    assert isinstance(name, str), name
+    name = str(name)
     fixed = ""
     for c in name:
         if not c.isalnum():

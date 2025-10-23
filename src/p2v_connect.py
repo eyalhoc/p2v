@@ -79,13 +79,21 @@ class p2v_connect():
                 if signal._bits != 0:
                     self._pins[pin] = wire
                 if isinstance(signal._strct, p2v_struct):
-                    strct = signal._strct
-                    self._strct_pins.append(wire)
-                    for field_name in strct.fields:
-                        if field_name in self._pins: # struct assignment is soft to allow specific field assignments
-                            continue
-                        field_wire = strct.update_field_name(wire, field_name)
-                        self._connect(field_name, field_wire, self._signals[field_name]._kind)
+                    self._connect_struct(strct=signal._strct, wire=wire)
+
+    def _connect_struct(self, strct, wire):
+        self._strct_pins.append(wire)
+        for field_name in strct.fields:
+            if field_name in self._pins: # struct assignment is soft to allow specific field assignments
+                continue
+            if wire == "":
+                if self._signals[field_name]._kind == p2v_kind.INPUT:
+                    field_wire = 0
+                else:
+                    field_wire = ""
+            else:
+                field_wire = strct.update_field_name(wire, field_name)
+            self._connect(field_name, field_wire, self._signals[field_name]._kind)
 
     def _check_connected(self):
         for name in self._signals:

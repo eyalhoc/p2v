@@ -31,6 +31,7 @@ class p2v_kind(Enum):
     LOGIC = auto()
     PARAMETER = auto()
     LOCALPARAM = auto()
+    VAR = auto()
     CLOCK = auto()
     SYNC_RESET = auto()
     ASYNC_RESET = auto()
@@ -457,6 +458,18 @@ class p2v_signal:
             bool
         """
         return self._kind in [p2v_kind.PARAMETER, p2v_kind.LOCALPARAM]
+
+    def is_var(self):
+        """
+        Checks if signal is a Python variable.
+
+        Args:
+            NA
+
+        Returns:
+            bool
+        """
+        return self._kind in [p2v_kind.VAR]
 
     def is_clock(self):
         """
