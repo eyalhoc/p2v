@@ -71,6 +71,13 @@ class p2v_task():
     def logic(self, name="", bits=1, assign=None):
         return self._p2v.logic(name=name, bits=bits, assign=assign, _task=True)
 
+    def loop(self, size):
+        name = self._parent._get_receive_name("loop")
+        return self._p2v.tb.loop(size, name=name)
+
+    def end(self):
+        return self._p2v.tb.end()
+
     def display(self, s, params=None, cond=None):
         formatted = misc.format_str(s, params=params)
         line = ""

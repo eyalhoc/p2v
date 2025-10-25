@@ -18,7 +18,7 @@ module tb ();
 
     initial begin
         resetn = 1;
-        repeat (5) @(negedge clk);  // async reset occurs not on posedge of clock
+        repeat (0) @(negedge clk);  // async reset occurs not on posedge of clock
         resetn = 0;
         repeat (20) @(posedge clk);
         resetn = 1;

@@ -810,7 +810,7 @@ def onehot(expression):
         Checks if exactly one bit in expression is high (1). Returns true if it is, false otherwise.
     """
     if isinstance(expression, p2v_signal):
-        _bits = expression._bits
+        _bits = expression.bits()
     else:
         _bits = 0
     return p2v_signal(None, f"$onehot({expression})", bits=_bits)
@@ -820,7 +820,7 @@ def onehot0(expression):
         Checks if at most one bit in expression is high (1), including the case where no bits are high. Returns true if it is, false otherwise.
     """
     if isinstance(expression, p2v_signal):
-        _bits = expression._bits
+        _bits = expression.bits()
     else:
         _bits = 0
     return p2v_signal(None, f"$onehot0({expression})", bits=_bits)
@@ -830,7 +830,7 @@ def isunknown(expression):
         Returns true if any bit in expression is unknown (X or Z). Otherwise, it returns false.
     """
     if isinstance(expression, p2v_signal):
-        _bits = expression._bits
+        _bits = expression.bits()
     else:
         _bits = 0
     return p2v_signal(None, f"$isunknown({expression})", bits=_bits)
@@ -840,7 +840,7 @@ def countones(expression):
         Returns the number of bits in expression that are high (1).
     """
     if isinstance(expression, p2v_signal):
-        _bits = expression._bits
+        _bits = expression.bits()
     else:
         _bits = 0
     return p2v_signal(None, f"$countones({expression})", bits=_bits)
@@ -850,7 +850,7 @@ def countbits(expression, *control_bits):
         Counts the number of bits in expression that match the specified control_bits (e.g., to count 1s, 0s, Xs, or Zs).
     """
     if isinstance(expression, p2v_signal):
-        _bits = expression._bits
+        _bits = expression.bits()
     else:
         _bits = 0
     return p2v_signal(None, f"$countbits({expression}, {', '.join(control_bits)})", bits=_bits)
@@ -860,7 +860,7 @@ def rose(expression):
         Returns true if the least significant bit of the expression changed from 0 to 1 between the previous and current clock cycles. It returns false otherwise.
     """
     if isinstance(expression, p2v_signal):
-        _bits = expression._bits
+        _bits = expression.bits()
     else:
         _bits = 0
     return p2v_signal(None, f"$rose({expression})", bits=_bits)
@@ -870,7 +870,7 @@ def fell(expression):
         Returns true if the least significant bit of the expression changed from 1 to 0 between the previous and current clock cycles.
     """
     if isinstance(expression, p2v_signal):
-        _bits = expression._bits
+        _bits = expression.bits()
     else:
         _bits = 0
     return p2v_signal(None, f"$fell({expression})", bits=_bits)
@@ -880,7 +880,7 @@ def stable(expression):
         Returns true if the value of expression did not change between the previous and current clock cycles. Otherwise, it returns false.
     """
     if isinstance(expression, p2v_signal):
-        _bits = expression._bits
+        _bits = expression.bits()
     else:
         _bits = 0
     return p2v_signal(None, f"$stable({expression})", bits=_bits)
@@ -890,7 +890,7 @@ def past(expression, num_cycles):
         Returns the value of expression from num_cycles ago. If num_cycles is not specified, it defaults to 1.
     """
     if isinstance(expression, p2v_signal):
-        _bits = expression._bits
+        _bits = expression.bits()
     else:
         _bits = 0
     return p2v_signal(None, f"$past({expression}, {num_cycles})", bits=_bits)

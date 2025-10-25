@@ -296,7 +296,7 @@ class p2v_tb():
                     {self.test_fail(message=fail_message, _inline=_inline)}
                 """
 
-    def gen_clk(self, clk, cycle=10, reset_cycles=20, pre_reset_cycles=5, timeout=None):
+    def gen_clk(self, clk, cycle=10, reset_cycles=20, pre_reset_cycles=0, timeout=None):
         """
         Generate clock and async reset if it exists.
 
@@ -602,6 +602,16 @@ class p2v_tb():
             self._parent._set_used(cond)
         self._parent.line("    begin")
         self._block = "always"
+
+    def loop(self, size, name=None):
+        """ for loop block """
+        if name is None:
+            name = self._parent._get_receive_name("loop")
+        var = self._parent.logic(name, 32, _allow_str=True)
+        self._parent.line(f"for ({var}=0; {var}<{size}; {var}={var}+1) begin")
+        self._parent._set_used(size)
+        self._block = "for"
+        return var
 
     def delay(self, signal, num=1, posedge=True, wait_for=None):
         """ wait for a number of clock cycles """
