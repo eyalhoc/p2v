@@ -79,7 +79,8 @@ class p2v_task():
         return self._p2v.tb.end()
 
     def display(self, s, params=None, cond=None):
-        formatted = misc.format_str(s, params=params)
+        s = "%0d: " + s
+        formatted = misc.format_str(s, params=["$time"] + params)
         line = ""
         if cond is not None:
             line += f"if ({cond}) "

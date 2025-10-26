@@ -112,6 +112,9 @@ class p2v_signal:
     def __truediv__(self, other):
         return self._create(other, "/")
 
+    def __floordiv__(self, other):
+        return self._signal(f"{self} {other}", bits=self._bits)
+
     def __add__(self, other):
         if isinstance(other, (int, float)):
             if other == 0:
