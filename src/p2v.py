@@ -256,6 +256,7 @@ class p2v():
         for path in search:
             sys.path.append(path)
         sys.path.append(self._args.outdir)
+        search.append(self._args.outdir)
         search.append(self._get_rtldir())
         return search
 
@@ -681,6 +682,8 @@ class p2v():
 
             if isinstance(val, p2v_signal) and val.is_parameter():
                 setattr(connects, name, name)
+            elif isinstance(val, p2v_signal) and val.is_var():
+                setattr(connects, name, val._strct)
             elif FIELD_SEP in name: # support access with dict
                 d = misc._path_to_dict(name, value=val)
                 key = list(d.keys())[0]
@@ -1327,7 +1330,7 @@ class p2v():
         current_line = self._get_current_line(caller=caller)
         return current_line.split(f"{cmd}(")[1].split(")")[0].strip()
 
-    def _assert_property(self, clk, condition, message, name=None, valid=None, fatal=True, property_type="assert"):
+    def _assert_property(self, clk, condition, message, name=None, valid=None, fatal=True, property_type="assert", concurrent=True):
         self._assert_type(clk, [clock, None])
         self._assert_type(condition, p2v_signal)
         self._assert_type(message, str)
@@ -1335,6 +1338,7 @@ class p2v():
         self._assert_type(valid, [None, p2v_signal])
         self._assert_type(fatal, bool)
         self._assert_type(property_type, str)
+        self._assert_type(concurrent, bool)
         self._assert(property_type in ["assert", "assume", "cover"], f"unknown assertion property {property_type}")
         self._check_line_balanced(condition)
 
@@ -1357,16 +1361,25 @@ class p2v():
             else:
                 err_str = f"$error({full_messgae})"
 
+            if concurrent:
+                tag_str = f"{name}_{property_type}: "
+                if clk is not None:
+                    tag_str = f"_{tag_str}"
+                property_str = " property"
+            else:
+                tag_str = ""
+                property_str = ""
+
             self._set_used(condition)
             if clk is None:
                 self._assert(property_type == "assert", f"non clocked assertions only supports assert type while received {property_type}")
-                self.line(f"""{name}_{property_type}: {property_type} property {misc._add_paren(condition)} else {err_str};
+                self.line(f"""{tag_str}{property_type}{property_str} {misc._add_paren(condition)} else {err_str};
                           """)
             else:
                 self._set_used(clk)
                 disable_str = misc.cond(clk.rst_n is not None, f" disable iff (!{clk.rst_n})")
-                self.line(f"""_{name}_{property_type}: {property_type} property (@(posedge {clk}){disable_str} {condition})
-                                         {misc.cond(property_type != "cover", "else")} {err_str};
+                self.line(f"""{tag_str}{property_type}{property_str} (@(posedge {clk}){disable_str} {condition})
+                                        {misc.cond(property_type != "cover", "else")} {err_str};
                           """)
 
                 if self._args.sim and self._args.sim_bin in ["vvp"] and property_type != "cover":
@@ -1474,12 +1487,13 @@ class p2v():
                 suffix = str(var)
             else:
                 suffix = None
-        if not isinstance(kind, list):
-            kind = [kind]
-        for n, next_kind in enumerate(kind):
-            if next_kind is None:
-                kind[n] = type(None)
-        self._assert(isinstance(var, tuple(kind)), f"{name} is of type {misc._type2str(type(var))} while expecting it to be in {misc._type2str(kind)}", fatal=True)
+        if kind is not None:
+            if not isinstance(kind, list):
+                kind = [kind]
+            for n, next_kind in enumerate(kind):
+                if next_kind is None:
+                    kind[n] = type(None)
+            self._assert(isinstance(var, tuple(kind)), f"{name} is of type {misc._type2str(type(var))} while expecting it to be in {misc._type2str(kind)}", fatal=True)
         loose = condition is None
         if not loose:
             var_str = misc.cond(isinstance(var, str), f'"{var}"', var)
@@ -1630,6 +1644,12 @@ class p2v():
         signal = self._add_signal(p2v_signal(misc.cond(local, p2v_kind.LOCALPARAM, p2v_kind.PARAMETER), name.upper(), val, driven=True))
         if local:
             self.line(signal.declare())
+        return signal
+
+    def var(self, name, val):
+        """ Deckare a variable that could be accessed by parent """
+        signal = self._add_signal(p2v_signal(p2v_kind.VAR, name.upper(), 0, used=True, driven=True))
+        signal._strct = val
         return signal
 
     def enum(self, names):
@@ -1910,6 +1930,8 @@ class p2v():
         self._assert_type(keyword, str)
         if self._exists():
             return tgt
+        if self.tb._block is not None: # inside initial or always block
+            keyword = ""
         if isinstance(tgt, list):
             tgt = misc.concat(tgt)
         if isinstance(src, list):
@@ -1922,7 +1944,8 @@ class p2v():
             src_expr = self._get_mux(src, bits=tgt.bits(), strct=tgt._strct)
             self.assign(tgt, src_expr, keyword=keyword, _remark=_remark, _allow_str=True)
         else:
-            tgt_is_strct = isinstance(tgt, p2v_signal) and isinstance(tgt._strct, p2v_struct)
+            tgt_is_signal = isinstance(tgt, p2v_signal)
+            tgt_is_strct = tgt_is_signal and isinstance(tgt._strct, p2v_struct)
             if tgt_is_strct:
                 self._assign_structs(tgt, src, keyword=keyword)
             else:
@@ -1932,10 +1955,13 @@ class p2v():
                     self._set_driven(tgt)
                 if isinstance(src, int):
                     tgt._const = True
-                    bits = self._get_signal_bits(tgt)
                     if isinstance(tgt._bits, str): # Verilog parameter width
                         src = f"'{src}"
                     else:
+                        if tgt_is_signal:
+                            bits = abs(tgt.bits())
+                        else:
+                            bits = self._get_signal_bits(tgt)
                         self._assert(bits > 0, f"illegal assignment to signal {tgt} of 0 bits")
                         src = misc.dec(src, bits)
                 self._set_used(src, drive=False)
@@ -2105,7 +2131,7 @@ class p2v():
             self._write_empty_module(modname)
         return self._get_connects(parent=self, modname=modname, signals=ports, params=params, verilog=True)
 
-    def assert_property(self, clk=None, condition=None, message=None, name=None, valid=None, fatal=True):
+    def assert_property(self, clk=None, condition=None, message=None, name=None, valid=None, fatal=True, concurrent=True):
         """
         Assertion on Verilog signals with clock.
 
@@ -2116,11 +2142,12 @@ class p2v():
             name([None, str]): Explicit assertion name
             valid([None, p2v_signal]): check on this signal
             fatal(bool): stop on error
+            concurrent(bool): concurrent or procedural
 
         Returns:
             NA
         """
-        self._assert_property(clk, condition, message, name=name, valid=valid, fatal=fatal, property_type="assert")
+        self._assert_property(clk, condition, message, name=name, valid=valid, fatal=fatal, property_type="assert", concurrent=concurrent)
 
     def assume_property(self, clk, condition, message, name=None, valid=None, fatal=True):
         """
@@ -2240,6 +2267,7 @@ class p2v():
         return self._find_file(filename, allow=True) is not None
 
     def pipeline(self, clk, valid, ready=None, bypass=False):
+        """ create pipeline for auto pipelining"""
         self._assert_type(clk, clock)
         self._assert_type(valid, p2v_signal)
         self._assert_type(ready, [None, p2v_signal])
@@ -2251,6 +2279,14 @@ class p2v():
         for _ in range(valid._pipe_stage):
             pipe.advance()
         return pipe
+
+    def exec(self, func):
+        """ execute external function """
+        if isinstance(func, list):
+            for elem in func:
+                self.exec(elem)
+            return None
+        return self.line(str(func))
 
 # top constructor
 if __name__ != "__main__":

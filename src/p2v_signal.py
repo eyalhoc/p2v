@@ -31,6 +31,7 @@ class p2v_kind(Enum):
     LOGIC = auto()
     PARAMETER = auto()
     LOCALPARAM = auto()
+    VAR = auto()
     CLOCK = auto()
     SYNC_RESET = auto()
     ASYNC_RESET = auto()
@@ -110,6 +111,9 @@ class p2v_signal:
 
     def __truediv__(self, other):
         return self._create(other, "/")
+
+    def __floordiv__(self, other):
+        return self._signal(f"{self} {other}", bits=self._bits)
 
     def __add__(self, other):
         if isinstance(other, (int, float)):
@@ -457,6 +461,30 @@ class p2v_signal:
             bool
         """
         return self._kind in [p2v_kind.PARAMETER, p2v_kind.LOCALPARAM]
+
+    def is_var(self):
+        """
+        Checks if signal is a Python variable.
+
+        Args:
+            NA
+
+        Returns:
+            bool
+        """
+        return self._kind in [p2v_kind.VAR]
+
+    def is_task(self):
+        """
+        Checks if signal is a Verilog task.
+
+        Args:
+            NA
+
+        Returns:
+            bool
+        """
+        return self._kind in [p2v_kind.TASK]
 
     def is_clock(self):
         """

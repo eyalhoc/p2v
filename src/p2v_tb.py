@@ -296,7 +296,7 @@ class p2v_tb():
                     {self.test_fail(message=fail_message, _inline=_inline)}
                 """
 
-    def gen_clk(self, clk, cycle=10, reset_cycles=20, pre_reset_cycles=5):
+    def gen_clk(self, clk, cycle=10, reset_cycles=20, pre_reset_cycles=0, timeout=None):
         """
         Generate clock and async reset if it exists.
 
@@ -305,6 +305,7 @@ class p2v_tb():
             cycle(int): clock cycle
             reset_cycles(int): number of clock cycles before releasing reset
             pre_reset_cycles(int): number of clock cycles before issuing reset
+            timeout([None, int]): set timeout on clock
 
         Returns:
             None
@@ -313,6 +314,7 @@ class p2v_tb():
         self._parent._assert_type(cycle, int)
         self._parent._assert_type(reset_cycles, int)
         self._parent._assert_type(pre_reset_cycles, int)
+        self._parent._assert_type(timeout, [None, int])
 
         self._parent._assert(cycle >= 2, f"clock cycle of {cycle} cannot be generated", fatal=True)
 
@@ -353,6 +355,8 @@ class p2v_tb():
                                      end
                               """)
             self._parent.allow_undriven(clk.reset)
+        if timeout is not None:
+            self.set_timeout(clk, timeout=timeout)
 
     def gen_busy(self, clk, name=None, max_duration=20, max_delay=20, inverse=False, en=None):
         """
@@ -599,9 +603,21 @@ class p2v_tb():
         self._parent.line("    begin")
         self._block = "always"
 
-    def delay(self, signal, num=1, posedge=True):
+    def loop(self, size, name=None):
+        """ for loop block """
+        if name is None:
+            name = self._parent._get_receive_name("loop")
+        var = self._parent.logic(name, 32, _allow_str=True)
+        self._parent.line(f"for ({var}=0; {var}<{size}; {var}={var}+1) begin")
+        self._parent._set_used(size)
+        self._block = "for"
+        return var
+
+    def delay(self, signal, num=1, posedge=True, wait_for=None):
         """ wait for a number of clock cycles """
         line = ""
+        if wait_for is not None:
+            line += f"while ({~wait_for})"
         if num > 1:
             line += f"repeat ({num}) "
         line += f"@({misc.cond(posedge, 'posedge', 'negedge')} {signal});"

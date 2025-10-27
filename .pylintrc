@@ -7,12 +7,12 @@ max-args=10
 max-attributes=25
 max-locals=25
 max-statements=64
-max-public-methods=30
+max-public-methods=35
 max-module-lines=2000
 max-branches=30
 
 [MESSAGES CONTROL]
-disable=protected-access,too-many-positional-arguments,too-many-arguments,too-many-locals,too-many-branches,too-many-statements,invalid-name,wrong-import-order,missing-module-docstring,missing-function-docstring,duplicate-code
+disable=protected-access,too-many-positional-arguments,too-many-arguments,too-many-locals,too-many-branches,too-many-statements,invalid-name,wrong-import-order,missing-module-docstring,missing-function-docstring,duplicate-code,invalid-unary-operand-type
 
 [REPORTS]
 score = no

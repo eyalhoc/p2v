@@ -71,15 +71,31 @@ class p2v_task():
     def logic(self, name="", bits=1, assign=None):
         return self._p2v.logic(name=name, bits=bits, assign=assign, _task=True)
 
-    def call(self, func):
-        return self.line(str(func))
+    def loop(self, size):
+        name = self._parent._get_receive_name("loop")
+        return self._p2v.tb.loop(size, name=name)
 
-    def display(self, s, *args):
-        params = ""
-        if len(args) > 0:
-            for arg in args:
-                params += ", " + str(arg)
-        self.line(f'$display("{s}"{params});')
+    def end(self):
+        return self._p2v.tb.end()
+
+    def assert_property(self, condition=None, message=None, name=None, valid=None, fatal=True, clk=None):
+        return self._p2v.assert_property(clk=clk, condition=condition, message=message, \
+                                         name=name, valid=valid, fatal=fatal, concurrent=False)
+
+    def display(self, s, params=None, cond=None):
+        s = "%0d: " + s
+        formatted = misc.format_str(s, params=["$time"] + params)
+        line = ""
+        if cond is not None:
+            line += f"if ({cond}) "
+        line += f"$display({formatted});"
+        self.line(line)
+
+    def delay(self, signal, num=1, posedge=True, wait_for=None):
+        return self._p2v.tb.delay(signal, num=num, posedge=posedge, wait_for=wait_for)
+
+    def exec(self, func):
+        return self._p2v.exec(func)
 
 
     def _make_task_function(self, task_name):
