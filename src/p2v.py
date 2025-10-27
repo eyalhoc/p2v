@@ -1330,7 +1330,7 @@ class p2v():
         current_line = self._get_current_line(caller=caller)
         return current_line.split(f"{cmd}(")[1].split(")")[0].strip()
 
-    def _assert_property(self, clk, condition, message, name=None, valid=None, fatal=True, property_type="assert"):
+    def _assert_property(self, clk, condition, message, name=None, valid=None, fatal=True, property_type="assert", concurrent=True):
         self._assert_type(clk, [clock, None])
         self._assert_type(condition, p2v_signal)
         self._assert_type(message, str)
@@ -1338,6 +1338,7 @@ class p2v():
         self._assert_type(valid, [None, p2v_signal])
         self._assert_type(fatal, bool)
         self._assert_type(property_type, str)
+        self._assert_type(concurrent, bool)
         self._assert(property_type in ["assert", "assume", "cover"], f"unknown assertion property {property_type}")
         self._check_line_balanced(condition)
 
@@ -1360,16 +1361,25 @@ class p2v():
             else:
                 err_str = f"$error({full_messgae})"
 
+            if concurrent:
+                tag_str = f"{name}_{property_type}: "
+                if clk is not None:
+                    tag_str = f"_{tag_str}"
+                property_str = " property"
+            else:
+                tag_str = ""
+                property_str = ""
+
             self._set_used(condition)
             if clk is None:
                 self._assert(property_type == "assert", f"non clocked assertions only supports assert type while received {property_type}")
-                self.line(f"""{name}_{property_type}: {property_type} property {misc._add_paren(condition)} else {err_str};
+                self.line(f"""{tag_str}{property_type}{property_str} {misc._add_paren(condition)} else {err_str};
                           """)
             else:
                 self._set_used(clk)
                 disable_str = misc.cond(clk.rst_n is not None, f" disable iff (!{clk.rst_n})")
-                self.line(f"""_{name}_{property_type}: {property_type} property (@(posedge {clk}){disable_str} {condition})
-                                         {misc.cond(property_type != "cover", "else")} {err_str};
+                self.line(f"""{tag_str}{property_type}{property_str} (@(posedge {clk}){disable_str} {condition})
+                                        {misc.cond(property_type != "cover", "else")} {err_str};
                           """)
 
                 if self._args.sim and self._args.sim_bin in ["vvp"] and property_type != "cover":
@@ -2121,7 +2131,7 @@ class p2v():
             self._write_empty_module(modname)
         return self._get_connects(parent=self, modname=modname, signals=ports, params=params, verilog=True)
 
-    def assert_property(self, clk=None, condition=None, message=None, name=None, valid=None, fatal=True):
+    def assert_property(self, clk=None, condition=None, message=None, name=None, valid=None, fatal=True, concurrent=True):
         """
         Assertion on Verilog signals with clock.
 
@@ -2132,11 +2142,12 @@ class p2v():
             name([None, str]): Explicit assertion name
             valid([None, p2v_signal]): check on this signal
             fatal(bool): stop on error
+            concurrent(bool): concurrent or procedural
 
         Returns:
             NA
         """
-        self._assert_property(clk, condition, message, name=name, valid=valid, fatal=fatal, property_type="assert")
+        self._assert_property(clk, condition, message, name=name, valid=valid, fatal=fatal, property_type="assert", concurrent=concurrent)
 
     def assume_property(self, clk, condition, message, name=None, valid=None, fatal=True):
         """

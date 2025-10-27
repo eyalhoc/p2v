@@ -78,6 +78,10 @@ class p2v_task():
     def end(self):
         return self._p2v.tb.end()
 
+    def assert_property(self, condition=None, message=None, name=None, valid=None, fatal=True, clk=None):
+        return self._p2v.assert_property(clk=clk, condition=condition, message=message, \
+                                         name=name, valid=valid, fatal=fatal, concurrent=False)
+
     def display(self, s, params=None, cond=None):
         s = "%0d: " + s
         formatted = misc.format_str(s, params=["$time"] + params)
