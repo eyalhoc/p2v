@@ -497,7 +497,10 @@ class p2v_tb():
         """ write a list of int values as hex string for Verilog readmemh """
         data_hex = []
         for d in data:
-            data_hex.append(str(misc.hex(d, bits=bits, add_sep=0, prefix=None)))
+            if isinstance(d, int):
+                data_hex.append(str(misc.hex(d, bits=bits, add_sep=0, prefix=None)))
+            else:
+                self._parent._raise(f"unsupported data type {type(d)}")
         fullname = os.path.abspath(os.path.join(self._parent._args.outdir, filename))
         self._parent._assert(not os.path.isfile(fullname), f"{fullname} already exists", fatal=True)
         misc._write_file(fullname, "\n".join(data_hex))
