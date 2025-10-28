@@ -493,8 +493,11 @@ class p2v_tb():
             vals.append(val_str.ljust(col_width))
         misc._write_file(filename, ", ".join(vals), append=True)
 
-    def write_data(self, filename, data, bits):
+    def write_data(self, filename, data=None, bits=8):
         """ write a list of int values as hex string for Verilog readmemh """
+        if data is None:
+            data = filename
+            filename = self._parent._get_receive_name("write_data") + ".txt"
         data_hex = []
         for d in data:
             if isinstance(d, int):
