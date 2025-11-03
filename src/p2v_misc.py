@@ -144,13 +144,16 @@ def _to_int(n, allow=False):
         return n
     raise RuntimeError(f"cannot convert {n} to int")
 
-def _to_bytes(n, bits=32):
+def _to_bytes(n, bits=32, big_endian=False):
     """ convert int to bytes """
     byte_num = ceil(bits / 8)
     nbytes = []
     for i in range(byte_num):
         nbyte = (n >> (8*i)) % (1<<8)
-        nbytes.append(nbyte)
+        if big_endian:
+            nbytes  = [nbyte] + nbytes
+        else:
+            nbytes  = nbytes + [nbyte]
     return nbytes
 
 def _path_to_dict(path, value=None, sep="__"):

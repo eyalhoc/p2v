@@ -495,6 +495,7 @@ class p2v_tb():
 
     def write_data(self, filename, data=None, bits=8):
         """ write a list of int values as hex string for Verilog readmemh """
+        self._parent._assert((bits%8)==0, f"bits {bits} must be in bytes (divide by 8)", fatal=True)
         if data is None:
             data = filename
             filename = self._parent._get_receive_name("write_data") + ".txt"
@@ -503,7 +504,8 @@ class p2v_tb():
             if isinstance(d, np.integer):
                 d = int(d)
             if isinstance(d, int):
-                data_hex.append(str(misc.hex(d, bits=bits, add_sep=0, prefix=None)))
+                for dbyte in misc._to_bytes(d, bits=bits):
+                    data_hex.append(str(misc.hex(dbyte, bits=8, add_sep=0, prefix=None)))
             else:
                 self._parent._raise(f"unsupported data type {type(d)}")
         fullname = os.path.abspath(os.path.join(self._parent._args.outdir, filename))
