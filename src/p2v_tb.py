@@ -493,21 +493,31 @@ class p2v_tb():
             vals.append(val_str.ljust(col_width))
         misc._write_file(filename, ", ".join(vals), append=True)
 
-    def write_data(self, filename, data=None, bits=8):
+    def _get_data(self, data, bits=8, big_endian=False):
+        data_hex = []
+        for d in data:
+            if isinstance(d, (list, np.ndarray)):
+                d = list(d)
+                if big_endian:
+                    d.reverse()
+                data_hex += self._get_data(d, bits=bits, big_endian=big_endian)
+            elif isinstance(d, (int, np.integer)):
+                d = int(d)
+                for dbyte in misc._to_bytes(d, bits=bits):
+                    data_hex.append(str(misc.hex(dbyte, bits=8, add_sep=0, prefix=None)))
+            else:
+                self._parent._raise(f"unsupported data type {type(d)}")
+        return data_hex
+
+    def write_data(self, filename, data=None, bits=8, big_endian=False):
         """ write a list of int values as hex string for Verilog readmemh """
         self._parent._assert((bits%8)==0, f"bits {bits} must be in bytes (divide by 8)", fatal=True)
         if data is None:
             data = filename
             filename = self._parent._get_receive_name("write_data") + ".txt"
-        data_hex = []
-        for d in data:
-            if isinstance(d, np.integer):
-                d = int(d)
-            if isinstance(d, int):
-                for dbyte in misc._to_bytes(d, bits=bits):
-                    data_hex.append(str(misc.hex(dbyte, bits=8, add_sep=0, prefix=None)))
-            else:
-                self._parent._raise(f"unsupported data type {type(d)}")
+        dim = len(misc.get_dimensions(data))
+        self._parent._assert(dim <=2, f"write_data does not support {dim}D data", fatal=True)
+        data_hex = self._get_data(data, bits=bits, big_endian=big_endian)
         fullname = os.path.abspath(os.path.join(self._parent._args.outdir, filename))
         self._parent._assert(not os.path.isfile(fullname), f"{fullname} already exists", fatal=True)
         misc._write_file(fullname, "\n".join(data_hex))
