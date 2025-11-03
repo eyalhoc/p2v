@@ -500,6 +500,8 @@ class p2v_tb():
             filename = self._parent._get_receive_name("write_data") + ".txt"
         data_hex = []
         for d in data:
+            if isinstance(d, np.integer):
+                d = int(d)
             if isinstance(d, int):
                 data_hex.append(str(misc.hex(d, bits=bits, add_sep=0, prefix=None)))
             else:
