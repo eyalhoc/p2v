@@ -159,6 +159,10 @@ class p2v_connect():
                 self.connect_in(pin[key], wire[key])
         else:
             if isinstance(wire, list):
+                for w in wire:
+                    if not isinstance(w, int):
+                        self._parent._assert(isinstance(w, p2v_signal), f"{w} is of type {type(w)} while expecting p2v signal", fatal=True)
+                        self._parent._assert(not w.is_parameter(), f"parameter {w} is not allowed on port concatenation", fatal=True)
                 wire = misc.concat(wire)
             if isinstance(pin, SimpleNamespace):
                 pin = vars(pin)
@@ -183,6 +187,10 @@ class p2v_connect():
         if isinstance(pin, dict) or isinstance(wire, dict):
             self._parent._assert(isinstance(pin, dict) and isinstance(wire, dict), "when dict type is used for connect both pin and wire must be of type dict", fatal=True)
             for key in wire:
+                for w in wire:
+                    if not isinstance(w, int):
+                        self._parent._assert(isinstance(w, p2v_signal), f"{w} is of type {type(w)} while expecting p2v signal", fatal=True)
+                        self._parent._assert(not w.is_parameter(), f"parameter {w} is not allowed on port concatenation", fatal=True)
                 self.connect_out(pin[key], wire[key])
         else:
             if isinstance(wire, list):

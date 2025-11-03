@@ -632,8 +632,8 @@ class p2v_signal:
         Returns:
             p2v_signal
         """
-        if bits >= self._bits:
-            return misc.pad(bits-self._bits, self, val=val)
+        if bits >= abs(self._bits):
+            return misc.pad(bits-abs(self._bits), self, val=val)
         return self[:bits]
 
     def bits(self):

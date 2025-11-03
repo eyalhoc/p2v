@@ -245,6 +245,7 @@ class p2v():
                 search.append(cocotb_dir)
         incdirs = [os.path.dirname(self._get_top_filename())] + self._args.I
         for incdir in self._args.Im:
+            incdirs.append(incdir)
             for subdir in self._get_subdirs(incdir):
                 if subdir not in incdirs:
                     incdirs.append(subdir)

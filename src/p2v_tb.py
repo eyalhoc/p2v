@@ -493,6 +493,24 @@ class p2v_tb():
             vals.append(val_str.ljust(col_width))
         misc._write_file(filename, ", ".join(vals), append=True)
 
+    def write_data(self, filename, data=None, bits=8):
+        """ write a list of int values as hex string for Verilog readmemh """
+        if data is None:
+            data = filename
+            filename = self._parent._get_receive_name("write_data") + ".txt"
+        data_hex = []
+        for d in data:
+            if isinstance(d, np.integer):
+                d = int(d)
+            if isinstance(d, int):
+                data_hex.append(str(misc.hex(d, bits=bits, add_sep=0, prefix=None)))
+            else:
+                self._parent._raise(f"unsupported data type {type(d)}")
+        fullname = os.path.abspath(os.path.join(self._parent._args.outdir, filename))
+        self._parent._assert(not os.path.isfile(fullname), f"{fullname} already exists", fatal=True)
+        misc._write_file(fullname, "\n".join(data_hex))
+        return fullname
+
     def fifo(self, bits=1):
         """
         Create SystemVerilog behavioral fifo (queue).
@@ -603,11 +621,11 @@ class p2v_tb():
         self._parent.line("    begin")
         self._block = "always"
 
-    def loop(self, size, name=None):
+    def loop(self, size, name=None, _task=False):
         """ for loop block """
         if name is None:
             name = self._parent._get_receive_name("loop")
-        var = self._parent.logic(name, 32, _allow_str=True)
+        var = self._parent.logic(name, 32, _allow_str=True, _task=_task)
         self._parent.line(f"for ({var}=0; {var}<{size}; {var}={var}+1) begin")
         self._parent._set_used(size)
         self._block = "for"
