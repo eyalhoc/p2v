@@ -99,6 +99,8 @@ class p2v_task():
                                          name=name, valid=valid, fatal=fatal, concurrent=False)
 
     def display(self, s, params=None, cond=None):
+        if isinstance(params, (str, p2v_signal)):
+            params = [params]
         s = "%0d: " + s
         formatted = misc.format_str(s, params=["$time"] + params)
         line = ""
