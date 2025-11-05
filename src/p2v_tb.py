@@ -519,7 +519,8 @@ class p2v_tb():
         self._parent._assert(dim <=2, f"write_data does not support {dim}D data", fatal=True)
         data_hex = self._get_data(data, bits=bits, big_endian=big_endian)
         fullname = os.path.abspath(os.path.join(self._parent._args.outdir, filename))
-        self._parent._assert(not os.path.isfile(fullname), f"{fullname} already exists", fatal=True)
+        if self._parent._args.gen_num is None:
+            self._parent._assert(not os.path.isfile(fullname), f"{fullname} already exists", fatal=True)
         misc._write_file(fullname, "\n".join(data_hex))
         return fullname
 
