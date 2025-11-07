@@ -75,7 +75,7 @@ class p2v_connect():
                 if isinstance(wire, int):
                     wire = str(misc.dec(wire, signal.bits()))
                 self._parent._assert(isinstance(wire, str), f"wire {wire} is of type {misc._type2str(type(wire))} while expecting type str", fatal=True)
-                self._parent._assert(pin not in self._pins, f"pin {pin} was previosuly assigned")
+                self._parent._assert(pin not in self._pins, f"pin {pin} was previously assigned", fatal=True)
                 if signal._bits != 0:
                     self._pins[pin] = wire
                 if isinstance(signal._strct, p2v_struct):
