@@ -667,6 +667,21 @@ class p2v_tb():
             self._parent.assign(released, "$time > 0", _allow_str=True)
         return released
 
+    def display(self, s, params=None, cond=None):
+        """ call Verilog display function """
+        if params is None:
+            params = []
+        elif not isinstance(params, list):
+            params = [params]
+        s = "%0d: " + s
+        formatted = misc.format_str(s, params=["$time"] + params)
+        line = ""
+        if cond is not None:
+            line += f"if ({cond}) "
+        line += f"$display({formatted});"
+        self._parent.line(line)
+
+
     class p2v_tb_fifo:
         """ implements a SystemVerilog fifo """
         def __init__(self, parent, name, bits):

@@ -99,15 +99,7 @@ class p2v_task():
                                          name=name, valid=valid, fatal=fatal, concurrent=False)
 
     def display(self, s, params=None, cond=None):
-        if isinstance(params, (str, p2v_signal)):
-            params = [params]
-        s = "%0d: " + s
-        formatted = misc.format_str(s, params=["$time"] + params)
-        line = ""
-        if cond is not None:
-            line += f"if ({cond}) "
-        line += f"$display({formatted});"
-        self.line(line)
+        return self._p2v.tb.display(s, params=params, cond=cond)
 
     def delay(self, signal, num=1, posedge=True, wait_for=None):
         return self._p2v.tb.delay(signal, num=num, posedge=posedge, wait_for=wait_for)
