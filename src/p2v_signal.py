@@ -109,6 +109,12 @@ class p2v_signal:
     def __hash__(self):
         return id(self)  # or use something meaningful
 
+    def __iter__(self):
+        vals = []
+        for n in range(self.bits()):
+            vals.append(self[n])
+        return iter(vals)
+
     def __truediv__(self, other):
         return self._create(other, "/")
 
@@ -607,7 +613,7 @@ class p2v_signal:
             return ", ".join(self._get_ranges(undriven, []))
         return None
 
-    def pad(self, left, right=0, val=0):
+    def pad(self, left=0, right=0, val=0):
         """
         Verilog zero padding.
 
@@ -632,8 +638,8 @@ class p2v_signal:
         Returns:
             p2v_signal
         """
-        if bits >= abs(self._bits):
-            return misc.pad(bits-abs(self._bits), self, val=val)
+        if bits >= self.bits():
+            return misc.pad(bits-self.bits(), self, val=val)
         return self[:bits]
 
     def bits(self):
@@ -642,7 +648,7 @@ class p2v_signal:
         """
         _bits = 1
         for x in self._dim:
-            _bits *= x
+            _bits *= abs(x)
         return _bits
 
     def int(self, int_bits=16):

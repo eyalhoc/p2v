@@ -815,6 +815,12 @@ def flatten(obj):
             out.append(cur)
     return out
 
+def get_module(name):
+    """ import and return a module by its string name """
+    assert isinstance(name, str), name
+    module = __import__(name)
+    return getattr(module, name)
+
 
 ### SYSTEM VERILOG ASSERTION FUNCTIONS
 def onehot(expression):

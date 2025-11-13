@@ -75,7 +75,7 @@ class p2v_connect():
                 if isinstance(wire, int):
                     wire = str(misc.dec(wire, signal.bits()))
                 self._parent._assert(isinstance(wire, str), f"wire {wire} is of type {misc._type2str(type(wire))} while expecting type str", fatal=True)
-                self._parent._assert(pin not in self._pins, f"pin {pin} was previosuly assigned")
+                self._parent._assert(pin not in self._pins, f"pin {pin} was previously assigned", fatal=True)
                 if signal._bits != 0:
                     self._pins[pin] = wire
                 if isinstance(signal._strct, p2v_struct):
@@ -154,9 +154,15 @@ class p2v_connect():
             None
         """
         if isinstance(pin, dict) or isinstance(wire, dict):
-            self._parent._assert(isinstance(pin, dict) and isinstance(wire, dict), "when dict type is used for connect both pin and wire must be of type dict", fatal=True)
-            for key in wire:
-                self.connect_in(pin[key], wire[key])
+            if isinstance(wire, int):
+                for key in pin:
+                    if isinstance(key, str) and key.startswith("_"):
+                        continue
+                    self.connect_in(pin[key], wire)
+            else:
+                self._parent._assert(isinstance(pin, dict) and isinstance(wire, dict), "when dict type is used for connect both pin and wire must be of type dict", fatal=True)
+                for key in wire:
+                    self.connect_in(pin[key], wire[key])
         else:
             if isinstance(wire, list):
                 for w in wire:
@@ -185,13 +191,19 @@ class p2v_connect():
             None
         """
         if isinstance(pin, dict) or isinstance(wire, dict):
-            self._parent._assert(isinstance(pin, dict) and isinstance(wire, dict), "when dict type is used for connect both pin and wire must be of type dict", fatal=True)
-            for key in wire:
-                for w in wire:
-                    if not isinstance(w, int):
-                        self._parent._assert(isinstance(w, p2v_signal), f"{w} is of type {type(w)} while expecting p2v signal", fatal=True)
-                        self._parent._assert(not w.is_parameter(), f"parameter {w} is not allowed on port concatenation", fatal=True)
-                self.connect_out(pin[key], wire[key])
+            if wire is None:
+                for key in pin:
+                    if isinstance(key, str) and key.startswith("_"):
+                        continue
+                    self.connect_out(pin[key], wire)
+            else:
+                self._parent._assert(isinstance(pin, dict) and isinstance(wire, dict), "when dict type is used for connect both pin and wire must be of type dict", fatal=True)
+                for key in wire:
+                    for w in wire:
+                        if not isinstance(w, int):
+                            self._parent._assert(isinstance(w, p2v_signal), f"{w} is of type {type(w)} while expecting p2v signal", fatal=True)
+                            self._parent._assert(not w.is_parameter(), f"parameter {w} is not allowed on port concatenation", fatal=True)
+                    self.connect_out(pin[key], wire[key])
         else:
             if isinstance(wire, list):
                 wire = misc.concat(wire)
@@ -231,7 +243,7 @@ class p2v_connect():
         for name in self._signals:
             signal = self._signals[name]
             if name not in self._pins and name not in self._strct_pins and signal._bits != 0:
-                wire = name + suffix
+                wire = name + str(suffix)
                 if not ports and signal.is_port() and wire not in self._parent._signals:
                     self._parent.logic(wire, signal._bits, _allow_str=True)
                 if signal._kind == p2v_kind.INPUT:

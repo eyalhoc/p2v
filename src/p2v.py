@@ -1883,6 +1883,8 @@ class p2v():
         src_expr = ""
         if len(src) == 1: # balanced encoded sel mux
             for sel, vals in src.items():
+                if isinstance(vals, p2v_signal):
+                    vals = list(vals)
                 self._assert(isinstance(vals, (list, dict)), f"assignment to mux must use type list or dict for mux inputs ({vals})", fatal=True)
                 if isinstance(vals, dict):
                     vals = list(vals.values())
