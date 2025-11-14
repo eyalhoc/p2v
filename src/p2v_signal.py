@@ -141,8 +141,9 @@ class p2v_signal:
         return self._create(other, "-")
 
     def __rsub__(self, other):
-        if isinstance(other, (int, float)):
-            return self.__sub__(other)
+        if isinstance(other, int):
+            other = misc.dec(other, max(self._bits, other.bit_length()))
+            return other.__sub__(self)
         raise RuntimeError(f"unsupported type {type(other)} with p2v signal")
 
     def __mul__(self, other):
