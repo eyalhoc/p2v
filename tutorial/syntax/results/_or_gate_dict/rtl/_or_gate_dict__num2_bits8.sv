@@ -11,7 +11,7 @@ module _or_gate_dict__num2_bits8 (
     //  * num = 2 (int) #  number of inputs
     //  * bits = 8 (int) #  data width
 
-    assign c__0 = i__0__w | i__0__r;
-    assign c__1 = i__1__w | i__1__r;
+    assign c__0 = (i__0__w | i__0__r);
+    assign c__1 = (i__1__w | i__1__r);
 
 endmodule  // _or_gate_dict__num2_bits8

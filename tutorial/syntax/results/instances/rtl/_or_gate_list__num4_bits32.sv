@@ -10,6 +10,6 @@ module _or_gate_list__num4_bits32 (
     //  * num = 4 (int) #  number of inputs
     //  * bits = 32 (int) #  data width
 
-    assign c = i__0 | i__1 | i__2 | i__3;
+    assign c = (i__0 | i__1 | i__2 | i__3);
 
 endmodule  // _or_gate_list__num4_bits32

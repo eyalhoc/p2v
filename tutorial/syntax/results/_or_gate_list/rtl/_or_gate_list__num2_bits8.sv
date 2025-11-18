@@ -8,6 +8,6 @@ module _or_gate_list__num2_bits8 (
     //  * num = 2 (int) #  number of inputs
     //  * bits = 8 (int) #  data width
 
-    assign c = i__0 | i__1;
+    assign c = (i__0 | i__1);
 
 endmodule  // _or_gate_list__num2_bits8
