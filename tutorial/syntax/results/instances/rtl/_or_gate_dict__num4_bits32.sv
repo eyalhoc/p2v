@@ -17,9 +17,9 @@ module _or_gate_dict__num4_bits32 (
     //  * num = 4 (int) #  number of inputs
     //  * bits = 32 (int) #  data width
 
-    assign c__0 = i__0__w | i__0__r;
-    assign c__1 = i__1__w | i__1__r;
-    assign c__2 = i__2__w | i__2__r;
-    assign c__3 = i__3__w | i__3__r;
+    assign c__0 = (i__0__w | i__0__r);
+    assign c__1 = (i__1__w | i__1__r);
+    assign c__2 = (i__2__w | i__2__r);
+    assign c__3 = (i__3__w | i__3__r);
 
 endmodule  // _or_gate_dict__num4_bits32

@@ -582,7 +582,7 @@ def concat(vals, sep=None, nl_every=None, add_paren=True):
                     vals[i] = f"({val})"
         if len(sep) == 1:
             sep = f" {sep} "
-        rtrn = sep.join(vals)
+        rtrn = "(" + sep.join(vals) + ")"
     return p2v_signal(None, str(rtrn), bits=_bits)
 
 def pad(left, name, right=0, val=0):
