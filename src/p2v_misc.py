@@ -600,15 +600,21 @@ def pad(left, name, right=0, val=0):
     """
     assert isinstance(left, int) and left >= 0, f"illegal left padding {left}"
     assert isinstance(right, int) and right >= 0, f"illegal left padding {right}"
-    assert isinstance(val, int), f"illegal pad value {val}"
+    assert isinstance(val, (p2v_signal, int)), f"illegal pad value {val}"
     _assert_signal("pad", name)
     _bits = name._bits + left + right
     vals = []
     if left > 0:
-        vals.append(dec(val, left))
+        if isinstance(val, int):
+            vals.append(dec(val, left))
+        else:
+            vals.append(concat([val] * left))
     vals.append(name)
     if right > 0:
-        vals.append(dec(val, right))
+        if isinstance(val, int):
+            vals.append(dec(val, right))
+        else:
+            vals.append(concat([val] * right))
     rtrn = concat(vals)
     return p2v_signal(None, str(rtrn), bits=_bits)
 

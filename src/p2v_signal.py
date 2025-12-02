@@ -621,26 +621,27 @@ class p2v_signal:
         Args:
             left(int): msb padding bits
             right(int): lsb padding bits
-            val(int): value for padding
+            val([int, p2v_signal]): value for padding
 
         Returns:
             p2v_signal
         """
         return misc.pad(left, self, right=right, val=val)
 
-    def resize(self, bits, val=0):
+    def resize(self, bits, val=0, signed=False):
         """
         Verilog zero padding to total size.
 
         Args:
             bits(int): total number of bits with pad
-            val(int): value for padding
+            val([int, p2v_signal]): value for padding
+            signed(bool): sign extend
 
         Returns:
             p2v_signal
         """
         if bits >= self.bits():
-            return misc.pad(bits-self.bits(), self, val=val)
+            return misc.pad(bits-self.bits(), self, val=misc.cond(signed, self[-1], val))
         return self[:bits]
 
     def bits(self):
