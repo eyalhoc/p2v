@@ -43,12 +43,12 @@ class p2v_task():
         lines = []
         lines.append(f"task {misc.cond(automatic, 'automatic ')}{task_name};")
         for port in self._p2v._get_signals([p2v_kind.INPUT, p2v_kind.OUTPUT]):
-            lines.append(f"{port._kind} {port._declare_bits()} {port._name};")
+            lines.append(f"{port._kind} {port._declare_bits(port._name)};")
             ports.append(port._name)
 
         lines.append("")
         for port in self._p2v._get_signals([p2v_kind.OUTPUT, p2v_kind.LOGIC]):
-            lines.append(f"reg {port._declare_bits()} {port._name};")
+            lines.append(f"reg {port._declare_bits(port._name)};")
 
         lines.append("begin")
 
@@ -87,9 +87,9 @@ class p2v_task():
     def fclose(self, fd):
         self.line(f"$fclose({fd});")
 
-    def loop(self, size):
+    def loop(self, size, start_idx=0):
         name = self._parent._get_receive_name("loop")
-        return self._p2v.tb.loop(size, name=name, _task=True)
+        return self._p2v.tb.loop(size, start_idx=start_idx, name=name, _task=True)
 
     def end(self):
         return self._p2v.tb.end()
@@ -107,6 +107,11 @@ class p2v_task():
     def exec(self, func, cond=None):
         return self._p2v.exec(func, cond=cond)
 
+    def readmemh(self, filename, dim):
+        assert len(dim) == 2, "readmemh memory must be 2d"
+        readmemh_array = self.logic(dim)
+        self.line(f"$readmemh({filename}, {readmemh_array});")
+        return readmemh_array
 
     def _make_task_function(self, task_name):
         def task_func(*args):

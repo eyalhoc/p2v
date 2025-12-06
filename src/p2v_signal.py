@@ -378,10 +378,12 @@ class p2v_signal:
             assert bits >= 1, f"{self._kind} {self._name} has 0 bits"
         return misc._declare_bits(misc.cond(self._bus, [bits], bits))
 
-    def _declare_bits(self):
+    def _declare_bits(self, name=""):
         s = ""
-        for bits in self._dim:
+        for n, bits in enumerate(self._dim):
             s += self._declare_bits_dim(bits)
+            if n == 0:
+                s += name
         return s
 
     def _get_ranges(self, idxs, ranges):
