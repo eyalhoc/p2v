@@ -104,8 +104,8 @@ class p2v_task():
     def delay(self, signal, num=1, posedge=True, wait_for=None):
         return self._p2v.tb.delay(signal, num=num, posedge=posedge, wait_for=wait_for)
 
-    def exec(self, func):
-        return self._p2v.exec(func)
+    def exec(self, func, cond=None):
+        return self._p2v.exec(func, cond=cond)
 
 
     def _make_task_function(self, task_name):

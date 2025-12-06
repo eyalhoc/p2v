@@ -2283,17 +2283,20 @@ class p2v():
             pipe.advance()
         return pipe
 
-    def exec(self, func):
+    def exec(self, func, cond=None):
         """ execute external function """
+        if cond is not None:
+            self.line(f"if {misc._add_paren(cond)}")
         if isinstance(func, list):
+            if cond is not None:
+                self.line("begin")
             for elem in func:
                 self.exec(elem)
-            return None
-        return self.line(str(func))
+            if cond is not None:
+                self.line("end")
+        else:
+            self.line(str(func))
 
 # top constructor
 if __name__ != "__main__":
-    #try:
     p2v()
-    #except ImportError:
-    #    pass

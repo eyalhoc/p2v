@@ -229,33 +229,41 @@ class p2v_connect():
             wire = self._get_wire(pin, wire)
         self._connect(pin, wire, kind=p2v_kind.INOUT)
 
-    def connect_auto(self, ports=False, suffix=""):
+    def connect_auto(self, ports=False, suffix="", const=None):
         """
         Automatically connect all unconnected ports to instance.
 
         Args:
             ports(bool): Define module ports for all unconnected instance ports
             suffix(str): Suffix all wires of unconnected instance ports
+            const([None, int]): Drive constant on inputs and set outputs unconnected
 
         Returns:
             None
         """
+        self._parent._assert(not (ports and const), "unused ports cannot be connected both to constants and to ports", fatal=True)
         for name in self._signals:
             signal = self._signals[name]
             if name not in self._pins and name not in self._strct_pins and signal._bits != 0:
                 wire = name + str(suffix)
-                if not ports and signal.is_port() and wire not in self._parent._signals:
+                if not ports and const is None and signal.is_port() and wire not in self._parent._signals:
                     self._parent.logic(wire, signal._bits, _allow_str=True)
                 if signal._kind == p2v_kind.INPUT:
                     if ports:
                         if not (wire in self._parent._signals and self._parent._signals[name]._kind == p2v_kind.INPUT):
                             self._parent.input(wire, signal._bits, _allow_str=True)
-                    self.connect_in(name, wire, _use_wire=True)
+                    if const is not None:
+                        self.connect_in(name, const)
+                    else:
+                        self.connect_in(name, wire, _use_wire=True)
                 elif signal._kind == p2v_kind.OUTPUT:
                     if ports:
                         if not (wire in self._parent._signals and self._parent._signals[name]._kind == p2v_kind.OUTPUT):
                             self._parent.output(wire, signal._bits, _allow_str=True)
-                    self.connect_out(name, wire, _use_wire=True)
+                    if const is not None:
+                        self.connect_out(name, None)
+                    else:
+                        self.connect_out(name, wire, _use_wire=True)
                 elif signal._kind == p2v_kind.INOUT:
                     if ports:
                         if not (wire in self._parent._signals and self._parent._signals[name]._kind == p2v_kind.INOUT):
