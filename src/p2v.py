@@ -560,7 +560,7 @@ class p2v():
                 pass
         self._assert(self._modname is not None, "module name was not set (set_modname() was not called)", fatal=True)
         self._assert(signal._name not in misc._systemverilog_keywords(), f"{signal._name} is a reserevd Verilog keyword", fatal=True)
-        if self._assert(signal._name not in self._signals, f"{signal._name} was previously defined"):
+        if self._assert(signal._name not in self._signals, f"{signal._name} was previously defined", fatal=True):
             if isinstance(signal._bits, int):
                 self._assert(abs(signal._bits) <= MAX_BITS, f"{signal._name} uses {abs(signal._bits)} bits which exceeds maximum of {MAX_BITS}", warning=True)
             self._signals[signal._name] = signal
@@ -2283,17 +2283,20 @@ class p2v():
             pipe.advance()
         return pipe
 
-    def exec(self, func):
+    def exec(self, func, cond=None):
         """ execute external function """
+        if cond is not None:
+            self.line(f"if {misc._add_paren(cond)}")
         if isinstance(func, list):
+            if cond is not None:
+                self.line("begin")
             for elem in func:
                 self.exec(elem)
-            return None
-        return self.line(str(func))
+            if cond is not None:
+                self.line("end")
+        else:
+            self.line(str(func))
 
 # top constructor
 if __name__ != "__main__":
-    #try:
     p2v()
-    #except ImportError:
-    #    pass

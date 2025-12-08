@@ -378,11 +378,16 @@ class p2v_signal:
             assert bits >= 1, f"{self._kind} {self._name} has 0 bits"
         return misc._declare_bits(misc.cond(self._bus, [bits], bits))
 
-    def _declare_bits(self):
-        s = ""
+    def _declare_bits(self, name=""):
+        s = []
         for bits in self._dim:
-            s += self._declare_bits_dim(bits)
-        return s
+            s.append(self._declare_bits_dim(bits))
+        if name == "":
+            return "".join(s)
+        assert len(s) <= 2, "only 2d mem arrays are supported"
+        if len(s) == 2:
+            return s[1] + name + s[0]
+        return s[0] + name
 
     def _get_ranges(self, idxs, ranges):
         if len(idxs) == 0:
@@ -621,26 +626,27 @@ class p2v_signal:
         Args:
             left(int): msb padding bits
             right(int): lsb padding bits
-            val(int): value for padding
+            val([int, p2v_signal]): value for padding
 
         Returns:
             p2v_signal
         """
         return misc.pad(left, self, right=right, val=val)
 
-    def resize(self, bits, val=0):
+    def resize(self, bits, val=0, signed=False):
         """
         Verilog zero padding to total size.
 
         Args:
             bits(int): total number of bits with pad
-            val(int): value for padding
+            val([int, p2v_signal]): value for padding
+            signed(bool): sign extend
 
         Returns:
             p2v_signal
         """
         if bits >= self.bits():
-            return misc.pad(bits-self.bits(), self, val=val)
+            return misc.pad(bits-self.bits(), self, val=misc.cond(signed, self[-1], val))
         return self[:bits]
 
     def bits(self):

@@ -634,13 +634,14 @@ class p2v_tb():
         self._parent.line("    begin")
         self._block = "always"
 
-    def loop(self, size, name=None, _task=False):
+    def loop(self, size, start_idx=0, name=None, _task=False):
         """ for loop block """
         if name is None:
             name = self._parent._get_receive_name("loop")
         var = self._parent.logic(name, 32, _allow_str=True, _task=_task)
-        self._parent.line(f"for ({var}=0; {var}<{size}; {var}={var}+1) begin")
-        self._parent._set_used(size)
+        self._parent.line(f"for ({var}={start_idx}; {var}<{size+start_idx}; {var}={var}+1) begin")
+        if isinstance(size, p2v_signal):
+            self._parent._set_used(size)
         self._block = "for"
         return var
 

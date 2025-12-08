@@ -21,6 +21,9 @@ class exprs(p2v):
         o5 = self.output(8)
         o6 = self.output(8)
         o7 = self.output(8)
+        o8_sel = self.input(3)
+        o8 = self.output()
+        o8_neg = self.output()
 
         o = {}
         for i in range(12):
@@ -67,6 +70,9 @@ class exprs(p2v):
                                bitwise[1]: [b, a],
                                bitwise[2]: [o1, o1]
                               })
+
+        self.assign(o8, {o8_sel: o7})
+        self.assign(o8_neg, {o8_sel: ~o7})
 
 
         self.assign(o[0], (a + 2) == (2 + a))
