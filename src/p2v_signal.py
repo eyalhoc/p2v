@@ -379,12 +379,15 @@ class p2v_signal:
         return misc._declare_bits(misc.cond(self._bus, [bits], bits))
 
     def _declare_bits(self, name=""):
-        s = ""
-        for n, bits in enumerate(self._dim):
-            s += self._declare_bits_dim(bits)
-            if n == 0:
-                s += name
-        return s
+        s = []
+        for bits in self._dim:
+            s.append(self._declare_bits_dim(bits))
+        if name == "":
+            return "".join(s)
+        assert len(s) <= 2, "only 2d mem arrays are supported"
+        if len(s) == 2:
+            return s[1] + name + s[0]
+        return s[0] + name
 
     def _get_ranges(self, idxs, ranges):
         if len(idxs) == 0:

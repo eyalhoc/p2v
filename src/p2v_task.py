@@ -94,6 +94,12 @@ class p2v_task():
     def end(self):
         return self._p2v.tb.end()
 
+    def syn_off(self):
+        return self._p2v.tb.syn_off()
+
+    def syn_on(self):
+        return self._p2v.tb.syn_on()
+
     def assert_property(self, condition=None, message=None, name=None, valid=None, fatal=True, clk=None):
         return self._p2v.assert_property(clk=clk, condition=condition, message=message, \
                                          name=name, valid=valid, fatal=fatal, concurrent=False)
