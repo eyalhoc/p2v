@@ -706,7 +706,7 @@ class p2v():
             if key.startswith("_"):
                 continue
             son = getattr(connects, key)
-            if isinstance(son, dict):
+            if isinstance(son, dict) and STRCT_NAME in son:
                 try:
                     son = self._dict_to_namespace(son)
                     setattr(connects, key, self._dict_to_namespace(son))
@@ -1542,12 +1542,18 @@ class p2v():
             override = {}
         self._assert_type(override, dict)
         self._assert("gen" in dir(self), f"{self._get_clsname()} is missing gen() function")
+        sig = inspect.signature(self.gen) # pylint: disable=no-member
+        sig_args = list(sig.parameters.keys())
+        self._assert("module" in dir(self), f"{self._get_clsname()} is missing module() function")
+        sig_mod = inspect.signature(self.module) # pylint: disable=no-member
+        sig_mod_args = list(sig_mod.parameters.keys())
+
         for name in self._args.sim_args:
             override[name] = self._args.sim_args[name]
+            self._assert(name in (sig_args + sig_mod_args), f"{name} is not an argument of {self._get_clsname()}", fatal=True)
         gen_args = {}
         if len(override) > 0:
-            sig = inspect.signature(self.gen) # pylint: disable=no-member
-            for sig_name in list(sig.parameters.keys()):
+            for sig_name in sig_args:
                 if sig_name in override:
                     gen_args[sig_name] = override[sig_name]
         args = self.gen(**gen_args) # pylint: disable=no-member
