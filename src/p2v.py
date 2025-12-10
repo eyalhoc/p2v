@@ -60,6 +60,11 @@ class p2v():
     """
 
     def __init__(self, parent=None, modname=None, parse=True, register=True):
+        try: # parent is a wrapper
+            while parent._modname is None and parent._parent._modname is not None:
+                parent = parent._parent
+        except AttributeError:
+            pass
         self._parent = parent
         self._modname = modname
         self._register = register
