@@ -738,6 +738,13 @@ def max(a, b): # pylint: disable=redefined-builtin
         return cond(b < a, a, b)
     raise RuntimeError("min() arguments cannot be both int")
 
+def eval_str(var):
+    """ performs eval if relevant without crashing """
+    try:
+        return eval(var) # pylint: disable=eval-used
+    except TypeError:
+        return var
+
 def quote(s="", q='"'):
     """
     Add quotes to string
