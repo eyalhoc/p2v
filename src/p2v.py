@@ -1383,7 +1383,8 @@ class p2v():
                           """)
             else:
                 self._set_used(clk)
-                disable_str = misc.cond(clk.rst_n is not None, f" disable iff (!{clk.rst_n})")
+                disable_str = misc.cond(clk.rst_n is not None, f" disable iff (!{clk.rst_n})",
+                              misc.cond(clk.reset is not None, f" disable iff ({clk.reset})"))
                 self.line(f"""{tag_str}{property_type}{property_str} (@(posedge {clk}){disable_str} {condition})
                                         {misc.cond(property_type != "cover", "else")} {err_str};
                           """)
@@ -1394,8 +1395,11 @@ class p2v():
                         assert_never = {}
                         assert_never[name] = self.logic(assign=misc._invert(condition), _allow_str=True)
                         self.allow_unused(assert_never[name])
+                        rst_n_str = misc.cond(clk.rst_n is not None, f'{clk.rst_n} & ',
+                                    misc.cond(clk.reset is not None, f'!{clk.reset} & '))
+
                         self.line(f"""always @(posedge {clk})
-                                          if ({misc.cond(clk.rst_n is not None, f'{clk.rst_n} & ')}{assert_never[name]})
+                                          if ({rst_n_str}{assert_never[name]})
                                               {err_str};
                                     """)
 
