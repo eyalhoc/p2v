@@ -1403,6 +1403,14 @@ class p2v():
                                               {err_str};
                                     """)
 
+    def _get_module_locals(self, depth=2):
+        module_locals = {}
+        frame = self._get_caller(depth)
+        for name, value in frame.f_locals.items():
+            if name != "self":
+                module_locals[name] = value
+        return module_locals
+
 
     def set_modname(self, modname=None, suffix=True):
         """
@@ -1421,12 +1429,7 @@ class p2v():
             self._assert(self._modname is None, "set_modname() was previously called", fatal=True)
 
         # create a new dictionary and remove self since it is illegal to delete items from locals
-        module_locals = {}
-        frame = inspect.currentframe()
-        for name, value in frame.f_back.f_locals.items():
-            if name != "self":
-                module_locals[name] = value
-
+        module_locals = self._get_module_locals()
         if self._register and self._parent.__class__.__name__ != self.__class__.__name__: # ignore nested recursions
             self.tb.register_test(module_locals)
 
@@ -1443,7 +1446,7 @@ class p2v():
                 if suffix and len(suf) > 0:
                     self._modname += FIELD_SEP + "_".join(suf)
                     self._assert(len(self._modname) <= MAX_MODNAME, \
-                    f"module name should be explicitly set generated name {self._modname} of {len(self._modname)} characters exceeds max od {MAX_MODNAME}", fatal=True)
+                    f"module name should be explicitly set generated name {self._modname} of {len(self._modname)} characters exceeds max of {MAX_MODNAME}", fatal=True)
         exists = self._exists()
         if exists:
             self._signals = self._cache["conn"][self._modname]._signals
@@ -1532,6 +1535,25 @@ class p2v():
                     fields.append(field)
         return fields
 
+    def get_module_params(self, remove=None):
+        """
+        Get module parametets.
+
+        Args:
+            remove([None, list]): list of parameters to remove from return value
+
+        Returns:
+            dict
+        """
+        self._assert_type(remove, [None, list])
+        params = {}
+        for name, val in self._get_module_locals().items():
+            if remove is not None and name in remove:
+                continue
+            if name in self._params:
+                params[name] = val
+        return params
+
     def gen_rand_args(self, override=None):
         """
         Generate random module parameters and register in csv file.
@@ -1604,12 +1626,13 @@ class p2v():
         for l in line.split("\n"):
             self._lines.append(l)
 
-    def remark(self, comment):
+    def remark(self, comment, stdout=False):
         """
         Insert a Verilog remark.
 
         Args:
             comment([None, str, dict, list]): string comment or one comment like per dictionary pair
+            stdout(bool): also log to standard output (screen)
 
         Returns:
             None
@@ -1619,7 +1642,7 @@ class p2v():
             pass
         elif isinstance(comment, dict):
             for key in comment:
-                self.remark(f"{key} = {comment[key]}")
+                self.remark(f"{key} = {comment[key]}", stdout=stdout)
             self.line()
         elif isinstance(comment, list):
             line = self._get_current_line().replace(" ", "").split("#")[0]
@@ -1627,10 +1650,12 @@ class p2v():
             remark_val = line.split("remark(")[1][:-1]
             if self._assert(len(remark_val) > 2 and remark_val[0] == "[" and remark_val[-1] == "]", f"unepxected reamrk {remark_val}"):
                 for n, name in enumerate(remark_val[1:-1].split(",")):
-                    self.remark(f"{name} = {comment[n]}")
+                    self.remark(f"{name} = {comment[n]}", stdout=stdout)
             self.line()
         else:
             self.line("", remark=comment)
+            if stdout:
+                print(comment)
 
     def parameter(self, name, val="", local=False):
         """
