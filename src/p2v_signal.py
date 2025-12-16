@@ -75,7 +75,7 @@ class p2v_signal:
             self._dim = [self._bits]
         elif isinstance(bits, tuple):
             assert len(bits) <= 2, f"{self} bits {bits} exceeds max of 2 dimensions"
-            self._bits = bits[0]
+            self._bits = bits[-1]
             self._bus = True
             self._dim = []
             for b in bits:
