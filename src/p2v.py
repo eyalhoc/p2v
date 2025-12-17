@@ -273,10 +273,11 @@ class p2v():
                     top_filename = None
                 else:
                     top_filename = self._get_filename()
-                logfile, success = p2v_tools.lint(self._args.lint_bin, dirname=self._get_rtldir(), outdir=self._args.outdir, filename=top_filename)
-                if self._assert(success, f"Verilog lint completed with errors:\n{misc._read_file(logfile)}"):
-                    self._logger.info("Verilog lint completed successfully")
-                    return True
+                if top_filename is not None: # nothing was created
+                    logfile, success = p2v_tools.lint(self._args.lint_bin, dirname=self._get_rtldir(), outdir=self._args.outdir, filename=top_filename)
+                    if self._assert(success, f"Verilog lint completed with errors:\n{misc._read_file(logfile)}"):
+                        self._logger.info("Verilog lint completed successfully")
+                        return True
         return False
 
     def _pylint(self, srcfiles=None):
@@ -418,7 +419,8 @@ class p2v():
                     args = self._get_gen_args(top_class, params=self._args.params)
                 top_class.module(self, **args)
                 self._lint()
-                self._pylint()
+                if not gen_loop or i == 0: # only once
+                    self._pylint()
 
         self._write_srcfiles()
         rtrn = int(self._err_num > 0)
