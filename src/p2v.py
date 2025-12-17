@@ -273,10 +273,11 @@ class p2v():
                     top_filename = None
                 else:
                     top_filename = self._get_filename()
-                logfile, success = p2v_tools.lint(self._args.lint_bin, dirname=self._get_rtldir(), outdir=self._args.outdir, filename=top_filename)
-                if self._assert(success, f"Verilog lint completed with errors:\n{misc._read_file(logfile)}"):
-                    self._logger.info("Verilog lint completed successfully")
-                    return True
+                if top_filename is not None: # nothing was created
+                    logfile, success = p2v_tools.lint(self._args.lint_bin, dirname=self._get_rtldir(), outdir=self._args.outdir, filename=top_filename)
+                    if self._assert(success, f"Verilog lint completed with errors:\n{misc._read_file(logfile)}"):
+                        self._logger.info("Verilog lint completed successfully")
+                        return True
         return False
 
     def _pylint(self, srcfiles=None):
@@ -418,7 +419,8 @@ class p2v():
                     args = self._get_gen_args(top_class, params=self._args.params)
                 top_class.module(self, **args)
                 self._lint()
-                self._pylint()
+                if not gen_loop or i == 0: # only once
+                    self._pylint()
 
         self._write_srcfiles()
         rtrn = int(self._err_num > 0)
@@ -458,14 +460,21 @@ class p2v():
             list_of_params = []
             with open(value, newline='', encoding="utf-8") as csvfile:
                 reader = csv.DictReader(csvfile, skipinitialspace=True)
-                for row in reader:
+                for y, row in enumerate(reader):
+                    x = 0
                     args = {}
                     for key, val in row.items():
-                        key, val = key.strip(), val.strip()
-                        try:
-                            args[key] = eval(val) # pylint: disable=eval-used
-                        except NameError:
-                            args[key] = eval(f'"{val}"') # pylint: disable=eval-used
+                        if not key.startswith("#"):
+                            key, val = key.strip(), val.strip()
+                            assert val.strip() != "", f"{value} cell {x}x{y} is empty"
+                            try:
+                                args[key] = eval(val) # pylint: disable=eval-used
+                            except NameError:
+                                try:
+                                    args[key] = eval(f'"{val}"') # pylint: disable=eval-used
+                                except: #pylint: disable=bare-except
+                                    self._raise(f"{value} cell {x}x{y} failed to parse")
+                        x += 1
                     list_of_params.append(args)
             return list_of_params
         return ast.literal_eval(value)
@@ -929,12 +938,13 @@ class p2v():
                 self._port(kind, str(name.reset), used=used, driven=driven, strct=name)
             if name.rst_n is not None:
                 self._port(kind, str(name.rst_n), used=used, driven=driven, strct=name)
-        elif isinstance(name, list):
+            return name
+        if isinstance(name, list):
             signals = []
             for n in name:
                 signals.append(self._port(kind, n, bits=bits, used=used, driven=driven))
             return signals
-        elif isinstance(bits, dict):
+        if isinstance(bits, dict):
             self._assert(kind in [p2v_kind.INPUT, p2v_kind.OUTPUT], f"struct {name} is of illegal kind {kind}")
             signal = self._add_signal(p2v_signal(kind, name, bits=0, strct=bits, used=True, driven=True, remark=self._get_remark(depth=3)))
             fields = signal._strct.fields
@@ -949,17 +959,15 @@ class p2v():
                 else:
                     self.output(field_name, abs(field_bits), _allow_str=True)
             return signal
-        else:
-            self._assert(misc._is_legal_name(str(name)), f"{kind} port {name} has an illegal name")
-            if isinstance(bits, str):
-                for bits_str in self._get_names(bits):
-                    self._set_used(bits_str)
-            signal = self._add_signal(p2v_signal(kind, name, bits, used=used, driven=driven, remark=self._get_remark(depth=3), strct=strct))
-            if enum is not None:
-                for _name, _val in enum.items():
-                    setattr(signal, _name, p2v_signal(None, f"({name} == {_val})", bits=bits, strct=strct))
-            return signal
-        return None
+        self._assert(misc._is_legal_name(str(name)), f"{kind} port {name} has an illegal name")
+        if isinstance(bits, str):
+            for bits_str in self._get_names(bits):
+                self._set_used(bits_str)
+        signal = self._add_signal(p2v_signal(kind, name, bits, used=used, driven=driven, remark=self._get_remark(depth=3), strct=strct))
+        if enum is not None:
+            for _name, _val in enum.items():
+                setattr(signal, _name, p2v_signal(None, f"({name} == {_val})", bits=bits, strct=strct))
+        return signal
 
     def _find_file(self, filename, allow_dir=False, allow=False):
         filename = filename.strip()
@@ -1535,23 +1543,32 @@ class p2v():
                     fields.append(field)
         return fields
 
-    def get_module_params(self, remove=None):
+    def get_module_params(self, remove=None, override=None):
         """
         Get module parametets.
 
         Args:
             remove([None, list]): list of parameters to remove from return value
+            override([None, dict]): variables to override
 
         Returns:
             dict
         """
-        self._assert_type(remove, [None, list])
+        if remove is None:
+            remove = []
+        if override is None:
+            override = {}
+        self._assert_type(remove, list)
+        self._assert_type(override, dict)
         params = {}
         for name, val in self._get_module_locals().items():
-            if remove is not None and name in remove:
+            if name in remove:
                 continue
             if name in self._params:
                 params[name] = val
+        for name, val in override.items():
+            self._assert(name in params, f"override argument {name} was not found in module agruments")
+            params[name] = val
         return params
 
     def gen_rand_args(self, override=None):
@@ -1885,7 +1902,8 @@ class p2v():
             self._clocks[orig_name] = name
             for net in name.get_nets():
                 self.logic(net, _allow_str=True)
-        elif isinstance(name, list):
+            return name
+        if isinstance(name, list):
             signals = []
             for n in name:
                 signals.append(self.logic(n, bits=bits, assign=assign, initial=initial))

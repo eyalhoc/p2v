@@ -159,7 +159,7 @@ def pylint(tool_bin, srcfiles, outdir):
 def _get_iverilog_flags(search=None):
     if search is None:
         search = []
-    flags = "-g2005-sv -gsupported-assertions"
+    flags = "-g2005-sv -gsupported-assertions -Wno-timescale"
     if len(search) > 0:
         flags += " -Y .v -Y .sv"
         flags += " -y " + " -y ".join(search)
