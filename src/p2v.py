@@ -1543,23 +1543,32 @@ class p2v():
                     fields.append(field)
         return fields
 
-    def get_module_params(self, remove=None):
+    def get_module_params(self, remove=None, override=None):
         """
         Get module parametets.
 
         Args:
             remove([None, list]): list of parameters to remove from return value
+            override([None, dict]): variables to override
 
         Returns:
             dict
         """
-        self._assert_type(remove, [None, list])
+        if remove is None:
+            remove = []
+        if override is None:
+            override = {}
+        self._assert_type(remove, list)
+        self._assert_type(override, dict)
         params = {}
         for name, val in self._get_module_locals().items():
-            if remove is not None and name in remove:
+            if name in remove:
                 continue
             if name in self._params:
                 params[name] = val
+        for name, val in override.items():
+            self._assert(name in params, f"override argument {name} was not found in module agruments")
+            params[name] = val
         return params
 
     def gen_rand_args(self, override=None):
