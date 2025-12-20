@@ -279,7 +279,7 @@ class p2v_signal:
 
     def __rlshift__(self, other):
         if isinstance(other, int):
-            return self.__lshift__(other)
+            return misc.dec(other, bits=self._bits) << self
         raise RuntimeError(f"unsupported type {type(other)} with p2v signal")
 
     def __rshift__(self, other):
@@ -294,7 +294,7 @@ class p2v_signal:
 
     def __rrshift__(self, other):
         if isinstance(other, int):
-            return self.__rshift__(other)
+            return misc.dec(other, bits=self._bits) >> self
         raise RuntimeError(f"unsupported type {type(other)} with p2v signal")
 
     def __getitem__(self, key):
