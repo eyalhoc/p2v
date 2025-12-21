@@ -351,12 +351,12 @@ class p2v_signal:
             if hasattr(self._strct, func_name):
                 func = getattr(self._strct, func_name)
                 return func(self, other)
-        if isinstance(other, int):
-            other = misc.dec(other, max(self._bits, other.bit_length()))
         if auto_pad:
             left, right = self._auto_pad(other)
         else:
             left, right = self, other
+        if isinstance(right, int):
+            right = misc.dec(right, max(self._bits, right.bit_length()))
         expr = misc._remove_extra_paren(f"({left} {op} {right})")
         if bits is None:
             bits = self._bits
