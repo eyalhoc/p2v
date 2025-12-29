@@ -786,6 +786,8 @@ def format_str(s, params=None):
 
 def list_func(lst, func):
     """ perform function on all elements of a list (recursive) """
+    if isinstance(lst, tuple):
+        lst = list(lst)
     assert isinstance(lst, list), lst
     for n, item in enumerate(lst):
         if isinstance(item, list):
