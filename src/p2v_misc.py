@@ -553,6 +553,9 @@ def concat(vals, sep=None, nl_every=None, add_paren=True):
     vals = flatten(vals) # support multi-dim lists
 
     _bits = 0
+    _pipe = None
+    _initial_pipe_stage = 0
+    _pipe_stage = 0
     new_vals = []
     for n, val in enumerate(vals):
         _assert_signal("concat", val)
@@ -561,6 +564,10 @@ def concat(vals, sep=None, nl_every=None, add_paren=True):
                 _bits += val._bits
             else:
                 _bits = val._bits
+            if val._pipe_stage > _pipe_stage:
+                _pipe = val._pipe
+                _initial_pipe_stage = val._initial_pipe_stage
+                _pipe_stage = val._pipe_stage
         if val is not None:
             val = str(val)
             if nl_every is not None and ((n > 0) and (n%nl_every) == 0):
@@ -584,7 +591,11 @@ def concat(vals, sep=None, nl_every=None, add_paren=True):
         if len(sep) == 1:
             sep = f" {sep} "
         rtrn = "(" + sep.join(vals) + ")"
-    return p2v_signal(None, str(rtrn), bits=_bits)
+    signal = p2v_signal(None, str(rtrn), bits=_bits)
+    signal._pipe = _pipe
+    signal._initial_pipe_stage = _initial_pipe_stage
+    signal._pipe_stage = _pipe_stage
+    return signal
 
 def pad(left, name, right=0, val=0):
     """

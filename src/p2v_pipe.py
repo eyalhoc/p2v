@@ -11,6 +11,8 @@
 #  GPL-3.0 license for full details: https://www.gnu.org/licenses/gpl-3.0.html
 # -----------------------------------------------------------------------------
 
+from p2v_signal import p2v_signal
+
 # pylint: disable=too-few-public-methods
 class p2v_pipe:
     """
@@ -18,57 +20,67 @@ class p2v_pipe:
     """
 
     def __init__(self, parent, clk, valid, ready=None, bypass=False, debug=False):
-        self.parent = parent
-        self.clk = clk
-        self.valid = valid
-        self.ready = ready
-        self.bypass = bypass
-        self.debug = debug
+        self._parent = parent
+        self._clk = clk
+        self._valid = valid
+        self._ready = ready
+        self._bypass = bypass
+        self._debug = debug
 
-        self.stage_valid = valid
+        self._stage_valid = valid
         if ready is not None:
-            self.parent._set_used(ready)
+            self._parent._set_used(ready)
         if debug:
             self._stage_cnt()
 
 
+    def valid(self):
+        """ get pipeline valid signal """
+        return self._stage_valid
+
     def end(self):
         """ close pipeline """
-        self.parent._pipelines[self.valid] = None
-        return self.stage_valid
+        self._parent._pipelines[self._valid] = None
+        self._stage_valid._initial_pipe_stage = -1
+        return self.valid()
 
-    def advance(self, bypass=False):
+    def advance(self, num=1, bypass=False):
         """ advance pipeline stage """
-        self.parent._assert(self.valid in self.parent._pipelines, "trying to advance undeclared pipeline", fatal=True)
-        self.parent._assert(self.parent._pipelines[self.valid] is not None, "trying to advance a closed pipeline", fatal=True)
+        if isinstance(num, p2v_signal):
+            self._parent._set_used(num)
+            num = num._pipe_stage
+        self._parent._assert(self._valid in self._parent._pipelines, "trying to advance undeclared pipeline", fatal=True)
+        self._parent._assert(self._parent._pipelines[self._valid] is not None, "trying to advance a closed pipeline", fatal=True)
         if not bypass:
-            if self.parent._pipe_stage == 0:
-                delay_name = self._get_delay_name(self.valid, self.parent._pipe_stage)
-                self.parent.logic(delay_name, assign=self.valid, _allow_str=True)
-            self.stage_valid = self._sample(self.valid, stage=self.parent._pipe_stage)
-            self.parent._pipe_stage += 1
-            if self.debug:
+            if self._parent._pipe_stage == 0:
+                delay_name = self._get_delay_name(self._valid, self._parent._pipe_stage)
+                self._parent.logic(delay_name, assign=self._valid, _allow_str=True)
+            self._stage_valid = self._sample(self._valid, stage=self._parent._pipe_stage)
+            self._parent._pipe_stage += 1
+            if self._debug:
                 self._stage_cnt()
-            self.parent.line("")
-            self.parent.remark("=" * 32)
-            self.parent.remark(f" ==== PIPELINE STAGE {self.parent._pipe_stage}")
-            self.parent.remark("=" * 32)
-            self.parent.line("")
-        return self.stage_valid
+            self._parent.line("")
+            self._parent.remark("=" * 32)
+            self._parent.remark(f" ==== PIPELINE STAGE {self._parent._pipe_stage}")
+            self._parent.remark("=" * 32)
+            self._parent.line("")
+            if num > 1:
+                self.advance(num-1)
+        return self._stage_valid
 
     def _stage_cnt(self):
-        self.parent.tb.syn_off()
-        cnt_name = self._get_delay_name("stage_cnt", self.parent._pipe_stage)
-        self.parent.logic(cnt_name, 8, initial=0, _allow_str=True)
-        valid = self.stage_valid
-        if self.ready is not None:
-            valid = f"{valid} & {self.ready}"
-        self.parent.line(f"""always @(posedge {self.clk})
+        self._parent.tb.syn_off()
+        cnt_name = self._get_delay_name("stage_cnt", self._parent._pipe_stage)
+        self._parent.logic(cnt_name, 8, initial=0, _allow_str=True)
+        valid = self._stage_valid
+        if self._ready is not None:
+            valid = f"{valid} & {self._ready}"
+        self._parent.line(f"""always @(posedge {self._clk})
                                  if ({valid})
                                      {cnt_name} = {cnt_name} + 1;
                           """)
-        self.parent._set_used(cnt_name)
-        self.parent.tb.syn_on()
+        self._parent._set_used(cnt_name)
+        self._parent.tb.syn_on()
 
     def _get_delay_name(self, name, stage):
         name = str(name)
@@ -87,31 +99,31 @@ class p2v_pipe:
 
     def _get_signal(self, name, stage=0):
         name_d = self._get_delay_name(name, stage=stage)
-        return self.parent._signals[name_d]
+        return self._parent._signals[name_d]
 
     def _signal_exists(self, name, stage=0):
         name_d = self._get_delay_name(name, stage=stage)
-        return name_d in self.parent._signals
+        return name_d in self._parent._signals
 
     def _sample(self, name, bits=1, stage=0):
         src = self._get_signal(name, stage=stage)
-        if self.bypass:
+        if self._bypass:
             return src
 
         tgt_name = self._get_delay_name(name, stage=stage+1)
         src_name = src._name
-        tgt = self.parent.logic(tgt_name, bits=bits, _allow_str=True)
+        tgt = self._parent.logic(tgt_name, bits=bits, _allow_str=True)
         tgt._strct = src._strct
         tgt._pipe_stage += 1
-        self.parent._signals[tgt_name]._strct = tgt._strct
+        self._parent._signals[tgt_name]._strct = tgt._strct
 
         # valid signal
-        if name == str(self.valid):
-            valid = self.ready
+        if name == str(self._valid):
+            valid = self._ready
         else:
-            valid = self._get_delay_name(self.valid, stage=stage)
-            if self.ready is not None:
-                valid = f"{valid} & {self.ready}"
+            valid = self._get_delay_name(self._valid, stage=stage)
+            if self._ready is not None:
+                valid = f"{valid} & {self._ready}"
 
-        self.parent.sample(self.clk, tgt_name, src_name, valid=valid, _allow_str=True)
+        self._parent.sample(self._clk, tgt_name, src_name, valid=valid, _allow_str=True)
         return tgt
