@@ -53,6 +53,7 @@ def _fix_legal_name(name):
 def _get_names(s):
     names = []
     clean = ""
+    s = _comment_remover(s)
     s = re.sub("'[a-z]", "", s)
     for c in s:
         if c.isalnum() or c == "_" or c == ".":

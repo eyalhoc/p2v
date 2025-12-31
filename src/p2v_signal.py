@@ -696,7 +696,8 @@ class p2v_signal:
         Returns:
             synched signal
         """
-        pipeline.parent._assert(not self._const, f"constant signal {self} should not be pipelined")
+        if self._const:
+            return self
         pipeline.parent._assert(self._pipe is None or self._pipe == pipeline, f"{self} used multiple pipelines at the same time", fatal=True)
         self._pipe = pipeline
 
