@@ -1772,6 +1772,11 @@ class p2v():
         elif isinstance(name, str):
             if not _allow_str:
                 self._assert(name == "", "port name should not use string type")
+        if type(bits) not in SIGNAL_TYPES:
+            try:
+                bits = bits(self)
+            except TypeError:
+                pass
         if isinstance(bits, p2v_signal) and bits.is_parameter():
             bits = str(bits)
         if issubclass(type(bits), p2v_type):
@@ -1809,6 +1814,11 @@ class p2v():
         elif isinstance(name, str):
             if not _allow_str:
                 self._assert(name == "", "port name should not use string type")
+        if type(bits) not in SIGNAL_TYPES:
+            try:
+                bits = bits(self)
+            except TypeError:
+                pass
         if isinstance(bits, p2v_signal) and bits.is_parameter():
             bits = str(bits)
         if issubclass(type(bits), p2v_type):
@@ -1869,6 +1879,11 @@ class p2v():
                 self._assert(name == "", "logic name should not use string type")
         if isinstance(name, str) and name == "":
             name = self._get_receive_name("logic")
+        if type(bits) not in SIGNAL_TYPES:
+            try:
+                bits = bits(self)
+            except TypeError:
+                pass
         if isinstance(bits, p2v_signal) and bits.is_parameter():
             bits = str(bits)
         if issubclass(type(bits), p2v_type):
