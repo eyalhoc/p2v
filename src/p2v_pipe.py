@@ -40,7 +40,7 @@ class p2v_pipe:
     def advance(self, bypass=False):
         """ advance pipeline stage """
         self.parent._assert(self.valid in self.parent._pipelines, "trying to advance undeclared pipeline", fatal=True)
-        self.parent._assert(self.parent._pipelines[self.valid] is not None, "trying to advance a closed pipeline", fatal=True)
+        #self.parent._assert(self.parent._pipelines[self.valid] is not None, "trying to advance a closed pipeline", fatal=True)
         if not bypass:
             if self.parent._pipe_stage == 0:
                 delay_name = self._get_delay_name(self.valid, self.parent._pipe_stage)

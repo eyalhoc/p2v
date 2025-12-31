@@ -325,7 +325,11 @@ class p2v_signal:
         return self._bit_range(bits=bits, start=key)
 
     def _signal(self, expr, bits):
-        return p2v_signal(None, str(expr), bits=bits)
+        signal = p2v_signal(None, str(expr), bits=bits)
+        signal._pipe = self._pipe
+        signal._initial_pipe_stage = self._initial_pipe_stage
+        signal._pipe_stage = self._pipe_stage
+        return signal
 
     def _auto_pad(self, other):
         left, right = self, other
