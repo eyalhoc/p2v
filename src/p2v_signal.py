@@ -702,29 +702,29 @@ class p2v_signal:
         """
         if self._const:
             return self
-        pipeline.parent._assert(self._pipe is None or self._pipe == pipeline, f"{self} used multiple pipelines at the same time", fatal=True)
+        pipeline._parent._assert(self._pipe is None or self._pipe == pipeline, f"{self} used multiple pipelines at the same time", fatal=True)
         self._pipe = pipeline
 
         signal = None
-        if pipeline.parent._pipe_stage == 0:
+        if pipeline._parent._pipe_stage == 0:
             return self
 
-        if self._pipe_stage < pipeline.parent._pipe_stage:
+        if self._pipe_stage < pipeline._parent._pipe_stage:
             if not pipeline._signal_exists(self._name, stage=self._initial_pipe_stage):
                 if self._initial_pipe_stage > 0:
                     name_d_initial = pipeline._get_delay_name(self._name, stage=0)
-                    src = pipeline.parent.logic(name_d_initial, bits=self._bits, assign=self, _allow_str=True)
+                    src = pipeline._parent.logic(name_d_initial, bits=self._bits, assign=self, _allow_str=True)
                 else:
                     src = self
 
                 name_d_initial = pipeline._get_delay_name(self._name, stage=self._initial_pipe_stage)
-                signal = pipeline.parent.logic(name_d_initial, bits=self._bits, assign=src, _allow_str=True)
+                signal = pipeline._parent.logic(name_d_initial, bits=self._bits, assign=src, _allow_str=True)
                 signal._strct = self._strct
 
-            for i in range(self._initial_pipe_stage, pipeline.parent._pipe_stage):
+            for i in range(self._initial_pipe_stage, pipeline._parent._pipe_stage):
                 if not pipeline._signal_exists(self._name, stage=i+1):
                     signal = pipeline._sample(self._name, bits=self._bits, stage=i)
-            self._pipe_stage = pipeline.parent._pipe_stage
+            self._pipe_stage = pipeline._parent._pipe_stage
             signal._pipe = self._pipe
             return signal
 

@@ -2044,10 +2044,13 @@ class p2v():
                 if _remark is None:
                     _remark = self._get_remark(depth=2)
                 self.line(f"{keyword} {tgt} = {src};", remark=_remark)
-                if isinstance(tgt, p2v_signal) and isinstance(src, p2v_signal) and src._pipe is not None:
-                    if tgt._kind == p2v_kind.OUTPUT:
-                        tgt._initial_pipe_stage = tgt._pipe_stage = self._pipe_stage
-                    tgt.pipe(src._pipe)
+                if isinstance(tgt, p2v_signal) and isinstance(src, p2v_signal):
+                    if src._pipe is not None:
+                        if tgt._kind == p2v_kind.OUTPUT:
+                            tgt._initial_pipe_stage = tgt._pipe_stage = self._pipe_stage
+                        tgt.pipe(src._pipe)
+                    elif src._initial_pipe_stage < 0: # closed pipeline valid (pass to parent)
+                        tgt._pipe_stage = src._pipe_stage
         return tgt
 
     def sample(self, clk, tgt, src, valid=None, reset=None, reset_val=0, bits=None, bypass=False, _allow_str=False):
