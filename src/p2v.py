@@ -762,7 +762,7 @@ class p2v():
         return True
 
     def _check_pipe(self, name):
-        if self._signals[name]._pipe is not None:
+        if self._signals[name]._pipe is not None and not self._signals[name]._pipe._bypass:
             orig_name = self._signals[name]._pipe._get_orig_name(name)
             if name == orig_name:
                 delay_name = self._signals[name]._pipe._get_delay_name(name, stage=0)

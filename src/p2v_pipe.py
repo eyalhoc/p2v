@@ -46,26 +46,27 @@ class p2v_pipe:
 
     def advance(self, num=1, bypass=False):
         """ advance pipeline stage """
-        if isinstance(num, p2v_signal):
-            self._parent._set_used(num)
-            num = num._pipe_stage
-        self._parent._assert(self._valid in self._parent._pipelines, "trying to advance undeclared pipeline", fatal=True)
-        self._parent._assert(self._parent._pipelines[self._valid] is not None, "trying to advance a closed pipeline", fatal=True)
-        if not bypass:
-            if self._parent._pipe_stage == 0:
-                delay_name = self._get_delay_name(self._valid, self._parent._pipe_stage)
-                self._parent.logic(delay_name, assign=self._valid, _allow_str=True)
-            self._stage_valid = self._sample(self._valid, stage=self._parent._pipe_stage)
-            self._parent._pipe_stage += 1
-            if self._debug:
-                self._stage_cnt()
-            self._parent.line("")
-            self._parent.remark("=" * 32)
-            self._parent.remark(f" ==== PIPELINE STAGE {self._parent._pipe_stage}")
-            self._parent.remark("=" * 32)
-            self._parent.line("")
-            if num > 1:
-                self.advance(num-1)
+        if not self._bypass:
+            if isinstance(num, p2v_signal):
+                self._parent._set_used(num)
+                num = num._pipe_stage
+            self._parent._assert(self._valid in self._parent._pipelines, "trying to advance undeclared pipeline", fatal=True)
+            self._parent._assert(self._parent._pipelines[self._valid] is not None, "trying to advance a closed pipeline", fatal=True)
+            if not bypass:
+                if self._parent._pipe_stage == 0:
+                    delay_name = self._get_delay_name(self._valid, self._parent._pipe_stage)
+                    self._parent.logic(delay_name, assign=self._valid, _allow_str=True)
+                self._stage_valid = self._sample(self._valid, stage=self._parent._pipe_stage)
+                self._parent._pipe_stage += 1
+                if self._debug:
+                    self._stage_cnt()
+                self._parent.line("")
+                self._parent.remark("=" * 32)
+                self._parent.remark(f" ==== PIPELINE STAGE {self._parent._pipe_stage}")
+                self._parent.remark("=" * 32)
+                self._parent.line("")
+                if num > 1:
+                    self.advance(num-1)
         return self._stage_valid
 
     def _stage_cnt(self):
@@ -98,6 +99,8 @@ class p2v_pipe:
         return name
 
     def _get_signal(self, name, stage=0):
+        if self._bypass:
+            return self._parent._signals[str(name)]
         name_d = self._get_delay_name(name, stage=stage)
         return self._parent._signals[name_d]
 
