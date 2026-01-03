@@ -662,7 +662,7 @@ class p2v_signal:
             _bits *= abs(x)
         return _bits
 
-    def int(self, int_bits=16):
+    def int(self, int_bits=None):
         """
         Convert to int
         """
