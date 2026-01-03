@@ -216,6 +216,7 @@ class p2v_connect():
             if isinstance(pin, p2v_signal) and wire in self._parent._signals:
                 self._parent._signals[wire]._pipe_stage += pin._pipe_stage
                 self._parent._signals[wire]._initial_pipe_stage += pin._pipe_stage
+                self._parent._signals[wire]._const = pin._const
 
     def connect_io(self, pin, wire="", _use_wire=False):
         """

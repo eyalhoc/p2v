@@ -659,7 +659,9 @@ def dec(num, bits=None): # pylint: disable=redefined-outer-name
         rtrn = bin(num + (1<<bits), bits)
     else:
         rtrn = f"{bits}'d{num}"
-    return p2v_signal(None, str(rtrn), bits=bits)
+    signal= p2v_signal(None, str(rtrn), bits=bits)
+    signal._const = True # don't expect .pipe()
+    return signal
 
 def hex(num, bits=None, add_sep=4, prefix="'h"): # pylint: disable=redefined-builtin,redefined-outer-name
     """
@@ -683,7 +685,9 @@ def hex(num, bits=None, add_sep=4, prefix="'h"): # pylint: disable=redefined-bui
         bits = num.bit_length()
         if bits == 0:
             bits = 1
-    return p2v_signal(None, str(rtrn), bits=bits)
+    signal= p2v_signal(None, str(rtrn), bits=bits)
+    signal._const = True # don't expect .pipe()
+    return signal
 
 def bin(num, bits=None, add_sep=4, prefix="'b"): # pylint: disable=redefined-builtin,redefined-outer-name
     """
@@ -705,7 +709,9 @@ def bin(num, bits=None, add_sep=4, prefix="'b"): # pylint: disable=redefined-bui
     rtrn = _base(2, num, bits, add_sep, prefix)
     if bits is None:
         bits = log2(num)
-    return p2v_signal(None, str(rtrn), bits=bits)
+    signal= p2v_signal(None, str(rtrn), bits=bits)
+    signal._const = True # don't expect .pipe()
+    return signal
 
 def min(a, b): # pylint: disable=redefined-builtin
     """

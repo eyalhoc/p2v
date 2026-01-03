@@ -662,7 +662,7 @@ class p2v_signal:
             _bits *= abs(x)
         return _bits
 
-    def int(self, int_bits=16):
+    def int(self, int_bits=None):
         """
         Convert to int
         """
@@ -700,6 +700,7 @@ class p2v_signal:
         Returns:
             synched signal
         """
+        #if not pipeline._parent._assert(not self._const, f"do not pipeline constant signal {self}"):
         if self._const:
             return self
         pipeline._parent._assert(self._pipe is None or self._pipe == pipeline, f"{self} used multiple pipelines at the same time", fatal=True)
@@ -714,11 +715,13 @@ class p2v_signal:
                 if self._initial_pipe_stage > 0:
                     name_d_initial = pipeline._get_delay_name(self._name, stage=0)
                     src = pipeline._parent.logic(name_d_initial, bits=self._bits, assign=self, _allow_str=True)
+                    src._const = True # don't expect .pipe()
                 else:
                     src = self
 
                 name_d_initial = pipeline._get_delay_name(self._name, stage=self._initial_pipe_stage)
                 signal = pipeline._parent.logic(name_d_initial, bits=self._bits, assign=src, _allow_str=True)
+                signal._const = True # don't expect .pipe()
                 signal._strct = self._strct
 
             for i in range(self._initial_pipe_stage, pipeline._parent._pipe_stage):
