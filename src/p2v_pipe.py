@@ -28,8 +28,10 @@ class p2v_pipe:
         self._debug = debug
 
         self._stage_valid = valid
+        self._stage_valid._const = True
         if ready is not None:
             self._parent._set_used(ready)
+            ready._const = True
         if debug:
             self._stage_cnt()
 
@@ -40,7 +42,7 @@ class p2v_pipe:
 
     def end(self):
         """ close pipeline """
-        self._parent._pipelines[self._valid] = None
+        del self._parent._pipelines[self._valid]
         self._stage_valid._initial_pipe_stage = -1
         return self.valid()
 
@@ -55,8 +57,10 @@ class p2v_pipe:
             if not bypass:
                 if self._parent._pipe_stage == 0:
                     delay_name = self._get_delay_name(self._valid, self._parent._pipe_stage)
-                    self._parent.logic(delay_name, assign=self._valid, _allow_str=True)
+                    signal = self._parent.logic(delay_name, assign=self._valid, _allow_str=True)
+                    signal._const = True # don't expect .pipe()
                 self._stage_valid = self._sample(self._valid, stage=self._parent._pipe_stage)
+                self._stage_valid._const = True
                 self._parent._pipe_stage += 1
                 if self._debug:
                     self._stage_cnt()
@@ -72,7 +76,8 @@ class p2v_pipe:
     def _stage_cnt(self):
         self._parent.tb.syn_off()
         cnt_name = self._get_delay_name("stage_cnt", self._parent._pipe_stage)
-        self._parent.logic(cnt_name, 8, initial=0, _allow_str=True)
+        signal = self._parent.logic(cnt_name, 8, initial=0, _allow_str=True)
+        signal._const = True # don't expect .pipe()
         valid = self._stage_valid
         if self._ready is not None:
             valid = f"{valid} & {self._ready}"

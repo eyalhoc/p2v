@@ -762,17 +762,21 @@ class p2v():
         return True
 
     def _check_pipe(self, name):
-        if self._signals[name]._pipe is not None and not self._signals[name]._pipe._bypass:
-            orig_name = self._signals[name]._pipe._get_orig_name(name)
-            if name == orig_name:
-                delay_name = self._signals[name]._pipe._get_delay_name(name, stage=0)
-                delay0_name_is_declared = self._check_declared(delay_name, allow=True)
-                if self._pipe_stage > self._signals[name]._initial_pipe_stage: # was not just created
-                    self._assert(delay0_name_is_declared, f"pipelined signal {name} is used without .pipe()", fatal=True)
-            for i in range(1, self._pipe_stage):
-                delay_name = self._signals[name]._pipe._get_delay_name(name, stage=i)
-                delay_name_is_declared = self._check_declared(delay_name, allow=True)
-                self._assert(not delay_name_is_declared, f"pipelined signal {name} is used without .pipe()", fatal=True)
+        if len(self._pipelines) > 0:
+            signal = self._signals[name]
+            if not signal._const and not signal.is_clock() and not name.startswith("_"):
+                self._assert(signal._pipe is not None, f"pipelined signal {name} is used without .pipe()", fatal=False)
+            if signal._pipe is not None and not signal._pipe._bypass:
+                orig_name = signal._pipe._get_orig_name(name)
+                if name == orig_name:
+                    delay_name = signal._pipe._get_delay_name(name, stage=0)
+                    delay0_name_is_declared = self._check_declared(delay_name, allow=True)
+                    if self._pipe_stage > signal._initial_pipe_stage: # was not just created
+                        self._assert(delay0_name_is_declared, f"pipelined signal {name} is used without .pipe()", fatal=False)
+                for i in range(1, self._pipe_stage):
+                    delay_name = signal._pipe._get_delay_name(name, stage=i)
+                    delay_name_is_declared = self._check_declared(delay_name, allow=True)
+                    self._assert(not delay_name_is_declared, f"pipelined signal {name} is used without .pipe()", fatal=False)
 
     def _set_used(self, wire, allow=False, drive=True):
         if wire is None:
@@ -1402,6 +1406,7 @@ class p2v():
                         self.remark(f"CODE ADDED TO SUPPORT LEGACY SIMULATOR {self._args.sim_bin} THAT DOES NOT SUPPORT CONCURRENT ASSERTIONS")
                         assert_never = {}
                         assert_never[name] = self.logic(assign=misc._invert(condition), _allow_str=True)
+                        assert_never[name]._const = True # don't expect .pipe()
                         self.allow_unused(assert_never[name])
                         rst_n_str = misc.cond(clk.rst_n is not None, f'{clk.rst_n} & ',
                                     misc.cond(clk.reset is not None, f'!{clk.reset} & '))
@@ -1749,7 +1754,7 @@ class p2v():
         enum_vals["BITS"] = enum_bits
         return p2v_enum(**enum_vals)
 
-    def input(self, name="", bits=1, force_dir=False, _allow_str=False):
+    def input(self, name="", bits=1, force_dir=False, const=False, _allow_str=False):
         """
         Create an input port.
 
@@ -1788,7 +1793,9 @@ class p2v():
 
         self._assert_type(name, [str, list ,clock])
         self._assert_type(bits, SIGNAL_TYPES)
-        return self._port(p2v_kind.INPUT, name, bits, strct=strct, driven=True, force_dir=force_dir)
+        signal = self._port(p2v_kind.INPUT, name, bits, strct=strct, driven=True, force_dir=force_dir)
+        signal._const = const # don't expect .pipe()
+        return signal
 
     def output(self, name="", bits=1, initial=None, force_dir=False, _allow_str=False):
         """
@@ -2045,6 +2052,7 @@ class p2v():
                     _remark = self._get_remark(depth=2)
                 self.line(f"{keyword} {tgt} = {src};", remark=_remark)
                 if isinstance(tgt, p2v_signal) and isinstance(src, p2v_signal):
+                    tgt._const = src._const
                     if src._pipe is not None:
                         if tgt._kind == p2v_kind.OUTPUT:
                             tgt._initial_pipe_stage = tgt._pipe_stage = self._pipe_stage

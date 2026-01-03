@@ -715,11 +715,13 @@ class p2v_signal:
                 if self._initial_pipe_stage > 0:
                     name_d_initial = pipeline._get_delay_name(self._name, stage=0)
                     src = pipeline._parent.logic(name_d_initial, bits=self._bits, assign=self, _allow_str=True)
+                    src._const = True # don't expect .pipe()
                 else:
                     src = self
 
                 name_d_initial = pipeline._get_delay_name(self._name, stage=self._initial_pipe_stage)
                 signal = pipeline._parent.logic(name_d_initial, bits=self._bits, assign=src, _allow_str=True)
+                signal._const = True # don't expect .pipe()
                 signal._strct = self._strct
 
             for i in range(self._initial_pipe_stage, pipeline._parent._pipe_stage):
